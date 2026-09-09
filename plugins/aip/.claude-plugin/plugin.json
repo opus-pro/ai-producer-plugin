@@ -1,0 +1,18 @@
+{
+  "name": "aip",
+  "version": "1.0.0",
+  "description": "Edit talking-head video into a finished cut with AI Producer: the agent prepares an editable workspace, while AIP transcribes, scores, restyles, previews and exports it.",
+  "author": {
+    "name": "OpusClip",
+    "url": "https://www.opus.pro/"
+  },
+  "homepage": "https://producer.opus.pro/docs/plugins",
+  "repository": "https://github.com/opus-pro/ai-producer-plugin",
+  "keywords": [
+    "video",
+    "editing",
+    "captions",
+    "motion-graphics",
+    "mcp"
+  ]
+}

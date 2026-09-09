@@ -1,0 +1,20 @@
+{
+  "name": "ai-producer-plugins",
+  "interface": {
+    "displayName": "AI Producer Plugins"
+  },
+  "plugins": [
+    {
+      "name": "aip",
+      "source": {
+        "source": "local",
+        "path": "./plugins/aip"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

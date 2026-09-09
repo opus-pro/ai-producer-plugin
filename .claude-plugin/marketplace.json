@@ -1,0 +1,22 @@
+{
+  "name": "ai-producer-plugins",
+  "description": "AI Producer video editing for coding agents: an editing skill, workspace contract, and remote AIP MCP server.",
+  "owner": {
+    "name": "OpusClip"
+  },
+  "plugins": [
+    {
+      "name": "aip",
+      "source": "./plugins/aip",
+      "description": "Edit talking-head video into a finished cut with AI Producer: the agent prepares an editable workspace, while AIP transcribes, scores, restyles, previews and exports it.",
+      "version": "1.0.0",
+      "author": {
+        "name": "OpusClip",
+        "url": "https://www.opus.pro/"
+      },
+      "homepage": "https://producer.opus.pro/docs/plugins",
+      "repository": "https://github.com/opus-pro/ai-producer-plugin",
+      "category": "productivity"
+    }
+  ]
+}
