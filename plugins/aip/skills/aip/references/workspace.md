@@ -1,60 +1,22 @@
-# AIP workspace contract
+# AIP workspace format
 
-Prepare editable source files and assets for an AIP project. Choose authoring tools separately; this plugin describes the service's file boundary. Read the existing workspace before editing and preserve its document structure, timing, media references, and editable elements. For a new project, use the current AIP tools and their returned project state as the starting point.
+The entry is `render-engine/index.html`. Supporting documents go in `compositions/`, assets in `public/`, styles in `styles/`, and fonts in `fonts/`, all beneath `render-engine/`.
 
-## File layout
+The workspace accepts HTML, CSS, JSON, images, fonts, video, and audio. HTML is limited to 64 KiB per file; `narrator_captions.html` to 256 KiB. Use the runtime scripts provided by the project and embed vector graphics in HTML.
 
-Tool paths are relative to the project root, including the `render-engine/` prefix. The externally writable portion is:
-
-```text
-render-engine/
-  index.html          # Editable project entry
-  compositions/       # Supporting documents and data, when used
-  public/             # Referenced media and assets, when used
-  styles/             # Stylesheets, when used
-  fonts/              # Font files, when used
-```
-
-`render-engine/index.html` is the entry file. The four directories are allowed destinations, not a requirement to create empty folders. Their filenames and contents follow the actual project. AIP owns the rest of the workspace, including plans, transcripts, build metadata, dependencies, and generated exports. Do not upload an entire repository, dependency tree, or render output as project source.
-
-Destination paths use `/` separators and only ASCII letters, digits, `.`, `_`, and `-` within each segment. No leading slash, backslash, NUL, empty segment, `.` segment, or `..` segment is accepted. Limits are 512 characters per path, 128 per segment, and eight segments including the filename. Keep caches, temporary directories, and version-control metadata out of the upload.
-
-## Accepted files
-
-| Kind | Extensions |
-| --- | --- |
-| Documents and data | `.html`, `.htm`, `.css`, `.json` |
-| Images | `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif` |
-| Fonts | `.woff`, `.woff2`, `.ttf`, `.otf` |
-| Video | `.mp4`, `.mov`, `.webm` |
-| Audio | `.mp3`, `.wav`, `.m4a`, `.ogg` |
-
-HTML must be UTF-8 and at most 64 KiB per file. A caption document named `narrator_captions.html` has a 256 KiB limit. Each non-HTML asset is limited to 256 MiB. These are file-admission limits, not evidence that a document or codec will render correctly.
-
-The service does not accept uploaded JavaScript modules, standalone scripts, or SVG files. Reference the scripts AIP already provides in the project; do not install or upload replacement runtime files or dependency manifests.
-
-## Documents and references
-
-Keep all required assets available in the project. An uploaded HTML file's relative `src` and `href` references are checked from that document's directory against existing workspace files, files accepted in the same batch, and service-provided resources. A missing reference refuses the whole batch. Preserve the existing project's working references and inspect playback after changing paths.
-
-HTML must not load remote scripts, contain `on*` event-handler attributes or `javascript:` URLs, or make network calls such as `fetch`, `XMLHttpRequest`, `WebSocket`, or `sendBeacon`. Author the document from the resources supplied to the project.
-
-File placement alone does not define an editable video. Preserve the established canvas, timeline, audio behavior, and editor metadata in the project's sources. The service's preview and export checks determine whether the resulting document works.
-
-## Effects
-
-Each visual effect the editor should list and let the user move is its own document under `compositions/`, mounted from `render-engine/index.html` by one host element that carries the effect's timing:
+An editable effect or caption is a composition document containing a `<template>`, mounted from the entry:
 
 ```html
-<div class="visual-host clip" data-composition-id="<id>" data-composition-src="compositions/<file>.html" data-start="<s>" data-duration="<s>" data-track-index="3" data-width="<px>" data-height="<px>"></div>
+<div class="visual-host clip" data-composition-id="example"
+     data-composition-src="compositions/example.html"
+     data-start="0" data-duration="3" data-track-index="3"
+     data-width="1080" data-height="1920"></div>
 ```
 
-Content and animation written straight into the entry document's root timeline play in preview and export, but the editor does not list them as effects and the user cannot move them. Keep one host per effect.
+Give each independently editable visual beat its own composition file and host, with start and duration matching that beat. The editor exposes one movable effect per host.
 
-## Handoff and verification
+The inner composition and its `window.__timelines` registration share the host's composition ID. Animation time is local to the composition.
 
-The MCP tool descriptions own transfer procedures, arguments, costs, and recovery. Use `list_workspace` and `get_workspace_file` to inspect the current sources. When the listing returns a non-null digest, use it as `base_digest` when committing changes so a concurrent editor update is detected rather than overwritten. A truncated listing can return a null digest; inspect the affected files using the tool guidance, omit `base_digest` if no complete-workspace token is available, and state that this commit has no digest-based concurrency check. Do not invent a token or pass null as a digest.
+Split speaker video/audio pairs use `class="clip speaker-clip"` and matching `data-hf-id`. The first pair has IDs `speaker` and `speaker-audio`. `data-start` is output time; `data-media-start` is the offset in the referenced media.
 
-A staged upload is not part of the playable project. `commit_workspace` accepts or refuses the entire staged batch; inspect the terminal task and `last_promote` result before treating files as accepted. On a stale base, read the current project and reconcile the changes before trying again.
-
-An accepted batch proves file admission, not renderability. Inspect the actual AIP preview and, when export is requested, its completed export result. Report failed or unperformed checks clearly and return the editable project link with the delivery.
+Read project sources with `list_workspace` and `get_workspace_file`; stage uploads and apply them with `commit_workspace`. The workspace digest supplies `base_digest`, and `last_promote` reports the accepted files or specific refusals. Tool descriptions provide the transfer details.
