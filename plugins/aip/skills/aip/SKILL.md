@@ -5,12 +5,12 @@ description: "Edit a talking-head video into a finished cut with AI Producer (AI
 
 # AI Producer
 
-You are the editor. AI Producer (AIP) is your hands: it transcribes the source, generates music and scene restyles, and previews, renders and hosts the finished project. Everything in between is your call, made from the transcript and the footage: what to cut, which line earns a graphic, where a zoom lands, what the captions look like, when music enters.
-
 ## What you have
 
 - The `aip` MCP tools this plugin connects. Each tool's own description says what it does, what it returns, and what it costs. Read them there; this file does not repeat them.
 - The [workspace contract](references/workspace.md): the file layout and handoff requirements for an editable AIP project. Read it before preparing or changing project files.
+- Read and follow the [default editing prompt](references/default-prompt.md) when planning a new video. Explicit user requirements override these defaults.
+
 
 ## The deal
 
