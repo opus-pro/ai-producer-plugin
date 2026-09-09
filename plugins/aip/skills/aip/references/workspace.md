@@ -41,6 +41,16 @@ HTML must not load remote scripts, contain `on*` event-handler attributes or `ja
 
 File placement alone does not define an editable video. Preserve the established canvas, timeline, audio behavior, and editor metadata in the project's sources. The service's preview and export checks determine whether the resulting document works.
 
+## Effects
+
+Each visual effect the editor should list and let the user move is its own document under `compositions/`, mounted from `render-engine/index.html` by one host element that carries the effect's timing:
+
+```html
+<div class="visual-host clip" data-composition-id="<id>" data-composition-src="compositions/<file>.html" data-start="<s>" data-duration="<s>" data-track-index="3" data-width="<px>" data-height="<px>"></div>
+```
+
+Content and animation written straight into the entry document's root timeline play in preview and export, but the editor does not list them as effects and the user cannot move them. Keep one host per effect.
+
 ## Handoff and verification
 
 The MCP tool descriptions own transfer procedures, arguments, costs, and recovery. Use `list_workspace` and `get_workspace_file` to inspect the current sources. When the listing returns a non-null digest, use it as `base_digest` when committing changes so a concurrent editor update is detected rather than overwritten. A truncated listing can return a null digest; inspect the affected files using the tool guidance, omit `base_digest` if no complete-workspace token is available, and state that this commit has no digest-based concurrency check. Do not invent a token or pass null as a digest.
