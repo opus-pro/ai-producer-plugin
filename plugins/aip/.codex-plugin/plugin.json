@@ -6,7 +6,7 @@
     "name": "OpusClip",
     "url": "https://www.opus.pro/"
   },
-  "homepage": "https://producer.opus.pro/docs/plugins",
+  "homepage": "https://producer.opus.pro/plugin",
   "repository": "https://github.com/opus-pro/ai-producer-plugin",
   "keywords": [
     "video",
@@ -27,7 +27,7 @@
       "Read",
       "Write"
     ],
-    "websiteURL": "https://producer.opus.pro/docs/plugins",
+    "websiteURL": "https://producer.opus.pro",
     "composerIcon": "./assets/icon.png",
     "logo": "./assets/icon.png",
     "defaultPrompt": [
