@@ -4,7 +4,7 @@ Edit talking-head videos in Codex or Claude Code with AI Producer: cut dead air,
 
 **[Installation and usage documentation](https://producer.opus.pro/docs)**
 
-This repository contains the AIP skill, [workspace contract](plugins/aip/skills/aip/references/workspace.md), and MCP connection. Video processing runs on the hosted AIP service; service access and credits are separate from installing this plugin.
+This repository contains the AIP skill, [HyperFrames contract](plugins/aip/skills/hyperframes/SKILL.md), [workspace contract](plugins/aip/skills/aip/references/workspace.md), and MCP connection. Video processing runs on the hosted AIP service; service access and credits are separate from installing this plugin.
 
 ## Development
 

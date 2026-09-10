@@ -1,6 +1,6 @@
 {
   "name": "aip",
-  "version": "1.0.2",
+  "version": "1.0.2+codex.20260910070442",
   "description": "Edit talking-head video into a finished cut with AI Producer: the agent prepares an editable workspace, while AIP transcribes, scores, restyles, previews and exports it.",
   "author": {
     "name": "OpusClip",
@@ -17,7 +17,7 @@
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "AI Producer",
+    "displayName": "AI Producer (Local HF)",
     "shortDescription": "Cut, caption and animate a talking-head video",
     "longDescription": "Edit an attached talking-head video: cut it from the transcript, prepare captions and motion graphics in an AIP-compatible workspace, and use AI Producer for music, restyling, preview and export.",
     "developerName": "OpusClip",

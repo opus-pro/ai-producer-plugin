@@ -18,6 +18,6 @@ Create a finished, editable AIP video. Shape the edit around the user's intent, 
 
 ## Make and review
 
-Author the project using the [AIP workspace format](references/workspace.md).
+Before writing or editing `index.html` or a composition, read this plugin's [HyperFrames contract](../hyperframes/SKILL.md). Author the project using that contract and the [AIP workspace format](references/workspace.md).
 
 Review the exported video as a viewer: consider the story, pacing, framing, captions, and sound. Refine the edit, then deliver the final video and its editable project link.
