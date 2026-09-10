@@ -1,7 +1,7 @@
 {
   "name": "aip",
-  "version": "1.0.2+codex.20260910070442",
-  "description": "Edit talking-head video into a finished cut with AI Producer: the agent prepares an editable workspace, while AIP transcribes, scores, restyles, previews and exports it.",
+  "version": "1.1.0",
+  "description": "Create an editable talking-head video with AI Producer. Deliver the preview link by default; export only on explicit request, without automatic playback inspection.",
   "author": {
     "name": "OpusClip",
     "url": "https://www.opus.pro/"

@@ -1,9 +1,13 @@
 ---
-name: hyperframes
-description: "How to author HTML-as-video with HyperFrames for a talking-head AI Producer project - the composition contract (data-* timing, template sub-compositions, one paused GSAP timeline per composition) and what the AIP editor recognises (speaker track, root audio, captions, visual moments, PIP). Read before writing or editing any composition or index.html."
+name: aip-composition
+description: "AIP-specific composition and editor contract. Read when using the AI Producer plugin to author its HTML workspace; not the general HyperFrames creation workflow."
 ---
 
 # HyperFrames for an AIP project
+
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+Copyright 2026 HeyGen, Inc. Modifications Copyright 2026 OpusClip. Modified by OpusClip for AIP; see [source attribution, license, and changes](../../THIRD_PARTY_NOTICES.md).
 
 HTML is the video: a composition is an HTML element with `data-*` timing attributes and one paused GSAP timeline the player drives. AIP's editor plays your HTML with its own player, and the export renders it with AIP's own pinned HyperFrames; they are two programs with separate playback and editing contracts. This page is the interface those two read, nothing more. What to draw, how it moves, where captions sit and what a moment looks like are your decisions.
 
@@ -26,12 +30,14 @@ HTML is the video: a composition is an HTML element with `data-*` timing attribu
 </script>
 ```
 
-- The speaker: `<video id="speaker" class="clip" src="public/source.mp4" muted playsinline data-volume="0">` and `<audio id="speaker-audio" class="clip" src="public/source.mp3" data-volume="1">`. Every media element carries an `id`, which is how the export's mixer finds it, and `data-volume` is what the export mixes (the HTML `muted` attribute only silences the browser). After a cut, use N video/audio pairs over the same two files. Each element has `class="clip speaker-clip"`, a unique `id`, and `data-start`, `data-duration`, `data-media-start`, and `data-track-index`. A pair shares its `data-hf-id` and timing; give each pair a distinct `data-hf-id`. Keep `speaker` and `speaker-audio` on the first pair. DOM order is output order on each speaker track, so write the spans in playback order with consecutive output starts.
+- The speaker: `<video id="speaker" class="clip" src="public/source.mp4" muted playsinline data-volume="0">` and `<audio id="speaker-audio" class="clip" src="public/source.mp3" data-volume="1">`. Keep unique media IDs. Speaker video is silent; the source audio is the audible leader. Generic extra `<audio class="clip">` tags are not AIP sound-effect tracks: AIP audio tracks require its editing document and derived `track-audio` elements. After a cut, use N video/audio pairs over the same two files. Each element has `class="clip speaker-clip"`, a unique `id`, and `data-start`, `data-duration`, `data-media-start`, and `data-track-index`. A pair shares its `data-hf-id` and timing; give each pair a distinct `data-hf-id`. Keep `speaker` and `speaker-audio` on the first pair. DOM order is output order on each speaker track, so write the spans in playback order with consecutive output starts.
 - A visual moment: one `<div class="visual-host clip" data-composition-id="<id>" data-composition-src="compositions/<file>.html" data-start data-duration data-track-index data-width data-height>` per moment. The host div is the moment the editor shows and lets the user move; content written straight into the root is not a moment.
 - Captions, when requested: a host div the same way, pointing at `compositions/narrator_captions.html`; inside it the editor reads the `.caption-band` element. Store word data in `compositions/_words.json`. Caption appearance remains an editorial choice; a request without captions does not need these files.
-- A picture-in-picture of the speaker inside a moment: `<video id="<unique>" data-pip-src="public/source.mp4" data-start="<the host's data-start>" data-duration="<the host's data-duration>" data-media-start="<source seconds at that start>" muted playsinline data-volume="0">`, with no `src`. The one exception to the timing table: a PIP's `data-start` is the host's global start, not 0, because the export re-anchors a speaker PIP on a cut project by setting its media offset to that value; the editor maps it through the cut itself.
+- A static duplicate speaker PIP can be represented inside a moment, but it is not a continuous full-frame/PIP transition or proof of export compatibility: `<video id="<unique>" data-pip-src="public/source.mp4" data-start="<the host's data-start>" data-duration="<the host's data-duration>" data-media-start="<source seconds at that start>" muted playsinline data-volume="0">`, with no `src`. The one exception to the timing table: a PIP's `data-start` is the host's global start, not 0, because the export re-anchors a speaker PIP on a cut project by setting its media offset to that value; the editor maps it through the cut itself.
 - Footage other than the recording (a user clip, a stock clip): a root clip in `index.html`, `<video id="<unique>" class="clip" data-track-index="<n>" src="public/videos/<stem>.mp4" data-start data-duration data-media-start muted playsinline data-volume="0">`, on a track of its own, with the moment that frames it drawing over it (a mask, a frame, a title) and holding no `<video>` of its own. A `<video>` with a `src` inside a composition plays in the editor's preview and is not painted by the export, whatever class or track index it carries: the export's headless capture leaves it black. `commit_workspace` names each one under `warnings` as `video_inside_composition`.
 - An element the user should move and restyle as one object carries `data-aip-editable="<token>"` where the token is one of that element's own classes; the editor also treats `.list-item`, `.glass-card`, `.media-card`, `.speaker-pip-frame` and `.item-bar` as such objects. Anything else inside a moment is reachable only as text or image leaves.
+
+For a continuous full-frame/PIP transition, keep one speaker identity and coordinate picture geometry with the window on the root timeline. The optional [PIP example](references/pip-transition.md) covers an uncut single-speaker project only; it is not a verified recipe for cut media or editor camera overrides. Independent effect hosts do not supply cross-scene interpolation automatically.
 
 ## A sub-composition file
 
@@ -58,11 +64,9 @@ The inner div's `data-composition-id` equals the host's. Scope styles and elemen
 | `data-duration` | every clip | seconds, the clip's own length |
 | `data-track-index` | every clip | integer; clips on one track cannot overlap |
 | `data-media-start` | video and audio | offset into the source file, seconds |
-| `data-volume` | video and audio | 0 to 1, what the export mixes; omitted means 1 |
+| `data-volume` | registered media | playback gain, 0 to 1; does not enroll arbitrary audio in AIP mixing |
 | `data-width`, `data-height` | compositions | the canvas, px |
 
-## Preview and export
+## Preview acceptance
 
-Upload the tree through the AIP workspace tools. In the editor, check that each visual beat appears as an independent effect and that seeking forward and backward preserves the expected picture, media timing, and caption state. Check the exported MP4 separately for picture and sound; successful export does not prove the editor can select or retime an effect, and successful preview does not prove export compatibility. Report a failure on the surface where it occurs.
-
-Use AIP's preview and export for acceptance. A standalone HyperFrames preview or render does not exercise AIP's editor. Keep the user's creative direction and chosen authoring tools; this skill specifies the consumed structure and timing, not a visual style.
+The [AIP skill](../aip/SKILL.md) owns delivery and the no-inspection stopping condition. Keep this contract separate from creative direction. A successful local animation sample or accepted upload does not establish AIP editor or export correctness.

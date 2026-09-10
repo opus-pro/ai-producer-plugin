@@ -13,4 +13,4 @@ Read README.md and CONTRIBUTING.md before changing the package.
 - Never add personal data, private transcripts, credentials, internal tickets, private infrastructure addresses, or developer-specific paths. Inspect the complete proposed public diff and metadata before publishing.
 - Preserve third-party notices. Use ASCII punctuation in agent instructions and English repository prose, with one source line per prose block.
 
-- Keep `skills/aip/` focused on AIP capabilities and the workspace file contract. Keep the bundled `hyperframes` skill focused on the composition, timing, and editor contract. Authoring tools are selected separately; do not bundle framework dependencies or rendering implementations. Verify file requirements against the service before changing the contract.
+- Keep `skills/aip/` focused on AIP capabilities and the workspace file contract. Keep the bundled `aip-composition` skill focused on the composition, timing, and editor contract. Authoring tools are selected separately; do not bundle framework dependencies or rendering implementations. Verify file requirements against the service before changing the contract.

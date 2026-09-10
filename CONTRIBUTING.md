@@ -22,7 +22,7 @@ Preserve the `ai-producer-plugins` marketplace identifier, `aip` plugin name, an
 
 ## Workspace contract
 
-Keep the plugin focused on AIP capabilities and the workspace files accepted by the service. The editing skill and its workspace reference live under `plugins/aip/skills/aip/`. The `hyperframes` skill describes the composition, timing, and editor contract. The agent chooses its authoring tools; this package does not install an authoring framework or bundle animation runtimes or caption implementations.
+Keep the plugin focused on AIP capabilities and the workspace files accepted by the service. The editing skill and its workspace reference live under `plugins/aip/skills/aip/`. The `aip-composition` skill describes the composition, timing, and editor contract. The agent chooses its authoring tools; this package does not install an authoring framework or bundle animation runtimes or caption implementations.
 
 Verify workspace requirements against the service's current acceptance and playback behavior. Separate required files from optional conventions, and transfer acceptance from preview/export validation. Tool descriptions own service procedures and costs; the workspace reference owns the file contract.
 
