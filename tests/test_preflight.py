@@ -54,6 +54,12 @@ class PreflightTests(unittest.TestCase):
         self.assertFalse(preflight.check(self.root)["ok"])
         self.assertTrue(preflight.check(self.root, ["public/source.mp3"])["ok"])
 
+    def test_service_paths_declare_existing_remote_assets(self):
+        self.write("index.html", ROOT.format('<audio src="public/source.mp3"></audio>'))
+        self.assertTrue(preflight.check(self.root, ["render-engine/public/source.mp3"])["ok"])
+        report = preflight.check(self.root, ["render-engine/../outside"])
+        self.assertIn("invalid_service_file", self.codes(report))
+
     def test_composition_id_and_timing_are_checked(self):
         self.write("compositions/beat.html", '<template><div data-composition-id="wrong" data-start="nan" data-duration="0"></div></template>')
         codes = self.codes(preflight.check(self.root))

@@ -18,6 +18,10 @@ def prepare(root, rows):
     jobs = []
     for row in rows:
         rel = row['path']
+        if not isinstance(rel, str):
+            raise ValueError('Upload path must be a string')
+        if rel.startswith('render-engine/'):
+            rel = rel[len('render-engine/'):]
         file = (root / rel).resolve()
         url = urlsplit(row['upload_url'])
         if Path(rel).is_absolute() or not file.is_relative_to(root) or not file.is_file():

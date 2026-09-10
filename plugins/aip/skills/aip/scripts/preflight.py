@@ -61,6 +61,8 @@ def check(root, remote_files=()):
             collection.append(item)
 
     for name in remote_files:
+        if name.startswith("render-engine/"):
+            name = name[len("render-engine/"):]
         candidate = (root / name).resolve()
         if urlsplit(name).scheme or not candidate.is_relative_to(root):
             issue(errors, "invalid_service_file")

@@ -6,6 +6,8 @@ Edit talking-head videos in Codex or Claude Code with AI Producer: create an edi
 
 This repository contains the AIP skill, [HyperFrames contract](plugins/aip/skills/aip-composition/SKILL.md), [workspace contract](plugins/aip/skills/aip/references/workspace.md), and MCP connection. Video processing runs on the hosted AIP service; service access and credits are separate from installing this plugin.
 
+The bundled static-check and upload helpers use Python 3.10 or newer on the client host. Hosts without it can use their own static-check and batch HTTP tools.
+
 ## Development
 
 Requires Python 3.10 or newer for the offline checks.
