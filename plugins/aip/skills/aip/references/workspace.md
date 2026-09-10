@@ -15,7 +15,7 @@ An editable effect or caption is a composition document containing a `<template>
 
 Give each independently editable visual beat its own composition file and host, with start and duration matching that beat. The editor exposes one movable effect per host.
 
-The inner composition and its `window.__timelines` registration share the host's composition ID. Animation time is local to the composition.
+The inner composition and its `window.__timelines` registration share the host's composition ID; any other element in the file that carries a composition ID is either a nested host with its own `data-composition-src` (its file registers that ID) or marked `data-no-timeline`, because the export waits on every other ID until the file registers it. The editor and the export mount only what is inside `<template>`: a `<script>` written after `</template>` never runs in either, so its timeline never registers, the export blocks on that host, and `commit_workspace` refuses the file as `timeline_outside_template`. The file needs no mount script outside the template. Animation time is local to the composition.
 
 Split speaker video/audio pairs use `class="clip speaker-clip"` and matching `data-hf-id`. The first pair has IDs `speaker` and `speaker-audio`. `data-start` is output time; `data-media-start` is the offset in the referenced media.
 
