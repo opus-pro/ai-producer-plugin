@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>PIP continuity fixture</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; background: #101624; }
+#stage { position: relative; width: 360px; height: 640px; overflow: hidden; background: #e7eef5; }
+#speaker { position: absolute; left: 0; top: 0; width: 360px; height: 640px; object-fit: cover; object-position: 50% 50%; border-radius: 0; z-index: 2; }
+#material { position: absolute; inset: 28px 24px auto; height: 260px; border-radius: 24px; background: #1c385c; color: white; font: 32px system-ui; padding: 30px; opacity: 0; }
+</style>
+<div id="stage" data-composition-id="finecut-root" data-start="0" data-duration="6" data-width="360" data-height="640">
+  <div id="material">Synthetic material<br>01 / 02 / 03</div>
+  <video id="speaker" class="clip" src="public/synthetic.webm" muted playsinline data-start="0" data-duration="6" data-media-start="0" data-track-index="0" data-volume="0"></video>
+</div>
+<script src="public/vendor/gsap.min.js"></script>
+<script>
+window.__timelines = window.__timelines || {};
+const rootTl = gsap.timeline({ paused: true });
+// One owner changes the image box, crop and corner shape together.
+const full = { left: 0, top: 0, width: 360, height: 640, borderRadius: 0, objectPosition: '50% 50%' };
+const pip = { left: 24, top: 340, width: 312, height: 276, borderRadius: 30, objectPosition: '50% 28%' };
+rootTl.fromTo('#speaker', full, { ...pip, duration: 0.6, ease: 'power2.inOut', immediateRender: false }, 1);
+rootTl.to('#material', { opacity: 1, duration: 0.6, ease: 'power2.inOut' }, 1);
+rootTl.to('#speaker', { ...full, duration: 0.6, ease: 'power2.inOut' }, 4);
+rootTl.to('#material', { opacity: 0, duration: 0.6, ease: 'power2.inOut' }, 4);
+window.__timelines['finecut-root'] = rootTl;
+</script></html>

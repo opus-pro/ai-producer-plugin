@@ -11,6 +11,7 @@ root so the test suite can run it against broken fixture trees.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import struct
@@ -21,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_DIRNAME = "aip"
 EXPECTED_REPOSITORY = "https://github.com/opus-pro/ai-producer-plugin"
 EXPECTED_ENDPOINT = "https://producer.opus.pro/api/mcp"
-EXPECTED_SKILLS = {"aip"}
+EXPECTED_SKILLS = {"aip", "aip-composition"}
 
 
 # The service needs the plugin version on each tool call.
@@ -37,6 +38,8 @@ SEMVER = re.compile(
 # in context and the body loads on invocation, so a body past this point is a
 # skill that has started carrying procedure the tool replies should carry.
 MAX_SKILL_LINES = 500
+# Preserve the complete upstream license, including its copyright appendix.
+HYPERFRAMES_LICENSE_SHA256 = "4259155fb06f127687ee7b0a8a3682d45132db0f2da26cbc0b7a2d1e796436b8"
 
 
 def plugin_dir(root: Path) -> Path:
@@ -161,6 +164,14 @@ def validate_relative_links(root: Path) -> None:
             assert path.exists(), f"missing relative reference: {source}: {target}"
 
 
+def validate_notices(root: Path) -> None:
+    license_file = plugin_dir(root) / "licenses/Apache-2.0.txt"
+    assert license_file.is_file(), "missing bundled HyperFrames license"
+    assert hashlib.sha256(license_file.read_bytes()).hexdigest() == HYPERFRAMES_LICENSE_SHA256, (
+        "bundled HyperFrames license must match the verified upstream text"
+    )
+
+
 def main(root: Path = ROOT) -> None:
     version = validate_manifests(root)
     validate_marketplaces(root, version)
@@ -168,6 +179,7 @@ def main(root: Path = ROOT) -> None:
     validate_skill_structure(root)
     validate_host_hooks(root)
     validate_relative_links(root)
+    validate_notices(root)
     print(f"Validated {PLUGIN_DIRNAME} {version} for Codex and Claude Code")
 
 

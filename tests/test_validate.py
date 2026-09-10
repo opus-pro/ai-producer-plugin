@@ -57,6 +57,17 @@ class ValidateFixtureTest(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "reference escapes package"):
             validate.main(self.root)
 
+    def test_bundled_license_cannot_be_truncated(self) -> None:
+        license_file = self.root / "plugins/aip/licenses/Apache-2.0.txt"
+        license_file.write_bytes(license_file.read_bytes()[:100])
+        with self.assertRaisesRegex(AssertionError, "verified upstream text"):
+            validate.main(self.root)
+
+    def test_missing_bundled_license_fails(self) -> None:
+        (self.root / "plugins/aip/licenses/Apache-2.0.txt").unlink()
+        with self.assertRaises(AssertionError):
+            validate.main(self.root)
+
     def test_nonproduction_endpoint_fails(self) -> None:
         self.rewrite(MCP_CONFIG, validate.EXPECTED_ENDPOINT, "https://example.invalid/api/mcp")
         with self.assertRaises(AssertionError):

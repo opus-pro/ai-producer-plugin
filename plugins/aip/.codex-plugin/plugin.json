@@ -1,7 +1,7 @@
 {
   "name": "aip",
-  "version": "1.0.2",
-  "description": "Edit talking-head video into a finished cut with AI Producer: the agent prepares an editable workspace, while AIP transcribes, scores, restyles, previews and exports it.",
+  "version": "1.1.0",
+  "description": "Create an editable talking-head video with AI Producer. Deliver the preview link by default; export only on explicit request, without automatic playback inspection.",
   "author": {
     "name": "OpusClip",
     "url": "https://www.opus.pro/"
@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "AI Producer",
     "shortDescription": "Cut, caption and animate a talking-head video",
-    "longDescription": "Edit an attached talking-head video: cut it from the transcript, prepare captions and motion graphics in an AIP-compatible workspace, and use AI Producer for music, restyling, preview and export.",
+    "longDescription": "Cut an attached talking-head video, prepare captions and motion graphics in an AIP-compatible workspace, and deliver an editable preview. Export on explicit request; playback review and follow-up edits stay with the user.",
     "developerName": "OpusClip",
     "category": "Productivity",
     "capabilities": [
@@ -31,7 +31,7 @@
     "composerIcon": "./assets/icon.png",
     "logo": "./assets/icon.png",
     "defaultPrompt": [
-      "Edit my attached talking-head video into a finished cut with AIP.",
+      "Edit my attached talking-head video with AIP and give me the editable preview link.",
       "Cut the dead air out of this video and add captions.",
       "Add motion graphics and music to this video and export the mp4."
     ]

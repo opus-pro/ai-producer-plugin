@@ -20,3 +20,13 @@ The inner composition and its `window.__timelines` registration share the host's
 Split speaker video/audio pairs use `class="clip speaker-clip"` and matching `data-hf-id`. The first pair has IDs `speaker` and `speaker-audio`. `data-start` is output time; `data-media-start` is the offset in the referenced media.
 
 Read project sources with `list_workspace` and `get_workspace_file`; stage uploads and apply them with `commit_workspace`. The workspace digest supplies `base_digest`, and `last_promote` reports the accepted files or specific refusals. Tool descriptions provide the transfer details.
+
+## Local handoff
+
+Resolve HTML `src`, `href`, `data-composition-src`, and `data-pip-src`, plus CSS `url(...)`, relative to the file containing the reference. For example, a document in `compositions/` references an image as `../public/images/example.jpg`, while `index.html` uses `public/images/example.jpg`.
+
+The bundled helpers require Python 3.10 or newer on the client host. If unavailable, perform equivalent static checks and batch PUTs with available host tools; do not install a runtime as part of the video task.
+
+Run `python3 <loaded-aip-skill>/scripts/preflight.py <render-engine-root>` once after authoring. Use repeated `--remote-file` arguments only for paths confirmed present in `list_workspace` but absent locally, such as `public/source.mp4`, `public/source.mp3`, or `public/vendor/gsap.min.js`. Both helpers accept local root-relative paths and service paths beginning with `render-engine/`; they remove exactly one such prefix. HTML and CSS references themselves still resolve relative to their containing file. This checks known local integration mistakes, not rendering or visual quality. Fix reported errors before uploading.
+
+For one batch transfer, construct a temporary JSON array of objects with `path` (the service path or a path relative to the local render-engine root), `upload_url`, and `headers` from the signed-upload response. Feed it on stdin to `python3 <loaded-aip-skill>/scripts/upload_batch.py <render-engine-root>`. The helper runs bounded parallel PUTs and prints only relative paths and outcomes. Do not print signed URLs or persist them in project documentation. It does not sign, commit, retry failed uploads, or call an LLM; if any upload fails, do not commit the incomplete batch.
