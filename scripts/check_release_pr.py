@@ -202,8 +202,20 @@ def check_release_pr(repo: Path, base: str, head: str, title: str) -> str:
 
     if not version_changed and release_title is None and not title.startswith("chore(release)"):
         bootstrap = LATEST_VERSION_FILE not in before and LATEST_VERSION_FILE not in base_documents
-        if changed_logs and not (bootstrap and changed_logs == {log_path}):
+        if changed_logs and not bootstrap:
             raise ValueError("Release logs require a version update; historical logs cannot be changed")
+        for path in sorted(changed_logs):
+            historical_version = path[len("releases/v"):-len(".md")]
+            if precedence(historical_version) > precedence(new_version):
+                raise ValueError("Initial release history cannot include versions newer than the declared version")
+            if git(repo, "ls-tree", ancestor, "--", path) or git(repo, "ls-tree", base, "--", path):
+                raise ValueError("Initial release history may only add logs; historical logs cannot be changed")
+            contents = regular_blob(repo, head, path).decode("utf-8")
+            # Archived releases predate the PR-link and comparison-link format.
+            if not contents.startswith(f"# v{historical_version}\n") or not contents.split("\n", 1)[1].strip():
+                raise ValueError(f"Historical release log must have a matching version heading and content: {path}")
+            if re.search(r"\{\{.*?\}\}", contents, re.DOTALL):
+                raise ValueError("Historical release log still contains template placeholders")
         validate_release_log(regular_blob(repo, head, log_path).decode("utf-8"), new_version)
         return "OK: no version change; ordinary PR"
     if not release_title:

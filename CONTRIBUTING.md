@@ -48,7 +48,7 @@ python3 scripts/prepare_release.py 1.1.4
 python3 scripts/test.py
 ```
 
-The directory uses `latest_version.json` and `template.md` for its two helper files, followed by `vX.Y.Z.md` logs when sorted by name. The initial `v1.1.3.md` summarizes the existing published release and links to its PRs and full comparison; adding it does not publish another release.
+The directory uses `latest_version.json` and `template.md` for its two helper files, followed by `vX.Y.Z.md` logs when sorted by name. See the [release directory guide](releases/README.md) for their usage and the initial import of published `v1.0.0` through `v1.1.3` notes. Legacy logs retain their published format; new releases follow the template. The initial import may add historical logs at or below the declared version without editing existing logs, and does not publish another release. Once tracking exists, ordinary PRs cannot add or change historical logs.
 
 The `Validate release PR` workflow runs on PR creation, reopening, new commits, and edits, including title changes. It detects version updates regardless of the PR title and validates ordinary PRs for version consistency. It runs the trusted validator from the workflow's commit and reads PR Git objects without checking out or executing PR code. It needs no credentials. After this workflow reaches the default branch, configure `Release PR policy` as a required status check and require branches to be up to date before merging so the base-version comparison stays current.
 

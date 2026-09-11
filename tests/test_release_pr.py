@@ -282,13 +282,65 @@ class ReleasePRTest(unittest.TestCase):
         (self.root / policy.RELEASE_TEMPLATE).write_text("Different template.\n")
         self.assertIn("ordinary PR", self.check("chore: release tooling"))
 
-    def test_bootstrap_tracking_keeps_existing_version(self) -> None:
+    def bootstrap_tracking(self) -> None:
         (self.root / policy.LATEST_VERSION_FILE).unlink()
         (self.root / policy.release_log_path("0.8.33")).unlink()
         self.base = self.commit()
         (self.root / policy.LATEST_VERSION_FILE).write_text('{"version":"0.8.33"}\n')
         self.set_version("0.8.33")
+
+    def test_bootstrap_tracking_keeps_existing_version(self) -> None:
+        self.bootstrap_tracking()
         self.assertIn("ordinary PR", self.check("chore: add release tracking"))
+
+    def test_bootstrap_can_import_legacy_release_formats(self) -> None:
+        self.bootstrap_tracking()
+        for version in ("0.8.31", "0.8.32"):
+            (self.root / policy.release_log_path(version)).write_text(
+                f"# v{version}\n\n### Original published heading\n\n"
+                "- Historical notes without PR links.\n\n"
+                f"**Full changelog**: https://github.com/opus-pro/ai-producer-plugin/commits/v{version}\n"
+            )
+        self.assertIn("ordinary PR", self.check("docs: import published releases"))
+
+    def test_bootstrap_cannot_import_future_versions(self) -> None:
+        self.bootstrap_tracking()
+        (self.root / policy.release_log_path("0.8.34")).write_text("# v0.8.34\n\nFuture notes.\n")
+        with self.assertRaisesRegex(ValueError, "newer than the declared version"):
+            self.check("docs: import published releases")
+
+    def test_bootstrap_cannot_change_existing_history(self) -> None:
+        path = self.root / policy.release_log_path("0.8.32")
+        path.write_text("# v0.8.32\n\nOriginal notes.\n")
+        self.bootstrap_tracking()
+        for changed in ("# v0.8.32\n\nRewritten notes.\n", None):
+            with self.subTest(changed=changed):
+                if changed is None:
+                    path.unlink()
+                else:
+                    path.write_text(changed)
+                with self.assertRaisesRegex(ValueError, "historical logs cannot be changed"):
+                    self.check("docs: import published releases")
+
+    def test_bootstrap_legacy_logs_need_matching_heading_and_content(self) -> None:
+        self.bootstrap_tracking()
+        path = self.root / policy.release_log_path("0.8.32")
+        for contents in ("", "# v0.8.31\n\nNotes.\n", "# v0.8.32\n\n", "# v0.8.32\n\n{{changes}}\n"):
+            with self.subTest(contents=contents):
+                path.write_text(contents)
+                with self.assertRaisesRegex(ValueError, "Historical release log"):
+                    self.check("docs: import published releases")
+
+    def test_bootstrap_current_log_still_requires_new_format(self) -> None:
+        self.bootstrap_tracking()
+        (self.root / policy.release_log_path("0.8.33")).write_text("# v0.8.33\n\nLegacy notes.\n")
+        with self.assertRaisesRegex(ValueError, "Full Changelog comparison link"):
+            self.check("docs: import published releases")
+
+    def test_ordinary_pr_cannot_import_history_after_tracking_exists(self) -> None:
+        (self.root / policy.release_log_path("0.8.32")).write_text("# v0.8.32\n\nLegacy notes.\n")
+        with self.assertRaisesRegex(ValueError, "historical logs cannot be changed"):
+            self.check("docs: import published releases")
 
     def test_symlink_release_log_fails(self) -> None:
         self.set_version("0.8.34")
