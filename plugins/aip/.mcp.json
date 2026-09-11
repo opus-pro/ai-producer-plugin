@@ -5,10 +5,10 @@
       "url": "https://producer.opus.pro/api/mcp",
       "oauth_resource": "https://producer.opus.pro/api/mcp",
       "headers": {
-        "X-AIP-Plugin-Version": "1.1.2"
+        "X-AIP-Plugin-Version": "1.1.3"
       },
       "http_headers": {
-        "X-AIP-Plugin-Version": "1.1.2"
+        "X-AIP-Plugin-Version": "1.1.3"
       }
     }
   }
