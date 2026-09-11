@@ -31,9 +31,7 @@
     "composerIcon": "./assets/icon.png",
     "logo": "./assets/icon.png",
     "defaultPrompt": [
-      "Edit my attached talking-head video with AIP and give me the editable preview link.",
-      "Cut the dead air out of this video and add captions.",
-      "Add motion graphics and music to this video and export the mp4."
+      "I'd like to create a project with the AI Producer plugin, briefly explain how you can help. Then ask me questions to get me started. First, ask me to upload my video and mention the video length limit. Next, ask if I have any images to use as style references. Finally, ask if I have any other requirements."
     ]
   },
   "mcpServers": "./.mcp.json"
