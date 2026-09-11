@@ -7,11 +7,19 @@ description: "Create an editable AI Producer preview from user footage. Deliver 
 
 Create one editable AIP preview from the user's footage and creative brief. Shape the edit around the user's intent, the footage, and its audience.
 
+## Source supporting visuals
+
+For footage-only or brief requests, apply the default editorial taste and research supporting material in the initial plan. Identify transcript beats that need real products, interfaces, devices, places, or event imagery. Use suitable supplied assets first; respect requests to avoid external sources.
+
+- For missing material, search the Web and open official or primary source pages to find images or clips. An empty `find_broll` result requires this lookup before falling back to diagrams. Use one batch of up to three targeted queries, plus at most one such follow-up batch for unresolved material.
+- Batch page reads and downloads. Before authoring, inspect a downsized image sheet or representative source frames for subject match, usable detail, and crop suitability. Replace unsuitable candidates within the research limit.
+- Use accepted assets in relevant beats with framing or motion that explains the speech. Record source URLs locally and label illustrative material where it could be mistaken for the speaker's demonstration. If lookup is unavailable or the limit yields no usable material, use a meaningful diagram and disclose the gap at delivery.
+
 ## Delivery boundary
 
 Deliver the editable project link by default. Treat "finished video" or "final cut" as a completed preview, not an explicit MP4 request. Export only when the user explicitly requests an MP4, rendered video file, or export. For an authorized export, wait for completion and return its link without opening, playing, sampling, or analyzing the output.
 
-Do not inspect the generated preview or MP4, including browser playback, screenshots, contact sheets, frame extraction, audio analysis, or delegated inspection. Do not start a post-delivery review, repair, or aesthetic iteration. This stopping condition applies whether the deliverable is a preview or an explicitly requested export. Input-media analysis and local static contract checks before submission remain allowed.
+Do not inspect the generated preview or MP4, including browser playback, screenshots, contact sheets, frame extraction, audio analysis, or delegated inspection. Do not start a post-delivery review, repair, or aesthetic iteration. This stopping condition applies whether the deliverable is a preview or an explicitly requested export. Input-media analysis, including retrieved source assets, and local static contract checks before submission remain allowed.
 
 Use only this package's [AIP composition contract](../aip-composition/SKILL.md) and [workspace reference](references/workspace.md) for integration. Read the workspace reference once before source upload or export, and the composition contract once before authoring; load the linked PIP example only when needed. Do not search global HyperFrames or media-use skills, backend source, or repository documentation to make this video. Resolve these links relative to the skill actually loaded, never a remembered versioned cache path. If that path is stale, use the host's installed-plugin listing once to find the enabled package and its version.
 
