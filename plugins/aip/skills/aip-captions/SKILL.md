@@ -5,18 +5,18 @@ description: "Pick the caption style for an AI Producer project. Read when the b
 
 # Captions for an AIP project
 
-The caption layer is one composition, `compositions/narrator_captions.html`, reading `compositions/_words.json`. The service builds both from a subtitle pattern you pick and the project's transcript; you do not write caption HTML, CSS, or word data. Your job is the pick and its few knobs, made from what you know about the video.
+The caption layer is one composition, `compositions/narrator_captions.html`, with `compositions/transcript-src.json` beside it. The service builds both from a subtitle pattern you pick and the project's transcript; you do not write caption HTML, CSS, or word data. Your job is the pick and its few knobs, made from what you know about the video.
 
 ## What you decide
 
 1. **The pattern.** One per video, from the table below. Read the transcript at `get_transcript` with `detail: segments` (a tenth of the bytes) for register and pace, and look at the source for brightness, contrast, where the face sits, and whether a brand accent exists. Those are the inputs the table keys on.
-2. **Emphasis words** (optional). At most one per phrase: the payload word a viewer should feel land. Take `word_id` values from `get_transcript` with `detail: words`. Every pattern has a designed treatment for an emphasis word; a phrase without one renders in the quiet register. Leave the list out and the service picks them.
+2. **Emphasis words** (optional). At most one per phrase: the payload word a viewer should feel land. Take `word_id` values from `get_transcript` with `detail: words`. Every pattern has a designed treatment for an emphasis word; a phrase without one renders in the quiet register. Leave the list out and the service picks them with one caption-plan call.
 3. **Position** (optional). Leave `position` out unless the brief places the captions; the service then uses the pattern's default. If you set it, it is the band's vertical anchor as a percent of frame height: 50 is mid-frame, 80 is the lowest the text-safe zone allows, and the service clamps anything past that, tighter for a pattern whose block grows downward. `placement` is `adaptive` (default: the band moves off the speaker when a person occupies it) or `fixed`. Horizontal composition is part of each pattern's design and is not a knob; change the pattern to change it.
 4. **Hide windows** (optional). `hide_intervals` is a list of `{start, end}` seconds where the band stays hidden, typically your visual moments' windows when a moment fills the caption band. Empty keeps captions on for the whole video.
 
 ## The call
 
-Call `stage_captions` with `project_id`, `pattern`, and any knobs above. The receipt names the two files the service staged for the project and returns the host div for `index.html`:
+Call `build_captions` with `project_id`, `caption_style` (the pattern), and any of `position`, `placement`, `hide_intervals`, `emphasis_word_ids`. It returns a task; read it with `get_task` (its `poll_args` say when). The finished task's `result` names the two files the service staged (`staged`), the pattern and position it baked, the emphasis words it used, and `host_div`, the one element for `index.html`:
 
 ```html
 <div
@@ -31,7 +31,7 @@ Call `stage_captions` with `project_id`, `pattern`, and any knobs above. The rec
 ></div>
 ```
 
-Place it in the root on a track of its own, spanning the whole video, then upload your tree and `commit_workspace` as usual: the staged caption files promote with your round, and the editor finds the running caption by the `.caption-band` element inside that host. Do not write `compositions/narrator_captions.html` or `compositions/_words.json` yourself; a file you stage at either path replaces the service's. Hand back the editor link; there is no local inspection step. Billing: free.
+Place `host_div` as written (its duration and canvas come from the root you committed; placeholders mean commit the root first) inside the root, last, on its own track, then upload your tree and `commit_workspace` as usual: the staged caption files promote with your round, and the editor finds the running caption by the `.caption-band` element inside that host. Do not write `compositions/narrator_captions.html` or `compositions/transcript-src.json` yourself; a file you stage at either path replaces the service's. Hand back the editor link; there is no local inspection step. One `build_captions` run is one flat charge, whether or not you named the emphasis words.
 
 ## Patterns
 
@@ -50,4 +50,4 @@ One pattern per video. The pick is yours; the pattern's typography, motion, and 
 
 ## Local test period (remove before contributing)
 
-While `stage_captions` is not yet available on the server: do everything above up to the call, then end the caption step by stating the exact call you would have made, with the pattern, the emphasis `word_id` values with their text, `position`, `placement`, and `hide_intervals`, and one sentence on why that pattern fits this video. Continue the rest of the project without a caption layer.
+While `build_captions` is not on this server's tool list: do everything above up to the call, then end the caption step by stating the exact call you would have made, with `caption_style`, the emphasis `word_id` values with their text, `position`, `placement`, and `hide_intervals`, and one sentence on why that pattern fits this video. Continue the rest of the project without a caption layer.
