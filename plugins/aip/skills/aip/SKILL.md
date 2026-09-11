@@ -9,9 +9,11 @@ Create one editable AIP preview from the user's footage and creative brief. Shap
 
 ## Source supporting visuals
 
-During initial planning, follow the user's visual and sourcing requirements, even for sparse briefs. Plan supporting visuals across key points, using suitable supplied assets first. For gaps needing real-world visuals, search the Web and open primary sources when allowed; consider still and motion assets before substituting diagrams. Allow two batches of up to three queries; reserve the second for uncovered points or failed candidates.
+For footage-only or brief requests, apply the default editorial taste and research supporting material in the initial plan. Identify transcript beats that need real products, interfaces, devices, places, or event imagery. Use suitable supplied assets first; respect requests to avoid external sources.
 
-Batch page reads/downloads. Before authoring, screen a downsized image sheet or source frames for relevance, detail, crop and coverage of the planned points. Animate accepted stills when sufficient; record pages only when the interaction matters. Keep source URLs locally and label material that could be mistaken for the speaker's demonstration. Try suitable alternatives within that budget before using diagrams for remaining gaps; disclose those gaps at delivery.
+- For missing material, search the Web and open official or primary source pages to find images or clips. An empty `find_broll` result requires this lookup before falling back to diagrams. Use one batch of up to three targeted queries, plus at most one such follow-up batch for unresolved material.
+- Batch page reads and downloads. Before authoring, inspect a downsized image sheet or representative source frames for subject match, usable detail, and crop suitability. Replace unsuitable candidates within the research limit.
+- Use accepted assets in relevant beats with framing or motion that explains the speech. Record source URLs locally and label illustrative material where it could be mistaken for the speaker's demonstration. If lookup is unavailable or the limit yields no usable material, use a meaningful diagram and disclose the gap at delivery.
 
 ## Delivery boundary
 
