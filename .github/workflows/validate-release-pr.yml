@@ -1,0 +1,40 @@
+name: Validate release PR
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  release-policy:
+    name: Release PR policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.13"
+      # Run only the trusted validator from the workflow's commit. PR files are
+      # read as Git objects, never checked out, imported, or executed.
+      # Public Git fetches need no token and work with the CI IP restrictions.
+      - name: Validate version changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          GIT_TERMINAL_PROMPT: "0"
+        shell: bash
+        run: |
+          policy_repo="$RUNNER_TEMP/release-policy.git"
+          git init --bare "$policy_repo"
+          git -C "$policy_repo" remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
+          git -C "$policy_repo" -c credential.helper= fetch --no-tags origin "$GITHUB_SHA" "$BASE_SHA" "$HEAD_SHA"
+          git -C "$policy_repo" show "$GITHUB_SHA:scripts/check_release_pr.py" > "$RUNNER_TEMP/check_release_pr.py"
+          python3 -I "$RUNNER_TEMP/check_release_pr.py" \
+            --repo "$policy_repo" --base "$BASE_SHA" --head "$HEAD_SHA" --title="$PR_TITLE"

@@ -28,7 +28,35 @@ Verify workspace requirements against the service's current acceptance and playb
 
 ## Versions
 
-For a plugin-content change, update the semantic version in both plugin manifests, the Claude marketplace entry, and `X-AIP-Plugin-Version` under both `headers` and `http_headers` in `.mcp.json`. The validator checks that these values agree. Documentation-only or test-only changes do not require a plugin version bump.
+Follow the shared [release rule](.agents/rules/release.md) when preparing a version update. Codex reaches it through `AGENTS.md`; Claude Code imports it through `CLAUDE.md`. Merge functional changes through ordinary PRs first, then prepare a separate PR titled exactly `chore: release vX.Y.Z`, for example `chore: release v1.1.4`. Documentation-only or test-only changes do not require a plugin version bump.
+
+`releases/_latest_version.json` is the canonical declared version. A release PR may change only the version fields in these five files and add the matching `releases/vX.Y.Z.md` log:
+
+- `releases/_latest_version.json`: `version`.
+- `plugins/aip/.codex-plugin/plugin.json`: `version`.
+- `plugins/aip/.claude-plugin/plugin.json`: `version`.
+- `.claude-plugin/marketplace.json`: the AIP entry's `version`.
+- `plugins/aip/.mcp.json`: `X-AIP-Plugin-Version` under both `headers` and `http_headers`.
+
+All six values must agree with the PR title and log version, and the version must increase in SemVer precedence over both the PR's starting version and the current base version. Prerelease and build suffixes are supported; a metadata-only change does not increase precedence. Other fields in those JSON files, other files, renames, deletions, and file-mode changes are not allowed in a release PR. Historical logs cannot be changed. Template and release-tooling changes belong in separate ordinary PRs.
+
+Prepare the files locally, then fill in the generated log's Changes, Compatibility, and Validation sections with verified information. Unfilled template placeholders fail validation. This command does not commit, push, tag, or publish:
+
+```bash
+python3 scripts/prepare_release.py 1.1.4
+# Fill in releases/v1.1.4.md before running checks.
+python3 scripts/test.py
+```
+
+The directory uses `_latest_version.json` and `_template.md` for its two helper files, followed by `vX.Y.Z.md` logs when sorted by name. The initial `v1.1.3.md` is a baseline record of the existing version, not a newly published release.
+
+The `Validate release PR` workflow runs on PR creation, reopening, new commits, and edits, including title changes. It detects version updates regardless of the PR title and validates ordinary PRs for version consistency. It runs the trusted validator from the workflow's commit and reads PR Git objects without checking out or executing PR code. It needs no credentials. After this workflow reaches the default branch, configure `Release PR policy` as a required status check and require branches to be up to date before merging so the base-version comparison stays current.
+
+To run the same check locally with both commits and their history fetched:
+
+```bash
+python3 scripts/check_release_pr.py --base origin/main --head HEAD --title 'chore: release v1.1.4'
+```
 
 Use patch versions for compatible fixes, minor versions for new behavior, and major versions for breaking changes. Describe user-visible behavior and validation in the pull request. Release maintainers review and publish changes; the CI workflow does not publish a release.
 

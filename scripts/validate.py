@@ -18,6 +18,11 @@ import struct
 import sys
 from pathlib import Path
 
+from check_release_pr import (
+    VERSION_FIELDS, reject_constant, release_log_path, unique_object,
+    validate_release_log, version_from_documents,
+)
+
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_DIRNAME = "aip"
 EXPECTED_REPOSITORY = "https://github.com/opus-pro/ai-producer-plugin"
@@ -124,6 +129,21 @@ def validate_mcp(root: Path, version: str) -> None:
         )
 
 
+def validate_releases(root: Path, version: str) -> None:
+    documents = {}
+    for relative in VERSION_FIELDS:
+        path = root / relative
+        assert path.is_file() and not path.is_symlink(), f"release metadata must be a regular file: {relative}"
+        documents[relative] = json.loads(
+            path.read_text(encoding="utf-8"), object_pairs_hook=unique_object,
+            parse_constant=reject_constant,
+        )
+    assert version_from_documents(documents) == version
+    log = root / release_log_path(version)
+    assert log.is_file() and not log.is_symlink(), "the current version must have a release log"
+    validate_release_log(log.read_text(encoding="utf-8"), version)
+
+
 def validate_skill_structure(root: Path) -> None:
     directories = skill_dirs(root)
     assert {path.name for path in directories} == EXPECTED_SKILLS, "unexpected bundled skill set"
@@ -176,6 +196,7 @@ def main(root: Path = ROOT) -> None:
     version = validate_manifests(root)
     validate_marketplaces(root, version)
     validate_mcp(root, version)
+    validate_releases(root, version)
     validate_skill_structure(root)
     validate_host_hooks(root)
     validate_relative_links(root)

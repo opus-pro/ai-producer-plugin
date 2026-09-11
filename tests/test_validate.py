@@ -10,6 +10,7 @@ from pathlib import Path
 
 
 REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "scripts"))
 SCRIPT = REPO / "scripts" / "validate.py"
 SPEC = importlib.util.spec_from_file_location("validate", SCRIPT)
 assert SPEC and SPEC.loader
@@ -17,7 +18,7 @@ validate = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = validate
 SPEC.loader.exec_module(validate)
 
-FIXTURE_PARTS = (".agents", ".claude-plugin", "plugins")
+FIXTURE_PARTS = (".agents", ".claude-plugin", "plugins", "releases")
 ENTRY_SKILL = Path("plugins/aip/skills/aip/SKILL.md")
 MCP_CONFIG = "plugins/aip/.mcp.json"
 
@@ -104,6 +105,24 @@ class ValidateFixtureTest(unittest.TestCase):
                     validate.main(self.root)
 
                 shutil.copy(REPO / MCP_CONFIG, path)
+
+    def test_stale_latest_version_fails(self) -> None:
+        (self.root / "releases/_latest_version.json").write_text('{"version": "0.0.1"}\n', encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "six version fields must match"):
+            validate.main(self.root)
+
+    def test_missing_latest_release_log_fails(self) -> None:
+        version = validate.load_json(self.root / "releases/_latest_version.json")["version"]
+        (self.root / f"releases/v{version}.md").unlink()
+        with self.assertRaisesRegex(AssertionError, "must have a release log"):
+            validate.main(self.root)
+
+    def test_unfilled_release_log_fails(self) -> None:
+        version = validate.load_json(self.root / "releases/_latest_version.json")["version"]
+        path = self.root / f"releases/v{version}.md"
+        path.write_text(f"# v{version}\n\n{{{{changes}}}}\n", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "template placeholders"):
+            validate.main(self.root)
 
     def test_skill_name_mismatch_fails(self) -> None:
         self.rewrite(str(ENTRY_SKILL), "name: aip", "name: renamed-skill")
