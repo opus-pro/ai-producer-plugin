@@ -19,4 +19,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and checks, and [SECURITY.md](S
 
 ## License
 
-[MIT](LICENSE), with the HyperFrames-derived composition skill under [Apache-2.0](plugins/aip/licenses/Apache-2.0.txt). See [third-party notices](THIRD_PARTY_NOTICES.md).
+[MIT](LICENSE), with [third-party notices](THIRD_PARTY_NOTICES.md).
