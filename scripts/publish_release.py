@@ -22,23 +22,37 @@ REPOSITORY = "opus-pro/ai-producer-plugin"
 
 
 def github_request(method: str, path: str, payload: dict | None = None) -> dict:
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Content-Type": "application/json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "aip-release-workflow",
+    }
+    # Public tag lookups need no credentials. Only mutations use the job token.
+    if method != "GET":
+        headers["Authorization"] = f"Bearer {os.environ['GH_TOKEN']}"
     request = Request(
         f"https://api.github.com/repos/{REPOSITORY}/{path}",
         data=None if payload is None else json.dumps(payload).encode("utf-8"),
         method=method,
-        headers={
-            "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
-            "Accept": "application/vnd.github+json",
-            "Content-Type": "application/json",
-            "X-GitHub-Api-Version": "2022-11-28",
-            "User-Agent": "aip-release-workflow",
-        },
+        headers=headers,
     )
     try:
         with urlopen(request, timeout=30) as response:
             return json.load(response)
     except HTTPError as error:
-        error.close()
+        try:
+            details = json.loads(error.read(8192))
+            message = details.get("message") if isinstance(details, dict) else None
+            if isinstance(message, str) and message.strip():
+                token = os.environ.get("GH_TOKEN")
+                if token:
+                    message = message.replace(token, "[redacted]")
+                error.msg = " ".join(message.split())[:1000]
+        except (ValueError, UnicodeError):
+            pass
+        finally:
+            error.close()
         raise
 
 
@@ -119,7 +133,7 @@ def main() -> int:
             raise ValueError("Publication requires the workflow's GITHUB_TOKEN with contents: write")
         print(publish_release(Path(__file__).resolve().parents[1], os.environ.get("GITHUB_SHA", "")))
     except HTTPError as error:
-        print(f"ERROR: GitHub API returned HTTP {error.code}; check token permissions and organization access policy", file=sys.stderr)
+        print(f"ERROR: GitHub API returned HTTP {error.code}: {error.reason}", file=sys.stderr)
         return 1
     except (OSError, URLError, ValueError, RuntimeError) as error:
         print(f"ERROR: {error}", file=sys.stderr)

@@ -79,6 +79,15 @@ class PublishReleaseTest(unittest.TestCase):
         self.assertIn("already exists", publisher.publish_release(self.root, SHA, api))
         api.assert_called_once_with("GET", "git/ref/tags/v1.1.4")
 
+    def test_existing_tag_skips_with_no_token_and_no_write_request(self) -> None:
+        response = io.BytesIO(b'{"ref":"refs/tags/v1.1.4"}')
+        with patch.dict(os.environ, {}, clear=True), patch.object(publisher, "urlopen", return_value=response) as request:
+            self.assertIn("already exists", publisher.publish_release(self.root, SHA))
+            request.assert_called_once()
+            sent = request.call_args.args[0]
+            self.assertEqual(sent.get_method(), "GET")
+            self.assertIsNone(sent.get_header("Authorization"))
+
     def test_missing_matching_log_or_version_file_skips_without_api_calls(self) -> None:
         api = Mock()
         (self.root / "releases/v1.0.0.md").write_text("Historical notes.\n")
@@ -174,6 +183,46 @@ class PublishReleaseTest(unittest.TestCase):
         }, clear=True), patch.object(publisher, "publish_release", return_value="Published fixture") as publish, contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(publisher.main(), 0)
             publish.assert_called_once_with(REPO, SHA)
+
+
+class GitHubRequestTest(unittest.TestCase):
+    def test_public_reads_omit_token_even_when_one_is_available(self) -> None:
+        with patch.dict(os.environ, {"GH_TOKEN": "synthetic-token"}), patch.object(
+            publisher, "urlopen", return_value=io.BytesIO(b'{"ref":"refs/tags/v1.1.4"}'),
+        ) as request:
+            publisher.github_request("GET", "git/ref/tags/v1.1.4")
+            self.assertIsNone(request.call_args.args[0].get_header("Authorization"))
+
+    def test_writes_keep_token_and_json_payload(self) -> None:
+        payload = {"ref": "refs/tags/v1.1.4", "sha": SHA}
+        with patch.dict(os.environ, {"GH_TOKEN": "synthetic-token"}), patch.object(
+            publisher, "urlopen", return_value=io.BytesIO(b'{"ref":"refs/tags/v1.1.4"}'),
+        ) as request:
+            publisher.github_request("POST", "git/refs", payload)
+            sent = request.call_args.args[0]
+            self.assertEqual(sent.get_method(), "POST")
+            self.assertEqual(sent.get_header("Authorization"), "Bearer synthetic-token")
+            self.assertEqual(json.loads(sent.data), payload)
+
+    def test_api_error_keeps_message_and_redacts_token(self) -> None:
+        response = io.BytesIO(b'{"message":"Access denied for synthetic-token"}')
+        error = HTTPError("https://api.github.com/", 403, "Forbidden", {}, response)
+        with patch.dict(os.environ, {"GH_TOKEN": "synthetic-token"}), patch.object(
+            publisher, "urlopen", side_effect=error,
+        ), self.assertRaises(HTTPError) as raised:
+            publisher.github_request("POST", "git/refs", {"ref": "refs/tags/v1.1.4", "sha": SHA})
+        self.assertEqual(raised.exception.code, 403)
+        self.assertEqual(raised.exception.reason, "Access denied for [redacted]")
+        self.assertTrue(response.closed)
+
+    def test_non_json_error_preserves_status_and_reason(self) -> None:
+        response = io.BytesIO(b"Upstream failure")
+        error = HTTPError("https://api.github.com/", 503, "Service Unavailable", {}, response)
+        with patch.object(publisher, "urlopen", side_effect=error), self.assertRaises(HTTPError) as raised:
+            publisher.github_request("GET", "git/ref/tags/v1.1.4")
+        self.assertEqual(raised.exception.code, 503)
+        self.assertEqual(raised.exception.reason, "Service Unavailable")
+        self.assertTrue(response.closed)
 
 
 if __name__ == "__main__":
