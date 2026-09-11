@@ -7,11 +7,19 @@ description: "Create an editable AI Producer preview from user footage. Deliver 
 
 Create one editable AIP preview from the user's footage and creative brief. Shape the edit around the user's intent, the footage, and its audience.
 
+## Source supporting visuals
+
+For footage-only or brief requests, apply the default editorial taste and research supporting material in the initial plan. Identify transcript beats that need real products, interfaces, devices, places, or event imagery. Use suitable supplied assets first; respect requests to avoid external sources.
+
+- For missing material, search the Web and open official or primary source pages to find images or clips. An empty `find_broll` result requires this lookup before falling back to diagrams. Use one batch of up to three targeted queries, plus at most one such follow-up batch for unresolved material.
+- Batch page reads and downloads. Before authoring, inspect a downsized image sheet or representative source frames for subject match, usable detail, and crop suitability. Replace unsuitable candidates within the research limit.
+- Use accepted assets in relevant beats with framing or motion that explains the speech. Record source URLs locally and label illustrative material where it could be mistaken for the speaker's demonstration. If lookup is unavailable or the limit yields no usable material, use a meaningful diagram and disclose the gap at delivery.
+
 ## Delivery boundary
 
 Deliver the editable project link by default. Treat "finished video" or "final cut" as a completed preview, not an explicit MP4 request. Export only when the user explicitly requests an MP4, rendered video file, or export. For an authorized export, wait for completion and return its link without opening, playing, sampling, or analyzing the output.
 
-Do not inspect the generated preview or MP4, including browser playback, screenshots, contact sheets, frame extraction, audio analysis, or delegated inspection. Do not start a post-delivery review, repair, or aesthetic iteration. This stopping condition applies whether the deliverable is a preview or an explicitly requested export. Input-media analysis and local static contract checks before submission remain allowed.
+Do not inspect the generated preview or MP4, including browser playback, screenshots, contact sheets, frame extraction, audio analysis, or delegated inspection. Do not start a post-delivery review, repair, or aesthetic iteration. This stopping condition applies whether the deliverable is a preview or an explicitly requested export. Input-media analysis, including retrieved source assets, and local static contract checks before submission remain allowed.
 
 Use only this package's [AIP composition contract](../aip-composition/SKILL.md) and [workspace reference](references/workspace.md) for integration. Read the workspace reference once before source upload or export, and the composition contract once before authoring; load the linked PIP example only when needed. Do not search global HyperFrames or media-use skills, backend source, or repository documentation to make this video. Resolve these links relative to the skill actually loaded, never a remembered versioned cache path. If that path is stale, use the host's installed-plugin listing once to find the enabled package and its version.
 
@@ -25,30 +33,27 @@ Opening is a status-only handoff to the user, not inspection. Use no external br
 
 ## Default editorial taste
 
-Use this preset to develop a brief specific to the footage within the initial planning step. The user's explicit creative requirements take precedence; use this direction to fill gaps. Choose concrete visuals and motion freely within the composition contract.
+Plan each new talking-head edit from its supplied media and publishing brief. User instructions override matching defaults; keep the rest. Preserve established choices in follow-up edits unless the user requests changes.
 
-You are a talking-head short-video editor and director. Produce a finished video from the provided speech audio, presenter footage, visual assets, and publishing requirements. Do not use memory. Plan and create from scratch.
+### Editing
 
-**Editing**
-
-- Use presenter close-ups for transitions, summaries, conditions, emotion, and closing calls to action.
-- Prefer real footage > real images > vector graphics.
-- For quick explanations of a visible object, overlay supporting visuals around the presenter.
-- For a visual-above/presenter-below layout, place the presenter in a large rounded panel, with the head centered and filling it. Keep the outer layout stable; animate within the visual area.
-- Show visuals full-screen when viewers need to read source text, inspect details, understand a process, or see results. Remove the presenter until that segment ends, then switch visuals or return to the presenter.
-- Open with a big title and zoom to emphasize the core point.
-- No subtitles or captions: no tracks, sidecar files, or burned-in text.
-- Emphasize key rebuttals or qualifications with zooms, bold text, or highlights; optionally add a presenter close-up.
-- For sarcasm, self-deprecation, or brief reminders, cut to a monochrome or desaturated presenter close-up for at most one sentence. Restore normal color on the next sentence.
+- Honor the requested runtime; preserve the speaker's argument, qualifications, and payoff.
+- Open with a large title and zoom to emphasize the core point.
+- Use presenter close-ups for transitions, summaries, conditions, emotion, and closing calls to action. Emphasize rebuttals and qualifications with zooms or visual highlights.
+- For concrete subjects, prefer relevant real footage, then images, then vectors. Overlay quick object explanations around the presenter.
+- Prefer visuals above/presenter below for examples, comparisons, and processes. Use a large rounded presenter panel with the head centered and filling it. Keep the outer layout stable; animate within the visual area.
+- Use full-screen visuals when source text or visual detail needs the whole canvas. Then switch visuals or return to the presenter.
+- Omit speech subtitles, caption tracks, caption sidecars, and burned-in captions. Reserve text overlays on the presenter for the opening hook; elsewhere, use only short labels within explanatory visuals. Use transcription for planning and timing.
+- For sarcasm, self-deprecation, or brief reminders, use a monochrome or desaturated presenter close-up for at most one sentence, then restore color.
 - Use smooth effects and layout transitions; minimize hard cuts.
 
-**Visual style**
+### Visual style
 
-- Use a neutral black-and-white brand palette.
-- Favor 3D effects, SVG, and vector animation; limit text animation.
-- Keep text brief and readable, with no more than three font sizes per frame.
-- Center the animation’s focal point and leave generous space around the edges.
-- Avoid crowded layouts. Keep text and vector elements large, positioned around the presenter or at the canvas center.
+- Use Apple keynote-style graphics; preserve source-media colors unless a specific treatment is intended.
+- Explain abstract relationships, mechanisms, and processes with 3D, SVG, or vector animation; limit text animation.
+- Use large, readable text, only essential words, and at most three font sizes per frame. Shorten copy to keep type large.
+- Center the focal point within each visual area. Keep all text and graphics at least 10% from its edges throughout the animation; simplify content to keep them large.
+- For text-heavy source visuals, prioritize readability over the default split layout. Crop and enlarge the relevant detail, or use full-screen visuals. Omit extra headings, duplicate labels, and nested frames; retain necessary illustrative-source labeling.
 
 ## Make, submit, stop
 
