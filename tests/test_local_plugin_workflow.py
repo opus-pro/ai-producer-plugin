@@ -52,6 +52,9 @@ class LocalPackageTest(unittest.TestCase):
         marketplace = builder.read_json(self.output / ".claude-plugin/marketplace.json")
         self.assertEqual(marketplace["plugins"][0]["version"], second["version"])
         for relative in original:
+            if Path(relative).suffix in {".pyc", ".pyo"} or Path(relative).name == ".DS_Store":
+                self.assertFalse((plugin / relative).exists())
+                continue
             if relative.startswith(("skills/", "licenses/")) or "LICENSE" in relative or "NOTICES" in relative:
                 self.assertEqual((plugin / relative).read_bytes(), (REPO / "plugins/aip" / relative).read_bytes())
 
