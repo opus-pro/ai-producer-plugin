@@ -48,8 +48,28 @@ def session_index(root: Path) -> dict:
         if identifier in index:
             raise ValueError("Duplicate task files in sessions root; select an unambiguous source")
         if identifier:
-            index[identifier] = {"path": path, "parent": parent}
+            index[identifier] = {"path": path, "parent": parent, "forked_from": meta.get("forked_from_id")}
     return index
+
+
+def ancestor_turns(identifier: str, index: dict) -> set:
+    turns, visited = set(), {identifier}
+    entry = index[identifier]
+    parent = entry["parent"] or entry.get("forked_from")
+    while parent in index and parent not in visited:
+        visited.add(parent)
+        entry = index[parent]
+        with entry["path"].open(encoding="utf-8") as stream:
+            for line in stream:
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                data = row.get("payload", {})
+                if row.get("type") == "turn_context" or (row.get("type") == "event_msg" and data.get("type") == "task_started"):
+                    turns.add(data.get("turn_id"))
+        parent = entry["parent"] or entry.get("forked_from")
+    return turns - {None}
 
 
 def validate_rates(rates: dict) -> None:
@@ -148,6 +168,8 @@ def read_usage(identifier: str, entry: dict, rates: dict | None, selected_turn: 
     turns = (started | contexts.keys() | receipt_turns) - foreign_turns - (inherited_turns or set()) - {None}
     unassigned = turns - receipt_turns
     selected = [r for r in receipts.values() if selected_turn is None or selected_turn in (r["turn_id"], r["root_turn_id"])]
+    unassigned_responses = sum(1 for r in receipts.values() if selected_turn is not None and entry["parent"]
+                              and r["root_turn_id"] is None and r["turn_id"] != selected_turn)
     relevant_turns = turns if selected_turn is None else {r["turn_id"] for r in selected}
     if selected_turn in turns:
         relevant_turns.add(selected_turn)
@@ -163,15 +185,18 @@ def read_usage(identifier: str, entry: dict, rates: dict | None, selected_turn: 
         issues.append("Per-response sum does not reconcile with the final thread cumulative usage")
     if relevant_turns & unassigned:
         issues.append("Started/context turns without usage receipts; their cost is not yet available")
-    is_complete = bool(relevant_turns) and relevant_turns <= completed.keys() and not (relevant_turns & unassigned) and not partial_tail
+    if unassigned_responses:
+        issues.append("Descendant receipts lack root_turn_id; scoped usage cannot be determined")
+    is_complete = bool(relevant_turns) and relevant_turns <= completed.keys() and not (relevant_turns & unassigned) and not partial_tail and not unassigned_responses
     elapsed = sum(completed[t] for t in relevant_turns) if is_complete and all(isinstance(completed[t], int) for t in relevant_turns) else None
-    priced = bool(selected) and reconciled and all(r["usd"] is not None for r in selected)
+    priced = bool(selected) and reconciled and not unassigned_responses and all(r["usd"] is not None for r in selected)
     return {
         "thread_id": identifier, "parent_id": entry["parent"], "complete": is_complete,
         "elapsed_ms": elapsed, "partial_tail": partial_tail, "responses": len(selected),
         "tokens": dict(totals), "usd": round(sum(r["usd"] for r in selected), 9) if priced else None,
         "reconciled": reconciled, "issues": issues, "rows": selected,
         "turn_ids": sorted(turns), "unassigned_turn_ids": sorted(unassigned),
+        "unassigned_response_count": unassigned_responses,
     }
 
 
@@ -181,12 +206,13 @@ def report(identifier: str, sessions: Path, rates: dict | None = None, selected_
     index = session_index(sessions)
     if identifier not in index:
         raise ValueError("Task not found in the supplied local sessions root")
-    threads, ancestors, queue = [], {identifier: set()}, [identifier]
+    threads, ancestors, queue = [], {identifier: ancestor_turns(identifier, index)}, [identifier]
     for key in queue:
         current = read_usage(key, index[key], rates, selected_turn, ancestors[key])
         if key == identifier and selected_turn is not None and selected_turn not in current["turn_ids"]:
             raise ValueError("Selected turn is not present in the root task")
-        if selected_turn is None or key == identifier or current["responses"] or current["unassigned_turn_ids"] or not current["reconciled"]:
+        if (selected_turn is None or key == identifier or current["responses"] or current["unassigned_turn_ids"]
+                or current["unassigned_response_count"] or not current["reconciled"]):
             threads.append(current)
         for child, entry in sorted(index.items()):
             if entry["parent"] == key and child not in ancestors:

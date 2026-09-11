@@ -230,6 +230,27 @@ class ClientCostTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not present"):
             cost.report(ROOT_ID, self.root, RATES, "absent-turn")
 
+    def test_missing_child_root_turn_is_unknown_in_scoped_report(self):
+        self.write_session(ROOT_ID, [record(ROOT_ID, 1, usage())])
+        child = record(CHILD_ID, 1, usage())
+        child["payload"].pop("root_turn_id")
+        self.write_session(CHILD_ID, [child], parent=ROOT_ID)
+        result = cost.report(ROOT_ID, self.root, RATES, ROOT_ID)
+        self.assertFalse(result["complete"])
+        self.assertIsNone(result["usd"])
+        self.assertEqual(result["threads"][1]["unassigned_response_count"], 1)
+        self.assertAlmostEqual(cost.report(ROOT_ID, self.root, RATES)["usd"], 0.00156)
+
+    def test_direct_child_query_excludes_inherited_context_without_receipt(self):
+        self.write_session(ROOT_ID, [record(ROOT_ID, 1, usage())], complete=False)
+        inherited = event("turn_context", {"turn_id": ROOT_ID, "model": "example-model"})
+        self.write_session(CHILD_ID, [inherited, record(CHILD_ID, 1, usage())], parent=ROOT_ID)
+        result = cost.report(CHILD_ID, self.root, RATES)
+        self.assertTrue(result["complete"])
+        self.assertEqual(result["responses"], 1)
+        self.assertEqual(result["elapsed_ms"], 1000)
+        self.assertAlmostEqual(result["usd"], 0.00078)
+
 
 if __name__ == "__main__":
     unittest.main()

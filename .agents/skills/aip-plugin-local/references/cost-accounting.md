@@ -8,7 +8,7 @@ For Codex, use the bundled reader instead of rewriting a log parser each time:
 python3 <this-skill>/scripts/cost_report.py <task-id-or-codex-link> --rates <verified-rates.json> --output <ignored-report.json>
 ```
 
-The default scope includes all turns and follow-ups. To isolate the original generation, pass `--turn <root-turn-id>` from the task's usage rows. The reader selects that turn and descendant receipts carrying its `root_turn_id`, while reconciling each complete log before filtering. Keep generation and subsequent review/edit costs separate. A child turn with no receipt cannot yet be assigned to a generation scope and is reported as incomplete.
+The default scope includes all turns and follow-ups. To isolate the original generation, pass `--turn <root-turn-id>` from the task's usage rows. The reader selects that turn and descendant receipts carrying its `root_turn_id`, while reconciling each complete log before filtering. Keep generation and subsequent review/edit costs separate. A child turn with no receipt or missing root-turn attribution cannot yet be assigned to a generation scope and is reported as incomplete. When querying a child directly, ancestor context IDs are read only to exclude inherited turns, without adding ancestor usage.
 
 Without `--rates` it reports tokens and leaves USD unknown. Read current official pricing for the **actual** recorded model and requested tier before supplying rates. Do not assume today's model, price, long-context policy, or cache-write semantics will remain unchanged. The rates file has this shape (numbers below are synthetic, not product prices):
 
