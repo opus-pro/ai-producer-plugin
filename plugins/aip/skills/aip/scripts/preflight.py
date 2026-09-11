@@ -69,14 +69,19 @@ def check(root, remote_files=()):
         else:
             declared.add(candidate)
 
-    def reference(value, owner, attribute):
+    def reference(value, owner, attribute, base=None):
+        """Resolve one reference. Media, images, stylesheets and data-* references in
+        an HTML document resolve from the root, whichever directory holds it, because
+        the editor mounts a composition's template into index.html. A script src and
+        a url() in a .css file resolve from their own file, as the export's page load
+        and CSS do (the editor re-points a composition's vendor script by file name)."""
         if not value or value.startswith(("#", "data:")):
             return None
         parts = urlsplit(value)
         if parts.scheme or parts.netloc:
             issue(errors, "remote_reference_unsupported", owner, attribute)
             return None
-        candidate = (owner.parent / unquote(parts.path)).resolve()
+        candidate = ((base or root) / unquote(parts.path)).resolve()
         if not candidate.is_relative_to(root):
             issue(errors, "reference_outside_workspace", owner, attribute)
             return None
@@ -97,7 +102,7 @@ def check(root, remote_files=()):
             continue
         if path.suffix.lower() == ".css":
             for match in CSS_URL.finditer(source):
-                reference(match[2], path, "css-url")
+                reference(match[2], path, "css-url", base=path.parent)
             continue
         doc = Document()
         doc.feed(source)
@@ -105,7 +110,7 @@ def check(root, remote_files=()):
         for tag, attrs, depth in doc.elements:
             for key in ("src", "href", "data-composition-src", "data-pip-src"):
                 if key in attrs:
-                    reference(attrs[key], path, key)
+                    reference(attrs[key], path, key, base=path.parent if tag == "script" else None)
             for key in ("data-start", "data-media-start", "data-duration"):
                 if key not in attrs:
                     continue
