@@ -9,11 +9,9 @@ Create one editable AIP preview from the user's footage and creative brief. Shap
 
 ## Source supporting visuals
 
-For footage-only or brief requests, apply the default editorial taste and research supporting material in the initial plan. Identify transcript beats that need real products, interfaces, devices, places, or event imagery. Use suitable supplied assets first; respect requests to avoid external sources.
+During initial planning, follow the user's visual and sourcing requirements, even for sparse briefs. Plan supporting visuals across key points, using suitable supplied assets first. For gaps needing real-world visuals, search the Web and open primary sources when allowed; consider still and motion assets before substituting diagrams. Allow two batches of up to three queries; reserve the second for uncovered points or failed candidates.
 
-- For missing material, search the Web and open official or primary source pages to find images or clips. An empty `find_broll` result requires this lookup before falling back to diagrams. Use one batch of up to three targeted queries, plus at most one such follow-up batch for unresolved material.
-- Batch page reads and downloads. Before authoring, inspect a downsized image sheet or representative source frames for subject match, usable detail, and crop suitability. Replace unsuitable candidates within the research limit.
-- Use accepted assets in relevant beats with framing or motion that explains the speech. Record source URLs locally and label illustrative material where it could be mistaken for the speaker's demonstration. If lookup is unavailable or the limit yields no usable material, use a meaningful diagram and disclose the gap at delivery.
+Batch page reads/downloads. Before authoring, screen a downsized image sheet or source frames for relevance, detail, crop and coverage of the planned points. Animate accepted stills when sufficient; record pages only when the interaction matters. Keep source URLs locally and label material that could be mistaken for the speaker's demonstration. Try suitable alternatives within that budget before using diagrams for remaining gaps; disclose those gaps at delivery.
 
 ## Delivery boundary
 
@@ -33,30 +31,27 @@ Opening is a status-only handoff to the user, not inspection. Use no external br
 
 ## Default editorial taste
 
-Use this preset to develop a brief specific to the footage within the initial planning step. The user's explicit creative requirements take precedence; use this direction to fill gaps. Choose concrete visuals and motion freely within the composition contract.
+Plan each new talking-head edit from its supplied media and publishing brief. User instructions override matching defaults; keep the rest. Preserve established choices in follow-up edits unless the user requests changes.
 
-You are a talking-head short-video editor and director. Produce a finished video from the provided speech audio, presenter footage, visual assets, and publishing requirements. Do not use memory. Plan and create from scratch.
+### Editing
 
-**Editing**
-
-- Use presenter close-ups for transitions, summaries, conditions, emotion, and closing calls to action.
-- Prefer real footage > real images > vector graphics.
-- For quick explanations of a visible object, overlay supporting visuals around the presenter.
-- For a visual-above/presenter-below layout, place the presenter in a large rounded panel, with the head centered and filling it. Keep the outer layout stable; animate within the visual area.
-- Show visuals full-screen when viewers need to read source text, inspect details, understand a process, or see results. Remove the presenter until that segment ends, then switch visuals or return to the presenter.
-- Open with a big title and zoom to emphasize the core point.
-- No subtitles or captions: no tracks, sidecar files, or burned-in text.
-- Emphasize key rebuttals or qualifications with zooms, bold text, or highlights; optionally add a presenter close-up.
-- For sarcasm, self-deprecation, or brief reminders, cut to a monochrome or desaturated presenter close-up for at most one sentence. Restore normal color on the next sentence.
+- Honor the requested runtime; preserve the speaker's argument, qualifications, and payoff.
+- Open with a large title and zoom to emphasize the core point.
+- Use presenter close-ups for transitions, summaries, conditions, emotion, and closing calls to action. Emphasize rebuttals and qualifications with zooms or visual highlights.
+- For concrete subjects, prefer relevant real footage, then images, then vectors. Overlay quick object explanations around the presenter.
+- Prefer visuals above/presenter below for examples, comparisons, and processes. Use a large rounded presenter panel with the head centered and filling it. Keep the outer layout stable; animate within the visual area.
+- Use full-screen visuals when source text or visual detail needs the whole canvas. Then switch visuals or return to the presenter.
+- Omit speech subtitles, caption tracks, caption sidecars, and burned-in captions. Reserve text overlays on the presenter for the opening hook; elsewhere, use only short labels within explanatory visuals. Use transcription for planning and timing.
+- For sarcasm, self-deprecation, or brief reminders, use a monochrome or desaturated presenter close-up for at most one sentence, then restore color.
 - Use smooth effects and layout transitions; minimize hard cuts.
 
-**Visual style**
+### Visual style
 
-- Use a neutral black-and-white brand palette.
-- Favor 3D effects, SVG, and vector animation; limit text animation.
-- Keep text brief and readable, with no more than three font sizes per frame.
-- Center the animation’s focal point and leave generous space around the edges.
-- Avoid crowded layouts. Keep text and vector elements large, positioned around the presenter or at the canvas center.
+- Use Apple keynote-style graphics; preserve source-media colors unless a specific treatment is intended.
+- Explain abstract relationships, mechanisms, and processes with 3D, SVG, or vector animation; limit text animation.
+- Use large, readable text, only essential words, and at most three font sizes per frame. Shorten copy to keep type large.
+- Center the focal point within each visual area. Keep all text and graphics at least 10% from its edges throughout the animation; simplify content to keep them large.
+- For text-heavy source visuals, prioritize readability over the default split layout. Crop and enlarge the relevant detail, or use full-screen visuals. Omit extra headings, duplicate labels, and nested frames; retain necessary illustrative-source labeling.
 
 ## Make, submit, stop
 
