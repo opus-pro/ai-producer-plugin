@@ -1,19 +1,22 @@
-# AI Producer Plugin
+<p align="center">
+  <a href="https://producer.opus.pro/plugin">
+    <img src="plugins/aip/assets/icon.png" alt="AI Producer" width="80" height="80">
+  </a>
+</p>
 
-Edit talking-head videos in Codex or Claude Code with AI Producer: create an editable preview with captions and motion graphics. Deliver the editable preview link by default and export only on explicit request. Stop without inspecting the generated preview or MP4, or starting automatic repair or aesthetic iteration.
+<h1 align="center">AI Producer Plugin</h1>
 
-**[Installation and usage documentation](https://producer.opus.pro/docs)**
+<p align="center">The official OpusClip plugin for editing videos in Codex and Claude Code.</p>
 
-This repository contains the AIP skill, [HyperFrames contract](plugins/aip/skills/aip-composition/SKILL.md), [workspace contract](plugins/aip/skills/aip/references/workspace.md), and MCP connection. Video processing runs on the hosted AIP service; service access and credits are separate from installing this plugin.
-
-The bundled static-check and upload helpers use Python 3.10 or newer on the client host. Hosts without it can use their own static-check and batch HTTP tools.
+<p align="center">
+  <a href="https://producer.opus.pro/plugin"><strong>Get started</strong></a> &nbsp; | &nbsp;
+  <a href="https://producer.opus.pro/docs">Documentation</a>
+</p>
 
 ## Development
 
-Requires Python 3.10 or newer for the offline checks.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and checks, and [SECURITY.md](SECURITY.md) for vulnerability reporting.
 
-```bash
-python3 scripts/test.py
-```
+## License
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development, [SECURITY.md](SECURITY.md) for vulnerability reporting, and [third-party notices](THIRD_PARTY_NOTICES.md) for source and branding boundaries. Original plugin source is licensed under [MIT](LICENSE); the HyperFrames-derived composition skill is licensed under [Apache-2.0](plugins/aip/licenses/Apache-2.0.txt).
+[MIT](LICENSE), with the HyperFrames-derived composition skill under [Apache-2.0](plugins/aip/licenses/Apache-2.0.txt). See [third-party notices](THIRD_PARTY_NOTICES.md).
