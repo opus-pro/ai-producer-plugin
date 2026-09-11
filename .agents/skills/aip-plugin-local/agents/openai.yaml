@@ -1,0 +1,7 @@
+interface:
+  display_name: "AI Producer Local"
+  short_description: "Install, refresh, and evaluate local AIP plugins"
+  icon_small: "./assets/local.svg"
+  icon_large: "./assets/local.svg"
+  brand_color: "#A78BFA"
+  default_prompt: "Use $aip-plugin-local to set up or refresh my local AI Producer plugin."

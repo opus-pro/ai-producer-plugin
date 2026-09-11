@@ -2,6 +2,8 @@
 
 This repository owns the public OpusClip AI Producer plugin for Codex and Claude Code. Read README.md and CONTRIBUTING.md before changing the package.
 
+For local plugin setup, installation, updates, debugging, or cost/quality comparisons, use [aip-plugin-local](.agents/skills/aip-plugin-local/SKILL.md). It responds to `/aip-plugin-local` and requests such as "install the local plugin", "update the local plugin", or "compare the cost and quality of these two runs". This developer workflow stays outside the distributed runtime skills.
+
 - Keep public plugin content in `plugins/aip/`; retain both host manifests and both marketplaces as separate files.
 - Preserve marketplace `ai-producer-plugins`, plugin `aip`, and server `aip` unless a coordinated migration is requested.
 - Keep the production MCP URL and OAuth resource aligned.
