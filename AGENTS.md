@@ -8,7 +8,7 @@ This repository owns the public OpusClip AI Producer plugin for Codex and Claude
 - Ship only skills and MCP configuration: no lifecycle hooks, no self-update commands. Installation and updates belong to the host client.
 - Skills teach capabilities; tool descriptions own service procedures and refusals. Keep each SKILL.md at most 500 lines, with its linked references and helper scripts.
 - Run `python3 scripts/test.py` after changes; validate packaging changes with both host parsers. State which checks actually ran.
-- Keep CI runnable without service credentials or private runners. Employee environments, private integration tests, internal notifications, and release orchestration belong outside this repository.
+- Keep CI runnable without service credentials or private runners. Employee environments, private integration tests, internal notifications, and internal release orchestration belong outside this repository. The public release workflow may use the repository's GITHUB_TOKEN to create version tags and GitHub Releases from main.
 - Never add personal data, private transcripts, credentials, internal tickets, private infrastructure addresses, or developer-specific paths; inspect the full public diff and metadata before publishing.
 - Preserve third-party notices. Use ASCII punctuation in agent instructions and English repository prose, with one source line per prose block.
 - Scope `skills/aip/` to AIP capabilities and the workspace file contract, and the bundled `aip-composition` skill to the composition, timing, and editor contract. Authoring tools are selected separately; do not bundle framework dependencies or rendering implementations. Verify file requirements against the service before changing the contract.

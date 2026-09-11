@@ -1,6 +1,6 @@
 # Release history
 
-This directory records the declared plugin version and release notes. Preparing or backfilling these files does not create a tag or publish a GitHub Release.
+This directory records the declared plugin version and release notes. Local preparation does not publish. Changes to the version file on main trigger automatic publication as described below; existing tags are preserved.
 
 ## latest_version.json
 
@@ -21,6 +21,18 @@ Use `template.md` for new releases. From the repository root, run `python3 scrip
 Changes, Compatibility, and Validation are optional and appear in that order when retained. Delete sections and categories with nothing noteworthy to report. Group concise change summaries by category and end each entry with one or more related PR-number links. Do not leave placeholders or empty sections.
 
 Keep each version update in its own PR titled `chore: release vX.Y.Z`. Follow the shared [release rule](../.agents/rules/release.md) and [contributing guide](../CONTRIBUTING.md) for the allowed files and checks. Changes to this README, the template, or release tooling belong in ordinary PRs.
+
+## Automatic publication
+
+The `Publish release` workflow runs only when a push to `main` in `opus-pro/ai-producer-plugin` changes `releases/latest_version.json`. It has no manual-dispatch or pull-request trigger. Publication is controlled by access to main; external PRs and fork pushes cannot run the publisher in this repository.
+
+The workflow reads the triggering commit, finds the exact `releases/vX.Y.Z.md` for the declared version, validates version alignment and the log, creates `vX.Y.Z` at that commit, and publishes a GitHub Release named `vX.Y.Z` with the Markdown file as its body. It does not scan older versions for publication. SemVer prereleases are marked as prereleases; stable releases use GitHub's version-based latest-release selection.
+
+If the version file or matching log is absent, the job skips publication. If the tag already exists, it skips both tag and release creation, even if no Release exists. Tags and Releases are never overwritten. Concurrent attempts to create the same tag also skip when another run has already created it.
+
+Only the publishing job receives `contents: write` through `GITHUB_TOKEN`; it requires no service credentials or custom token. Organization access policies must permit the runner to use that token. Authentication, IP-policy, and API errors fail the job rather than being treated as a missing tag. See [GitHub's IP allow-list documentation](https://docs.github.com/en/enterprise-cloud@latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/managing-allowed-ip-addresses-for-your-organization).
+
+Tag creation and Release creation are separate operations. If the tag succeeds but the Release fails, the tag is retained and subsequent runs skip it. A maintainer must inspect the failure and create the missing Release from that existing tag and the corresponding Markdown file, without moving or deleting the tag. If publication failed before tag creation, resolve the error and rerun the failed workflow.
 
 ## Legacy releases
 

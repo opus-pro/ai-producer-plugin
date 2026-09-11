@@ -1,6 +1,6 @@
 # release
 
-Follow this rule whenever asked to prepare a release, bump the plugin version, or align release metadata in this repository. Release preparation updates local version files and a release log; it does not publish a tag or GitHub Release.
+Follow this rule whenever asked to prepare a release, bump the plugin version, or align release metadata in this repository. Local release preparation updates version files and a release log. After the release PR is merged, the public release workflow automatically creates the tag and GitHub Release from main.
 
 ## Version source
 
@@ -23,7 +23,7 @@ Use the user's requested version when provided. Otherwise inspect the unreleased
 3. Complete the new log using the format below. Replace placeholders in retained sections and delete unused sections and categories entirely. Use public information and preserve third-party notices; never include private data or invent validation results. Keep the full validation evidence and checks not run in the PR description even when the release log omits Validation.
 4. Run `python3 scripts/test.py` and the packaging checks required by `CONTRIBUTING.md`. Inspect the complete diff. A release PR may change only the version fields in the five JSON files above and add exactly one matching release log. Keep `template.md`, previous logs, rules, scripts, workflow configuration, and functional changes out of the release PR.
 5. After the release changes are committed, run `python3 scripts/check_release_pr.py --base origin/main --head HEAD --title 'chore: release vX.Y.Z'`, using the actual PR base when it differs from `main`. Fetch complete base and head history first. The committed PR diff is what this check validates.
-6. Use the exact PR title `chore: release vX.Y.Z`, replacing `X.Y.Z` with the version in the JSON files and log. Include the release summary and validation results in the PR description. Merge and publication follow the maintainer's authorization; a request to prepare a release does not by itself authorize publishing it.
+6. Use the exact PR title `chore: release vX.Y.Z`, replacing `X.Y.Z` with the version in the JSON files and log. Include the release summary and validation results in the PR description. A request to prepare a release does not by itself authorize merging it. Maintainer approval to merge a release PR also approves the automatic publication triggered by its version-file change on main.
 
 ## Release log format
 
@@ -33,6 +33,10 @@ Use the user's requested version when provided. Otherwise inspect the unreleased
 - End the log with `**Full Changelog**: [vPREVIOUS...vX.Y.Z](https://github.com/opus-pro/ai-producer-plugin/compare/vPREVIOUS...vX.Y.Z)`. The preparation script fills both versions using the current declared version and the requested version. Check the comparison range before submitting; it must start at the current PR base version.
 
 See the [release directory guide](../../releases/README.md) for legacy notes. Published `v1.0.0` through `v1.1.2` bodies retain their original format and are exempt from the new template; `v1.1.3.md` already follows the new format. Do not rewrite legacy notes or apply their exemption to new releases. Verify imported content against GitHub Releases without inventing PR associations or validation results.
+
+## Automatic publication
+
+The `Publish release` workflow handles only pushes to main in the upstream repository that change `releases/latest_version.json`. It publishes only the declared version with a matching log, not every historical log. It creates `vX.Y.Z` at the triggering commit before publishing the log verbatim as the release body. Missing metadata or a missing log skips publication. An existing tag skips both tag and release creation, even if the release is absent; never replace, move, or delete tags to force a rerun. Publication validates version alignment and the current log before creating anything. Prereleases are marked accordingly. See the [release directory guide](../../releases/README.md#automatic-publication) for access requirements and recovery if release creation fails after tag creation.
 
 ## CI enforcement
 
