@@ -1,6 +1,6 @@
 {
   "name": "aip",
-  "version": "1.2.0",
+  "version": "1.1.1",
   "description": "Create an editable talking-head video with AI Producer. Deliver the preview link by default; export only on explicit request, without automatic playback inspection.",
   "author": {
     "name": "OpusClip",
