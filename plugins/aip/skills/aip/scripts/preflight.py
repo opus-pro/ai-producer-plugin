@@ -69,14 +69,17 @@ def check(root, remote_files=()):
         else:
             declared.add(candidate)
 
-    def reference(value, owner, attribute):
+    def reference(value, owner, attribute, base=None):
+        """Resolve one reference. An HTML document resolves from the root, whichever
+        directory holds it, because the editor mounts a composition's template into
+        index.html; a .css file resolves from its own directory, as CSS does."""
         if not value or value.startswith(("#", "data:")):
             return None
         parts = urlsplit(value)
         if parts.scheme or parts.netloc:
             issue(errors, "remote_reference_unsupported", owner, attribute)
             return None
-        candidate = (owner.parent / unquote(parts.path)).resolve()
+        candidate = ((base or root) / unquote(parts.path)).resolve()
         if not candidate.is_relative_to(root):
             issue(errors, "reference_outside_workspace", owner, attribute)
             return None
@@ -97,7 +100,7 @@ def check(root, remote_files=()):
             continue
         if path.suffix.lower() == ".css":
             for match in CSS_URL.finditer(source):
-                reference(match[2], path, "css-url")
+                reference(match[2], path, "css-url", base=path.parent)
             continue
         doc = Document()
         doc.feed(source)
