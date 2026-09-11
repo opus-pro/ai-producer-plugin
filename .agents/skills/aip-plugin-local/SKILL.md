@@ -1,6 +1,6 @@
 ---
 name: aip-plugin-local
-description: "Build, install, refresh, and debug AI Producer Local in Codex or Claude Code; prepare controlled video experiments and audit client token cost. Use for /aip-plugin-local, local plugin setup, or 本地插件安装、更新、调试、成本对比. Ordinary video editing uses the installed aip skill."
+description: "Build, install, refresh, and debug AI Producer Local in Codex or Claude Code; prepare controlled video experiments and audit client token cost. Use for /aip-plugin-local or local plugin installation, updates, debugging, and cost comparisons. Ordinary video editing uses the installed aip skill."
 ---
 
 # AI Producer Local
