@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="480" viewBox="0 0 1200 480" fill="none" role="img" aria-labelledby="title description">
+  <title id="title">AI Producer - Your footage. Your next great cut.</title>
+  <desc id="description">Video editing for Codex and Claude Code, illustrated with an editable timeline of footage, captions, graphics, and audio.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1200" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111216"/>
+      <stop offset="1" stop-color="#1B1C25"/>
+    </linearGradient>
+    <linearGradient id="preview" x1="946" y1="113" x2="1084" y2="263" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DFD5FD"/>
+      <stop offset="1" stop-color="#8D83B4"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" stroke="#FFF" stroke-opacity=".025"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="480" rx="24" fill="url(#background)"/>
+  <rect width="1200" height="480" rx="24" fill="url(#grid)"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect x="56" y="48" width="30" height="30" rx="9" fill="#D5FF83"/>
+    <path d="M65 56L78 63L65 70V56Z" fill="#16191A"/>
+    <text x="99" y="70" fill="#FAF9F6" font-size="23" font-weight="700">AI Producer</text>
+    <text x="56" y="157" fill="#BEB9CD" font-size="13" font-weight="700" letter-spacing="2.2">THE OPUSCLIP PLUGIN</text>
+    <text x="53" y="224" fill="#FAF9F6" font-size="62" font-weight="700" letter-spacing="-2.5">Your footage.</text>
+    <text x="53" y="294" fill="#D5FF83" font-size="62" font-weight="700" letter-spacing="-2.5">Your next great cut.</text>
+    <text x="56" y="341" fill="#B8BAC5" font-size="19">Cut, caption, and animate. Just ask your agent.</text>
+    <rect x="56" y="385" width="102" height="35" rx="17.5" fill="#24262E" stroke="#3B3D48"/>
+    <text x="107" y="408" text-anchor="middle" fill="#EDECF0" font-size="14">Codex</text>
+    <rect x="170" y="385" width="139" height="35" rx="17.5" fill="#24262E" stroke="#3B3D48"/>
+    <text x="239.5" y="408" text-anchor="middle" fill="#EDECF0" font-size="14">Claude Code</text>
+    <text x="327" y="408" fill="#999CA9" font-size="14">Powered by MCP</text>
+
+    <rect x="658" y="57" width="488" height="372" rx="18" fill="#0D0F13" stroke="#3E404C"/>
+    <path d="M659 99H1145" stroke="#2C2E38"/>
+    <circle cx="680" cy="78" r="4" fill="#636572"/>
+    <circle cx="695" cy="78" r="4" fill="#636572"/>
+    <circle cx="710" cy="78" r="4" fill="#636572"/>
+    <text x="735" y="83" fill="#D4D3DC" font-size="12">An editable timeline</text>
+    <rect x="1053" y="68" width="73" height="21" rx="10.5" fill="#293820"/>
+    <text x="1089.5" y="82" text-anchor="middle" fill="#D5FF83" font-size="10" font-weight="700">PREVIEW</text>
+
+    <rect x="678" y="116" width="205" height="56" rx="10" fill="#252830"/>
+    <path d="M693 129L696 136L703 139L696 142L693 149L690 142L683 139L690 136L693 129Z" fill="#D5FF83"/>
+    <text x="711" y="139" fill="#F1F0F6" font-size="12">Cut the pauses.</text>
+    <text x="711" y="157" fill="#F1F0F6" font-size="12">Make the key points pop.</text>
+    <text x="680" y="202" fill="#9296A6" font-size="10" letter-spacing="1.4">FROM A SIMPLE PROMPT</text>
+    <text x="680" y="229" fill="#EEEDF4" font-size="18" font-weight="700">To a cut you can shape.</text>
+    <text x="680" y="252" fill="#A5A7B5" font-size="12">Open it. Review it. Make it yours.</text>
+
+    <rect x="958" y="113" width="136" height="150" rx="10" fill="url(#preview)"/>
+    <circle cx="1026" cy="161" r="23" fill="#454052"/>
+    <path d="M980 231C980 198 998 188 1026 188C1054 188 1072 198 1072 231V253H980V231Z" fill="#454052"/>
+    <rect x="971" y="224" width="110" height="24" rx="5" fill="#D5FF83"/>
+    <text x="1026" y="240" text-anchor="middle" fill="#151813" font-size="12" font-weight="700">Make it yours.</text>
+    <path d="M1110 126V138M1104 132H1116M937 207V215M933 211H941" stroke="#D5FF83" stroke-width="2" stroke-linecap="round"/>
+
+    <path d="M678 278H1126" stroke="#2C2E38"/>
+    <g fill="#8D91A2" font-size="9">
+      <text x="741" y="294">00:00</text>
+      <text x="860" y="294">00:05</text>
+      <text x="979" y="294">00:10</text>
+      <text x="1098" y="294">00:15</text>
+      <text x="678" y="325">FOOTAGE</text>
+      <text x="678" y="355">CAPTIONS</text>
+      <text x="678" y="385">AUDIO</text>
+    </g>
+    <rect x="741" y="308" width="102" height="24" rx="4" fill="#AD9CCC"/>
+    <rect x="847" y="308" width="150" height="24" rx="4" fill="#C5B4E3"/>
+    <rect x="1001" y="308" width="125" height="24" rx="4" fill="#AD9CCC"/>
+    <g stroke="#78678F" stroke-width="2" stroke-linecap="round">
+      <path d="M752 316V324M762 316V324M772 316V324M782 316V324M792 316V324M802 316V324M812 316V324M822 316V324M832 316V324"/>
+      <path d="M858 316V324M868 316V324M878 316V324M888 316V324M898 316V324M908 316V324M918 316V324M928 316V324M938 316V324M948 316V324M958 316V324M968 316V324M978 316V324M988 316V324"/>
+      <path d="M1012 316V324M1022 316V324M1032 316V324M1042 316V324M1052 316V324M1062 316V324M1072 316V324M1082 316V324M1092 316V324M1102 316V324M1112 316V324"/>
+    </g>
+    <rect x="756" y="341" width="77" height="19" rx="4" fill="#D5FF83"/>
+    <rect x="847" y="341" width="88" height="19" rx="4" fill="#D5FF83"/>
+    <rect x="952" y="341" width="91" height="19" rx="4" fill="#D5FF83"/>
+    <rect x="1055" y="341" width="59" height="19" rx="4" fill="#D5FF83"/>
+    <rect x="741" y="370" width="385" height="24" rx="4" fill="#283938"/>
+    <path d="M751 382H757L760 378L763 387L766 375L769 385L772 382H781L784 374L787 389L790 377L793 385L796 382H804L807 376L810 387L813 373L816 385L819 382H829L832 378L835 387L838 375L841 385L844 382H854L857 374L860 389L863 377L866 385L869 382H879L882 376L885 387L888 373L891 385L894 382H904L907 378L910 387L913 375L916 385L919 382H929L932 374L935 389L938 377L941 385L944 382H954L957 376L960 387L963 373L966 385L969 382H979L982 378L985 387L988 375L991 385L994 382H1004L1007 374L1010 389L1013 377L1016 385L1019 382H1029L1032 376L1035 387L1038 373L1041 385L1044 382H1054L1057 378L1060 387L1063 375L1066 385L1069 382H1079L1082 374L1085 389L1088 377L1091 385L1094 382H1115" stroke="#87C9BC" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M924 299V406" stroke="#FAF9F6" stroke-width="1.5"/>
+    <path d="M919 299H929L924 305L919 299Z" fill="#FAF9F6"/>
+  </g>
+</svg>
