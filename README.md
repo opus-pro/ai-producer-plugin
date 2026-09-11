@@ -12,8 +12,6 @@ The bundled static-check and upload helpers use Python 3.10 or newer on the clie
 
 Requires Python 3.10 or newer for the offline checks.
 
-In a Codex or Claude Code task opened in this repository, say "set up the local plugin" or invoke `/aip-plugin-local` to use the [local development workflow](.agents/skills/aip-plugin-local/SKILL.md). It builds **AI Producer Local**, refreshes host installation, and guides controlled quality, duration, and client-cost comparisons. Local instructions use the selected source's MCP service; a local plugin does not start a local backend.
-
 ```bash
 python3 scripts/test.py
 ```
