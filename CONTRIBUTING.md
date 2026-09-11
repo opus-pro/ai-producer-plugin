@@ -30,9 +30,9 @@ Verify workspace requirements against the service's current acceptance and playb
 
 Follow the shared [release rule](.agents/rules/release.md) when preparing a version update. Codex reaches it through `AGENTS.md`; Claude Code imports it through `CLAUDE.md`. Merge functional changes through ordinary PRs first, then prepare a separate PR titled exactly `chore: release vX.Y.Z`, for example `chore: release v1.1.4`. Documentation-only or test-only changes do not require a plugin version bump.
 
-`releases/_latest_version.json` is the canonical declared version. A release PR may change only the version fields in these five files and add the matching `releases/vX.Y.Z.md` log:
+`releases/latest_version.json` is the canonical declared version. A release PR may change only the version fields in these five files and add the matching `releases/vX.Y.Z.md` log:
 
-- `releases/_latest_version.json`: `version`.
+- `releases/latest_version.json`: `version`.
 - `plugins/aip/.codex-plugin/plugin.json`: `version`.
 - `plugins/aip/.claude-plugin/plugin.json`: `version`.
 - `.claude-plugin/marketplace.json`: the AIP entry's `version`.
@@ -40,7 +40,7 @@ Follow the shared [release rule](.agents/rules/release.md) when preparing a vers
 
 All six values must agree with the PR title and log version, and the version must increase in SemVer precedence over both the PR's starting version and the current base version. Prerelease and build suffixes are supported; a metadata-only change does not increase precedence. Other fields in those JSON files, other files, renames, deletions, and file-mode changes are not allowed in a release PR. Historical logs cannot be changed. Template and release-tooling changes belong in separate ordinary PRs.
 
-Prepare the files locally, then fill in the generated log's Changes, Compatibility, and Validation sections with verified information. Unfilled template placeholders fail validation. This command does not commit, push, tag, or publish:
+Prepare the files locally, then complete the generated log. Omit Changes, Compatibility, or Validation when there is nothing noteworthy to report. Group changes by category, summarize related PRs together, and append one or more PR-number links to each change. Keep the generated Full Changelog comparison link at the end. Unfilled placeholders and empty retained sections fail validation. Full validation evidence belongs in the PR description even when omitted from the log. This command does not commit, push, tag, or publish:
 
 ```bash
 python3 scripts/prepare_release.py 1.1.4
@@ -48,7 +48,7 @@ python3 scripts/prepare_release.py 1.1.4
 python3 scripts/test.py
 ```
 
-The directory uses `_latest_version.json` and `_template.md` for its two helper files, followed by `vX.Y.Z.md` logs when sorted by name. The initial `v1.1.3.md` is a baseline record of the existing version, not a newly published release.
+The directory uses `latest_version.json` and `template.md` for its two helper files, followed by `vX.Y.Z.md` logs when sorted by name. The initial `v1.1.3.md` summarizes the existing published release and links to its PRs and full comparison; adding it does not publish another release.
 
 The `Validate release PR` workflow runs on PR creation, reopening, new commits, and edits, including title changes. It detects version updates regardless of the PR title and validates ordinary PRs for version consistency. It runs the trusted validator from the workflow's commit and reads PR Git objects without checking out or executing PR code. It needs no credentials. After this workflow reaches the default branch, configure `Release PR policy` as a required status check and require branches to be up to date before merging so the base-version comparison stays current.
 

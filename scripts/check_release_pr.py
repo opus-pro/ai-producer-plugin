@@ -12,9 +12,11 @@ import sys
 from pathlib import Path
 
 
-LATEST_VERSION_FILE = "releases/_latest_version.json"
-RELEASE_TEMPLATE = "releases/_template.md"
+LATEST_VERSION_FILE = "releases/latest_version.json"
+RELEASE_TEMPLATE = "releases/template.md"
 LOG_SECTIONS = ("Changes", "Compatibility", "Validation")
+REPOSITORY_URL = "https://github.com/opus-pro/ai-producer-plugin"
+PR_LINK = re.compile(r"\[#([1-9][0-9]*)\]\(" + re.escape(REPOSITORY_URL) + r"/pull/\1\)")
 VERSION_FIELDS = {
     LATEST_VERSION_FILE: (("version",),),
     "plugins/aip/.codex-plugin/plugin.json": (("version",),),
@@ -127,19 +129,47 @@ def release_log_path(version: str) -> str:
     return f"releases/v{version}.md"
 
 
-def validate_release_log(contents: str, version: str) -> None:
+def validate_changes(contents: str) -> None:
+    categories = re.split(r"^### (.+)$", contents, flags=re.MULTILINE)
+    if len(categories) < 3 or categories[0].strip():
+        raise ValueError("Changes must group concise entries under category headings")
+    for category, body in zip(categories[1::2], categories[2::2]):
+        lines = [line.strip() for line in body.splitlines() if line.strip()]
+        if not lines:
+            raise ValueError(f"Omit empty change categories: {category}")
+        for line in lines:
+            entry = re.fullmatch(r"- (.+?) \((.+)\)\.?", line)
+            if not entry or not all(PR_LINK.fullmatch(link) for link in entry[2].split(", ")):
+                raise ValueError("Each change must end with one or more matching PR-number links")
+
+
+def validate_release_log(contents: str, version: str, *, previous_version: str | None = None) -> None:
     if not contents.splitlines() or contents.splitlines()[0] != f"# v{version}":
         raise ValueError(f"Release log must start with '# v{version}'")
     if re.search(r"\{\{.*?\}\}", contents, re.DOTALL):
         raise ValueError("Release log still contains template placeholders")
-    sections = re.split(r"^## (.+)$", contents, flags=re.MULTILINE)
+    visible = re.sub(r"<!--.*?-->", "", contents, flags=re.DOTALL).strip()
+    body, _, footer = visible.rpartition("\n")
+    comparison = re.fullmatch(r"\*\*Full Changelog\*\*: \[v(.+?)\.\.\.v(.+?)\]\(([^)]+)\)", footer)
+    if not comparison:
+        raise ValueError("Release log must end with a Full Changelog comparison link")
+    previous, target, url = comparison.groups()
+    if target != version or url != f"{REPOSITORY_URL}/compare/v{previous}...v{version}":
+        raise ValueError("Full Changelog link must match its label and the release version")
+    if precedence(previous) >= precedence(version):
+        raise ValueError("Full Changelog must compare an earlier version to this release")
+    if previous_version is not None and previous != previous_version:
+        raise ValueError(f"Full Changelog must start from base version {previous_version}")
+
+    sections = re.split(r"^## (.+)$", body, flags=re.MULTILINE)
     headings = sections[1::2]
-    if headings != list(LOG_SECTIONS):
-        raise ValueError("Release log must contain Changes, Compatibility, and Validation sections in that order")
+    if headings != [section for section in LOG_SECTIONS if section in headings]:
+        raise ValueError("Release log sections must be an ordered subset of Changes, Compatibility, and Validation")
     for heading, body in zip(headings, sections[2::2]):
-        body = re.sub(r"<!--.*?-->", "", body, flags=re.DOTALL)
         if not re.search(r"[A-Za-z0-9]", body):
             raise ValueError(f"Release log section must be filled in: {heading}")
+        if heading == "Changes":
+            validate_changes(body)
 
 
 def without_versions(document: dict, fields: tuple) -> str:
@@ -195,7 +225,7 @@ def check_release_pr(repo: Path, base: str, head: str, title: str) -> str:
         raise ValueError(f"Release version must be newer than both {old_version} and base version {base_version}")
     if log_path not in changed or git(repo, "ls-tree", ancestor, "--", log_path) or git(repo, "ls-tree", base, "--", log_path):
         raise ValueError(f"Release PR must add a new release log: {log_path}")
-    validate_release_log(regular_blob(repo, head, log_path).decode("utf-8"), new_version)
+    validate_release_log(regular_blob(repo, head, log_path).decode("utf-8"), new_version, previous_version=base_version)
     return f"OK: release {old_version} -> {new_version}; title, file scope, all six version fields, and release log match"
 
 

@@ -53,7 +53,7 @@ class PrepareReleaseTest(unittest.TestCase):
             self.assertEqual(after[path], before[path])
         self.assertEqual(log.relative_to(self.root).as_posix(), release_log_path(self.target))
         template = (self.root / RELEASE_TEMPLATE).read_text()
-        self.assertEqual(log.read_text(), template.replace("{{version}}", self.target))
+        self.assertEqual(log.read_text(), template.replace("{{version}}", self.target).replace("{{previous_version}}", self.current))
         with self.assertRaisesRegex(ValueError, "template placeholders"):
             validate_release_log(log.read_text(), self.target)
 
@@ -96,6 +96,16 @@ class PrepareReleaseTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     prepare_release.prepare_release(self.root, self.target)
                 self.assertEqual(self.files(), original)
+
+    def test_template_can_omit_all_optional_sections(self) -> None:
+        (self.root / RELEASE_TEMPLATE).write_text(
+            "# v{{version}}\n\n"
+            "**Full Changelog**: [v{{previous_version}}...v{{version}}]"
+            "(https://github.com/opus-pro/ai-producer-plugin/compare/v{{previous_version}}...v{{version}})\n"
+        )
+        log = prepare_release.prepare_release(self.root, self.target)
+        validate_release_log(log.read_text(), self.target, previous_version=self.current)
+        self.assertNotIn("{{", log.read_text())
 
     def test_non_regular_version_file_is_rejected(self) -> None:
         path = self.root / LATEST_VERSION_FILE

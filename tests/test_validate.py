@@ -107,18 +107,18 @@ class ValidateFixtureTest(unittest.TestCase):
                 shutil.copy(REPO / MCP_CONFIG, path)
 
     def test_stale_latest_version_fails(self) -> None:
-        (self.root / "releases/_latest_version.json").write_text('{"version": "0.0.1"}\n', encoding="utf-8")
+        (self.root / "releases/latest_version.json").write_text('{"version": "0.0.1"}\n', encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "six version fields must match"):
             validate.main(self.root)
 
     def test_missing_latest_release_log_fails(self) -> None:
-        version = validate.load_json(self.root / "releases/_latest_version.json")["version"]
+        version = validate.load_json(self.root / "releases/latest_version.json")["version"]
         (self.root / f"releases/v{version}.md").unlink()
         with self.assertRaisesRegex(AssertionError, "must have a release log"):
             validate.main(self.root)
 
     def test_unfilled_release_log_fails(self) -> None:
-        version = validate.load_json(self.root / "releases/_latest_version.json")["version"]
+        version = validate.load_json(self.root / "releases/latest_version.json")["version"]
         path = self.root / f"releases/v{version}.md"
         path.write_text(f"# v{version}\n\n{{{{changes}}}}\n", encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "template placeholders"):

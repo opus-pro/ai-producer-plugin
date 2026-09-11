@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import itertools
 import json
 import shutil
 import subprocess
@@ -58,6 +59,9 @@ class ReleasePRTest(unittest.TestCase):
         (self.root / path).write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
 
     def set_version(self, version: str) -> None:
+        previous = self.document(policy.LATEST_VERSION_FILE)["version"]
+        if policy.precedence(previous) >= policy.precedence(version):
+            previous = "0.0.0"
         for path, fields in policy.VERSION_FIELDS.items():
             document = self.document(path)
             for field in fields:
@@ -69,9 +73,12 @@ class ReleasePRTest(unittest.TestCase):
         log = self.root / policy.release_log_path(version)
         if not log.exists():
             log.write_text(
-                f"# v{version}\n\n## Changes\n\n- Synthetic release fixture.\n\n"
+                f"# v{version}\n\n## Changes\n\n### Changed\n\n"
+                "- Synthetic release fixture. ([#1](https://github.com/opus-pro/ai-producer-plugin/pull/1))\n\n"
                 "## Compatibility\n\n- No migration required.\n\n"
-                "## Validation\n\n- Fixture JSON checked.\n", encoding="utf-8",
+                "## Validation\n\n- Fixture JSON checked.\n\n"
+                f"**Full Changelog**: [v{previous}...v{version}]"
+                f"(https://github.com/opus-pro/ai-producer-plugin/compare/v{previous}...v{version})\n", encoding="utf-8",
             )
 
     def check(self, title: str = "chore: release v0.8.34", base: str | None = None) -> str:
@@ -304,6 +311,61 @@ class ReleasePRTest(unittest.TestCase):
             )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("ordinary PR", result.stdout)
+
+
+class ReleaseLogTest(unittest.TestCase):
+    footer = "**Full Changelog**: [v0.8.33...v0.8.34](https://github.com/opus-pro/ai-producer-plugin/compare/v0.8.33...v0.8.34)"
+    change = "- Summarize related fixes. ([#1](https://github.com/opus-pro/ai-producer-plugin/pull/1), [#2](https://github.com/opus-pro/ai-producer-plugin/pull/2))"
+
+    def log(self, body: str = "") -> str:
+        return f"# v0.8.34\n\n{body}\n\n{self.footer}\n"
+
+    def test_every_section_can_be_omitted(self) -> None:
+        sections = (
+            f"## Changes\n\n### Fixed\n\n{self.change}",
+            "## Compatibility\n\n- Synthetic migration note.",
+            "## Validation\n\n- Synthetic validation limitation.",
+        )
+        for selected in itertools.product((False, True), repeat=3):
+            with self.subTest(selected=selected):
+                body = "\n\n".join(section for section, include in zip(sections, selected) if include)
+                policy.validate_release_log(self.log(body), "0.8.34", previous_version="0.8.33")
+
+    def test_changes_need_categories(self) -> None:
+        with self.assertRaisesRegex(ValueError, "category headings"):
+            policy.validate_release_log(self.log(f"## Changes\n\n{self.change}"), "0.8.34")
+
+    def test_empty_categories_must_be_omitted(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Omit empty change categories"):
+            policy.validate_release_log(self.log("## Changes\n\n### Fixed"), "0.8.34")
+
+    def test_pr_links_must_match_numbers_and_end_the_change(self) -> None:
+        for change in (
+            "- Fix the fixture.",
+            "- Fix the fixture. (#1)",
+            self.change.replace("pull/1", "pull/3"),
+            self.change.replace("github.com", "example.invalid"),
+            self.change + " Trailing text.",
+        ):
+            with self.subTest(change=change), self.assertRaisesRegex(ValueError, "PR-number links"):
+                policy.validate_release_log(self.log(f"## Changes\n\n### Fixed\n\n{change}"), "0.8.34")
+
+    def test_missing_full_changelog_fails(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Full Changelog comparison link"):
+            policy.validate_release_log("# v0.8.34\n", "0.8.34")
+
+    def test_comparison_label_and_url_must_match_release(self) -> None:
+        for footer in (
+            self.footer.replace("v0.8.34", "v0.8.35"),
+            self.footer.replace("compare/v0.8.33", "compare/v0.8.32"),
+            self.footer.replace("github.com", "example.invalid"),
+        ):
+            with self.subTest(footer=footer), self.assertRaisesRegex(ValueError, "match its label"):
+                policy.validate_release_log(self.log().replace(self.footer, footer), "0.8.34")
+
+    def test_comparison_must_start_at_pr_base_version(self) -> None:
+        with self.assertRaisesRegex(ValueError, "start from base version"):
+            policy.validate_release_log(self.log(), "0.8.34", previous_version="0.8.32")
 
 
 class SemVerTest(unittest.TestCase):

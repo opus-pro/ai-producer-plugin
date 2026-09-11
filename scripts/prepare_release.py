@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -31,13 +32,13 @@ def prepare_release(root: Path, version: str) -> Path:
     if log.exists() or log.is_symlink():
         raise ValueError(f"Release log already exists: {log.name}")
     template = (root / RELEASE_TEMPLATE).read_text(encoding="utf-8")
-    for field in ("version", "changes", "compatibility", "validation"):
+    for field in ("version", "previous_version"):
         if "{{" + field + "}}" not in template:
             raise ValueError(f"Release template is missing the {field} placeholder")
-    preview = template.replace("{{version}}", version)
-    for field in ("changes", "compatibility", "validation"):
-        preview = preview.replace("{{" + field + "}}", "Draft")
-    validate_release_log(preview, version)
+    draft = template.replace("{{version}}", version).replace("{{previous_version}}", current)
+    preview = draft.replace("{{pr_number}}", "1").replace("{{related_pr_number}}", "2")
+    preview = re.sub(r"\{\{[^{}]+\}\}", "Draft", preview)
+    validate_release_log(preview, version, previous_version=current)
 
     # Validate every input before modifying any file.
     for relative, fields in VERSION_FIELDS.items():
@@ -48,7 +49,7 @@ def prepare_release(root: Path, version: str) -> Path:
             parent[field[-1]] = version
     for relative, document in documents.items():
         (root / relative).write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
-    log.write_text(template.replace("{{version}}", version), encoding="utf-8")
+    log.write_text(draft, encoding="utf-8")
     return log
 
 
