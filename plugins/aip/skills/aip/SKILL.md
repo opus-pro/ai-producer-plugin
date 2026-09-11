@@ -1,6 +1,6 @@
 ---
 name: aip
-description: "Create an editable AI Producer preview from user footage. Deliver the editable project link by default, export only on explicit request, and stop without inspecting the preview or output video."
+description: "Create an editable AI Producer preview from user footage. Show progress in Codex's in-app browser, deliver the editable project link, and export only on explicit request, without inspecting the preview or output video."
 ---
 
 # AI Producer preview
@@ -13,7 +13,17 @@ Deliver the editable project link by default. Treat "finished video" or "final c
 
 Do not inspect the generated preview or MP4, including browser playback, screenshots, contact sheets, frame extraction, audio analysis, or delegated inspection. Do not start a post-delivery review, repair, or aesthetic iteration. This stopping condition applies whether the deliverable is a preview or an explicitly requested export. Input-media analysis and local static contract checks before submission remain allowed.
 
+Opening the project page for the user as described below is required in Codex and is not playback inspection. Leave viewing and quality judgments to the user.
+
 Use only this package's [AIP composition contract](../aip-composition/SKILL.md) and [workspace reference](references/workspace.md) for integration. Read them once before authoring; load the linked PIP example only when needed. Do not search global HyperFrames or media-use skills, backend source, or repository documentation to make this video. Resolve these links relative to the skill actually loaded, never a remembered versioned cache path. If that path is stale, use the host's installed-plugin listing once to find the enabled package and its version.
+
+## Show progress in Codex
+
+As soon as project creation returns a project ID, call `get_view_url` and open its exact returned `url` in the current Codex task, while preparation is running. Do not wait for transcription, authoring, submission, or the final reply. The exchange URL authenticates this browser once; never fetch it with HTTP tools first or put it in messages or project files. Retain the returned durable `agent_page_url` for final delivery, preserving its origin and query parameters.
+
+Use Codex's `open_in_codex` tool with `target: {type: "browser", url: <returned url>}` and `placement: "right"`; omit `threadId` to target the current task. If that tool is unavailable, use the available browser tool's explicit in-app route, such as `cua.createBrowserTab("iab", url, {visible: true})`. Do not use an unspecified/default browser, an external browser, or an OS open command. A text link alone does not perform this step.
+
+Use only the opening tool's acknowledgement to track this handoff. A queued open is pending, not a reason to open another tab. After an explicit failure, allow at most one recovery attempt in the in-app browser; obtain a fresh exchange URL only if the first may have been consumed. If no in-app route works, briefly report that limitation and continue the edit without claiming the page opened. Keep the project tab for live updates; do not reopen or refresh it after every stage, inspect its contents, or add browser polling. Successful submission does not require a second browser open.
 
 ## Default editorial taste
 
@@ -32,4 +42,4 @@ Inspect the supplied media and plan once. Batch independent metadata reads and m
 
 Author the complete first version locally. Before upload, run [preflight.py](scripts/preflight.py) as described in the workspace reference, or equivalent local static checks if Python 3.10+ is unavailable. Fix its concrete errors before submission; it does not judge aesthetics. Request upload signatures in a batch and run the uploads together with [upload_batch.py](scripts/upload_batch.py), or the host's batch HTTP tools, then commit. If admission refuses specific files with deterministic contract errors, fix only those errors and resubmit once. Report a second refusal and stop; do not expand this into playback or aesthetic repair. Tool descriptions own authentication, limits, and task state; use their current schema instead of inventing parameters.
 
-After acceptance, retrieve and deliver the project link, then stop unless an export was explicitly requested. Report service refusals or warnings without starting a playback or repair loop. Label the result as not playback-verified; do not claim visual quality, audio synchronization, or export compatibility from upload or render completion alone.
+After acceptance, deliver the durable project link retained above (or retrieve it if missing), then stop unless an export was explicitly requested. Include this link in the final reply even when the project is already open in Codex. Never deliver the single-use exchange URL. Report service refusals or warnings without starting a playback or repair loop. Label the result as not playback-verified; do not claim visual quality, audio synchronization, or export compatibility from upload or render completion alone.
