@@ -60,7 +60,7 @@ The inner div's `data-composition-id` equals the host's. Scope styles and elemen
 
 | attribute | on | value |
 | --- | --- | --- |
-| `data-start` | every clip | seconds, relative to the parent composition (a PIP video: the host's global start, see above) |
+| `data-start` | every clip | seconds, relative to the parent composition (a PIP or footage clip inside a composition: the host's global start, see above) |
 | `data-duration` | every clip | seconds, the clip's own length |
 | `data-track-index` | every clip | integer; clips on one track cannot overlap |
 | `data-media-start` | video and audio | offset into the source file, seconds |
