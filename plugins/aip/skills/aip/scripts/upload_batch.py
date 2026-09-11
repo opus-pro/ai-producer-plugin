@@ -1,15 +1,35 @@
 #!/usr/bin/env python3
 """Upload an explicitly signed batch without logging credentials or calling models."""
+import base64
 import concurrent.futures
 import http.client
 import json
 from pathlib import Path
 import sys
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
+from urllib.request import getproxies, proxy_bypass
 
 MAX_WORKERS = 4
 TIMEOUT_SECONDS = 120
 CHUNK_BYTES = 1024 * 1024
+DEFAULT_PROXY_PORT = 8080
+
+
+def proxy_for(url):
+    """Resolve the HTTPS proxy for one target from the environment and, on macOS and
+    Windows, the system settings. The proxy opens a CONNECT tunnel, so the signed
+    request stays end-to-end TLS. Returns None when the target is reached directly."""
+    setting = getproxies().get('https')
+    if not setting or proxy_bypass(url.hostname):
+        return None
+    proxy = urlsplit(setting if '://' in setting else '//' + setting)
+    if not proxy.hostname:
+        raise ValueError('Unusable https proxy setting')
+    headers = {}
+    if proxy.username:
+        credential = f'{unquote(proxy.username)}:{unquote(proxy.password or "")}'
+        headers['Proxy-Authorization'] = 'Basic ' + base64.b64encode(credential.encode()).decode()
+    return proxy.hostname, proxy.port or DEFAULT_PROXY_PORT, headers
 
 
 def prepare(root, rows):
@@ -32,15 +52,21 @@ def prepare(root, rows):
         headers = row.get('headers', {})
         if not isinstance(headers, dict) or any(not isinstance(k, str) or not isinstance(v, str) for k, v in headers.items()):
             raise ValueError('Headers must be a string mapping')
-        jobs.append((str(file.relative_to(root)), file, url, headers))
+        # Resolve the proxy here so a broken setting fails the batch before any upload.
+        jobs.append((str(file.relative_to(root)), file, url, headers, proxy_for(url)))
     return jobs
 
 
 def upload(job):
-    rel, file, url, headers = job
+    rel, file, url, headers, proxy = job
     conn = None
     try:
-        conn = http.client.HTTPSConnection(url.hostname, url.port, timeout=TIMEOUT_SECONDS)
+        if proxy:
+            host, port, tunnel_headers = proxy
+            conn = http.client.HTTPSConnection(host, port, timeout=TIMEOUT_SECONDS)
+            conn.set_tunnel(url.hostname, url.port, tunnel_headers)
+        else:
+            conn = http.client.HTTPSConnection(url.hostname, url.port, timeout=TIMEOUT_SECONDS)
         target = url.path or '/'
         if url.query:
             target += '?' + url.query
@@ -56,7 +82,7 @@ def upload(job):
         response = conn.getresponse()
         return {'path': rel, 'ok': 200 <= response.status < 300, 'status': response.status}
     except Exception:
-        # Transport exceptions may contain signed URLs; never echo their text.
+        # Transport exceptions may contain signed URLs or proxy credentials; never echo their text.
         return {'path': rel, 'ok': False, 'error': 'upload_failed'}
     finally:
         if conn is not None:
