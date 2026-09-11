@@ -1,5 +1,7 @@
 # AIP workspace format
 
+Before source upload, check the format, duration, and size: `.mp4`, `.mov`, or `.webm`; up to 15 minutes by default; at most 1.5 GiB. Recommend compression for larger files. Exports follow the source frame rate by default, capped at 30 fps.
+
 The entry is `render-engine/index.html`. Supporting documents go in `compositions/`, assets in `public/`, styles in `styles/`, and fonts in `fonts/`, all beneath `render-engine/`.
 
 The workspace accepts HTML, CSS, JSON, images, fonts, video, and audio. HTML is limited to 64 KiB per file; `narrator_captions.html` to 256 KiB. Use the runtime scripts provided by the project and embed vector graphics in HTML.
