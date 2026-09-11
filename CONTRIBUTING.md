@@ -4,7 +4,7 @@ Open an issue for a bug or proposal, or submit a focused pull request. Include t
 
 ## Local checks
 
-Python 3.10 or newer is sufficient for the offline checks:
+Python 3.9 or newer is sufficient for the offline checks:
 
 ```bash
 python3 scripts/test.py
