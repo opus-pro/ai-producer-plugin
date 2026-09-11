@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_DIRNAME = "aip"
 EXPECTED_REPOSITORY = "https://github.com/opus-pro/ai-producer-plugin"
 EXPECTED_ENDPOINT = "https://producer.opus.pro/api/mcp"
-EXPECTED_SKILLS = {"aip", "aip-composition"}
+EXPECTED_SKILLS = {"aip", "aip-captions", "aip-composition"}
 
 
 # The service needs the plugin version on each tool call.

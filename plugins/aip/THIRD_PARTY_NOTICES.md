@@ -1,6 +1,6 @@
 # Source and branding notices
 
-Original AIP plugin source, helper scripts, and tests are provided under the [MIT License](LICENSE), except for the HyperFrames-derived skill described below. This package contains no bundled third-party authoring engine, animation runtime, or media library.
+Original AIP plugin source, helper scripts, tests, and the `skills/aip/` and `skills/aip-captions/` skills are provided under the [MIT License](LICENSE), except for the HyperFrames-derived skill described below. This package contains no bundled third-party authoring engine, animation runtime, or media library.
 
 ## HyperFrames-derived composition skill
 
