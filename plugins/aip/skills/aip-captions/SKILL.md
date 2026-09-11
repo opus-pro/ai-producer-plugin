@@ -47,7 +47,3 @@ Place `host_div` as written (its duration and canvas come from the root you comm
 | Vlogs, hot takes, sticker energy, loud and playful; a real brand accent                                                                       | `tilt-slam`         | a formal or corporate register; dense small on-screen text; captions should stay quiet |
 
 One pattern per video. The pick is yours; the pattern's typography, motion, and layout are the service's.
-
-## Local test period (remove before contributing)
-
-While `build_captions` is not on this server's tool list: do everything above up to the call, then end the caption step by stating the exact call you would have made, with `caption_style`, the emphasis `word_id` values with their text, `position`, `placement`, and `hide_intervals`, and one sentence on why that pattern fits this video. Continue the rest of the project without a caption layer.
