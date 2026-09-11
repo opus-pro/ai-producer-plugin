@@ -95,15 +95,20 @@ class PreflightTests(unittest.TestCase):
         self.write("compositions/beat.html", CHILD.format('<img src="../public/images/card.png">'))
         self.assertEqual(self.codes(preflight.check(self.root)), {"reference_outside_workspace"})
 
-    def test_composition_script_and_link_resolve_from_the_composition_file(self):
-        # The export loads a composition as its own page, so its vendor script and
-        # stylesheet are written `../`; the editor re-points both by file name.
-        self.write("styles/theme.css", "body{}")
-        self.write("compositions/beat.html", CHILD.format(
-            '<link rel="stylesheet" href="../styles/theme.css"><script src="../public/vendor/gsap.min.js"></script>'))
+    def test_composition_script_resolves_from_the_composition_file(self):
+        # The export loads a composition as its own page, so its vendor script is
+        # written `../public/vendor/...`; the editor re-points it by file name.
+        self.write("compositions/beat.html", CHILD.format('<script src="../public/vendor/gsap.min.js"></script>'))
         self.assertTrue(preflight.check(self.root, ["public/vendor/gsap.min.js"])["ok"])
         self.write("compositions/beat.html", CHILD.format('<script src="public/vendor/gsap.min.js"></script>'))
         self.assertIn("missing_local_reference", self.codes(preflight.check(self.root, ["public/vendor/gsap.min.js"])))
+
+    def test_composition_stylesheet_resolves_from_the_root(self):
+        self.write("styles/theme.css", "body{}")
+        self.write("compositions/beat.html", CHILD.format('<link rel="stylesheet" href="styles/theme.css">'))
+        self.assertTrue(preflight.check(self.root)["ok"])
+        self.write("compositions/beat.html", CHILD.format('<link rel="stylesheet" href="../styles/theme.css">'))
+        self.assertEqual(self.codes(preflight.check(self.root)), {"reference_outside_workspace"})
 
     def test_stylesheet_url_resolves_from_the_css_file(self):
         self.write("public/fonts/a.woff2", "font")
