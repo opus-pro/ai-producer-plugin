@@ -15,6 +15,14 @@ Do not inspect the generated preview or MP4, including browser playback, screens
 
 Use only this package's [AIP composition contract](../aip-composition/SKILL.md) and [workspace reference](references/workspace.md) for integration. Read them once before authoring; load the linked PIP example only when needed. Do not search global HyperFrames or media-use skills, backend source, or repository documentation to make this video. Resolve these links relative to the skill actually loaded, never a remembered versioned cache path. If that path is stale, use the host's installed-plugin listing once to find the enabled package and its version.
 
+## Show progress in Codex
+
+In Codex, as soon as an AIP creation/preparation tool returns `project_id`, call `get_view_url`, then `open_in_codex` with `target: {type: "browser", url: <exact returned url>}` and `placement: "right"`, omitting `threadId`. Open during preparation; retain the exact `agent_page_url` for delivery. The exchange URL is single-use: do not fetch it separately or include it in messages or files.
+
+Opening is a status-only handoff to the user, not inspection. Use no external browser or computer-use action that returns page content. Keep the tab for live updates without reopening, refreshing, polling, playing, or inspecting it.
+
+`queued` means pending. Retry an explicit failure at most once with the same tool, obtaining a fresh exchange URL only if the first may have been consumed. If unavailable or still failing, report it and continue editing; never claim the page opened.
+
 ## Default editorial taste
 
 Use this preset to develop a brief specific to the footage within the initial planning step. The user's explicit creative requirements take precedence; use this direction to fill gaps. Choose concrete visuals and motion freely within the composition contract.
@@ -32,4 +40,4 @@ Inspect the supplied media and plan once. Batch independent metadata reads and m
 
 Author the complete first version locally. Before upload, run [preflight.py](scripts/preflight.py) as described in the workspace reference, or equivalent local static checks if Python 3.10+ is unavailable. Fix its concrete errors before submission; it does not judge aesthetics. Request upload signatures in a batch and run the uploads together with [upload_batch.py](scripts/upload_batch.py), or the host's batch HTTP tools, then commit. If admission refuses specific files with deterministic contract errors, fix only those errors and resubmit once. Report a second refusal and stop; do not expand this into playback or aesthetic repair. Tool descriptions own authentication, limits, and task state; use their current schema instead of inventing parameters.
 
-After acceptance, retrieve and deliver the project link, then stop unless an export was explicitly requested. Report service refusals or warnings without starting a playback or repair loop. Label the result as not playback-verified; do not claim visual quality, audio synchronization, or export compatibility from upload or render completion alone.
+After acceptance, deliver the durable project link (`agent_page_url`, retrieved if missing) in the final reply, then stop unless an export was explicitly requested. Report service refusals or warnings without starting a playback or repair loop. Label the result as not playback-verified; do not claim visual quality, audio synchronization, or export compatibility from upload or render completion alone.
