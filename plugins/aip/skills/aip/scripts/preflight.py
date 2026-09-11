@@ -70,9 +70,12 @@ def check(root, remote_files=()):
             declared.add(candidate)
 
     def reference(value, owner, attribute, base=None):
-        """Resolve one reference. An HTML document resolves from the root, whichever
-        directory holds it, because the editor mounts a composition's template into
-        index.html; a .css file resolves from its own directory, as CSS does."""
+        """Resolve one reference. Media, images and data-* references in an HTML
+        document resolve from the root, whichever directory holds it, because the
+        editor mounts a composition's template into index.html. A script src, a link
+        href, and a url() in a .css file resolve from their own file, as the export's
+        page load and CSS do (the editor re-points a composition's script and link by
+        file name)."""
         if not value or value.startswith(("#", "data:")):
             return None
         parts = urlsplit(value)
@@ -108,7 +111,7 @@ def check(root, remote_files=()):
         for tag, attrs, depth in doc.elements:
             for key in ("src", "href", "data-composition-src", "data-pip-src"):
                 if key in attrs:
-                    reference(attrs[key], path, key)
+                    reference(attrs[key], path, key, base=path.parent if tag in ("script", "link") else None)
             for key in ("data-start", "data-media-start", "data-duration"):
                 if key not in attrs:
                     continue
