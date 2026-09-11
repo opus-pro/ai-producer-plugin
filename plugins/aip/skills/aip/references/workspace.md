@@ -6,6 +6,8 @@ The entry is `render-engine/index.html`. Supporting documents go in `composition
 
 The workspace accepts HTML, CSS, JSON, images, fonts, video, and audio. HTML is limited to 64 KiB per file; `narrator_captions.html` to 256 KiB. Use the runtime scripts provided by the project and embed vector graphics in HTML.
 
+A commit replaces a document or a stylesheet already at a path under `compositions/`, `styles/`, or `fonts/`. It never replaces a file already committed under `public/`, nor any committed image, video, audio file, or font: different bytes at such a path are refused as `immutable_asset`, because an export reads those by path, and a replaced file would leave an earlier export reading as current. Upload the new bytes under a new name, repoint every reference to that name in the same commit, and leave the old file in the workspace.
+
 An editable effect or caption is a composition document containing a `<template>`, mounted from the entry:
 
 ```html
@@ -22,6 +24,8 @@ The inner composition and its `window.__timelines` registration share the host's
 Split speaker video/audio pairs use `class="clip speaker-clip"` and matching `data-hf-id`. The first pair has IDs `speaker` and `speaker-audio`. `data-start` is output time; `data-media-start` is the offset in the referenced media.
 
 Read project sources with `list_workspace` and `get_workspace_file`; stage uploads and apply them with `commit_workspace`. The workspace digest supplies `base_digest`, and `last_promote` reports the accepted files or specific refusals. Tool descriptions provide the transfer details.
+
+The same digest identifies an export. Every `start_export` and `get_export_url` reply reports `current_workspace_digest` (the accepted workspace now) beside `export_workspace_digest` (the one the returned task rendered), with `reuse_reason`, `staged_files_present`, and warnings for uploads no commit accepted. To require a file of one exact tree, pass that tree's digest as `start_export`'s `expected_workspace_digest`, or name the `commit_workspace` task your edit went in by as `expected_commit_task_id` and let the server resolve it. Either way the request is bound: a workspace that has moved, a commit that was not accepted (`expected_commit_unmet`, with the reason and what clears it), a live turn that would decide the tree (`export_expectation_unbindable`, retryable), or a render already running over a different one is refused and nothing is exported. A refusal answers through `next_data`, not through the reply fields above.
 
 ## Local handoff
 
