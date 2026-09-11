@@ -6,6 +6,8 @@ The entry is `render-engine/index.html`. Supporting documents go in `composition
 
 The workspace accepts HTML, CSS, JSON, images, fonts, video, and audio. HTML is limited to 64 KiB per file; `narrator_captions.html` to 256 KiB. Use the runtime scripts provided by the project and embed vector graphics in HTML.
 
+A commit replaces a document or a stylesheet already at a path. It never replaces an image, video, audio file, or font already there: different bytes at such a path are refused as `immutable_asset`, because an export reads media by path, and a replaced file would leave an earlier export reading as current. Upload the new bytes under a new name, repoint every reference to that name in the same commit, and leave the old file in the workspace.
+
 An editable effect or caption is a composition document containing a `<template>`, mounted from the entry:
 
 ```html
