@@ -1,6 +1,6 @@
 ---
 name: aip
-description: "Create an editable AI Producer preview from user footage. Show progress in Codex's in-app browser, deliver the editable project link, and export only on explicit request, without inspecting the preview or output video."
+description: "Create an editable AI Producer preview from user footage. In Codex, show progress in the in-app browser. Deliver the editable project link and export only on explicit request, without inspecting the preview or output video."
 ---
 
 # AI Producer preview
@@ -19,11 +19,11 @@ Use only this package's [AIP composition contract](../aip-composition/SKILL.md) 
 
 ## Show progress in Codex
 
-As soon as project creation returns a project ID, call `get_view_url` and open its exact returned `url` in the current Codex task, while preparation is running. Do not wait for transcription, authoring, submission, or the final reply. The exchange URL authenticates this browser once; never fetch it with HTTP tools first or put it in messages or project files. Retain the returned durable `agent_page_url` for final delivery, preserving its origin and query parameters.
+As soon as the AIP tool that creates or prepares the project returns `project_id`, call `get_view_url` and open its exact returned `url` in the current Codex task, while preparation is running. Follow that tool's current schema; do not wait for transcription, authoring, submission, or the final reply. The exchange URL authenticates this browser once; never fetch it with HTTP tools first or put it in messages or project files. Retain the returned durable `agent_page_url` for final delivery, preserving its origin and query parameters.
 
-Use Codex's `open_in_codex` tool with `target: {type: "browser", url: <returned url>}` and `placement: "right"`; omit `threadId` to target the current task. If that tool is unavailable, use the available browser tool's explicit in-app route, such as `cua.createBrowserTab("iab", url, {visible: true})`. Do not use an unspecified/default browser, an external browser, or an OS open command. A text link alone does not perform this step.
+Use Codex's `open_in_codex` tool with `target: {type: "browser", url: <returned url>}` and `placement: "right"`; omit `threadId` to target the current task. This action must return only opening status, not page content. Do not substitute a computer-use browser action that returns a screenshot or DOM, an unspecified/default browser, an external browser, or an OS open command. A text link alone does not perform this step.
 
-Use only the opening tool's acknowledgement to track this handoff. A queued open is pending, not a reason to open another tab. After an explicit failure, allow at most one recovery attempt in the in-app browser; obtain a fresh exchange URL only if the first may have been consumed. If no in-app route works, briefly report that limitation and continue the edit without claiming the page opened. Keep the project tab for live updates; do not reopen or refresh it after every stage, inspect its contents, or add browser polling. Successful submission does not require a second browser open.
+Use only the opening tool's acknowledgement to track this handoff. A queued open is pending, not a reason to open another tab. After an explicit failure, allow at most one recovery attempt with the same tool; obtain a fresh exchange URL only if the first may have been consumed. If the tool is unavailable or recovery fails, briefly report that limitation and continue the edit without claiming the page opened. Keep the project tab for live updates; do not reopen or refresh it after every stage, inspect its contents, or add browser polling. Successful submission does not require a second browser open.
 
 ## Default editorial taste
 
