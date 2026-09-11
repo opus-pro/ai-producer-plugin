@@ -12,17 +12,22 @@ from urllib.request import getproxies, proxy_bypass
 MAX_WORKERS = 4
 TIMEOUT_SECONDS = 120
 CHUNK_BYTES = 1024 * 1024
-DEFAULT_PROXY_PORT = 8080
+DEFAULT_PROXY_PORT = 80  # The scheme's own default; a proxy on 8080 must say so.
 
 
 def proxy_for(url):
     """Resolve the HTTPS proxy for one target from the environment and, on macOS and
-    Windows, the system settings. The proxy opens a CONNECT tunnel, so the signed
-    request stays end-to-end TLS. Returns None when the target is reached directly."""
+    Windows, the system settings. The proxy opens a plaintext CONNECT tunnel, so the
+    signed request stays end-to-end TLS. Bypass entries may name a port, so match on
+    the whole authority. Returns None when the target is reached directly."""
     setting = getproxies().get('https')
-    if not setting or proxy_bypass(url.hostname):
+    if not setting or proxy_bypass(url.netloc):
         return None
     proxy = urlsplit(setting if '://' in setting else '//' + setting)
+    if proxy.scheme not in ('', 'http'):
+        # The tunnel request and its credentials precede TLS, so a proxy that expects
+        # TLS itself would receive them in the clear. Refuse rather than leak them.
+        raise ValueError('Only an http proxy can carry the upload tunnel')
     if not proxy.hostname:
         raise ValueError('Unusable https proxy setting')
     headers = {}

@@ -58,7 +58,8 @@ class UploadTests(unittest.TestCase):
     def test_proxy_is_resolved_from_host_configuration(self):
         url = urlsplit('https://example.test/x')
         for setting, expected in [('http://proxy.test:3128', ('proxy.test', 3128, {})),
-                                  ('proxy.test', ('proxy.test', upload.DEFAULT_PROXY_PORT, {}))]:
+                                  ('http://proxy.test', ('proxy.test', 80, {})),
+                                  ('proxy.test', ('proxy.test', 80, {}))]:
             with patch.object(upload, 'getproxies', return_value={'https': setting}):
                 self.assertEqual(upload.proxy_for(url), expected)
         with patch.object(upload, 'getproxies', return_value={'https': 'http://user:p%40ss@proxy.test:3128'}):
@@ -68,9 +69,17 @@ class UploadTests(unittest.TestCase):
         with patch.object(upload, 'getproxies', return_value={'https': 'http://proxy.test:3128'}):
             with patch.object(upload, 'proxy_bypass', return_value=True):
                 self.assertIsNone(upload.proxy_for(url))
-            with patch.object(upload, 'getproxies', return_value={'https': 'http://:3128'}):
-                with self.assertRaises(ValueError):
-                    upload.proxy_for(url)
+            for broken in ('http://:3128', 'https://proxy.test:443', 'socks5://proxy.test:1080'):
+                with patch.object(upload, 'getproxies', return_value={'https': broken}):
+                    with self.assertRaises(ValueError):
+                        upload.proxy_for(url)
+
+    def test_bypass_is_matched_on_the_whole_authority(self):
+        # NO_PROXY entries may pin a port, so the port has to reach proxy_bypass.
+        with patch.object(upload, 'getproxies', return_value={'https': 'http://proxy.test:3128'}):
+            with patch.object(upload, 'proxy_bypass', return_value=False) as bypass:
+                upload.proxy_for(urlsplit('https://origin.test:8443/x'))
+                bypass.assert_called_once_with('origin.test:8443')
 
     def test_upload_tunnels_through_the_proxy(self):
         with tempfile.TemporaryDirectory() as tmp:
