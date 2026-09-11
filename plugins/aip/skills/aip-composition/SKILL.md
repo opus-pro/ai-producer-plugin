@@ -46,15 +46,16 @@ For a continuous full-frame/PIP transition, keep one speaker identity and coordi
   <div data-composition-id="<id>" data-width="W" data-height="H">
     ...content, with its <style> and <script> inside the template...
     <script>
+      const root = document.querySelector('[data-composition-id="<id>"]');
       const tl = gsap.timeline({ paused: true });
-      ...
+      ...tweens on root.querySelector(...) targets...
       window.__timelines["<id>"] = tl;
     </script>
   </div>
 </template>
 ```
 
-The inner div's `data-composition-id` equals the host's. Scope styles and element queries to the composition's content so multiple moments can coexist in the same document. Keep the composition root visible at its base pose; animate an inner wrapper or its children, not the composition root or host. The editor mounts only what is inside `<template>`, and the export mounts the template itself: a `<script>` written after `</template>` is not part of the moment in either, so write nothing after `</template>`; the file needs no mount script of its own. Timeline time 0 is the host's `data-start`, and the player seeks the timeline rather than playing it. Create and register the paused timeline synchronously after its DOM exists. Render-critical changes belong on that timeline, not in timers, requestAnimationFrame loops, playback callbacks, or CSS animations. Do not call `tl.play()` or start media playback yourself; the player owns the clock. Keep animation repeats finite and randomness seeded so a seek reaches a deterministic state. The host attributes own the duration and active window; do not add empty tweens to set duration or manually nest the child timeline into the root timeline.
+The inner div's `data-composition-id` equals the host's. Bind the root exactly as the snippet does, with `[data-composition-id="<id>"]` and nothing else in that selector, and reach every element through descendant queries on that root. The export mount strips `data-composition-id` and the other `data-*` attributes from the inner div, so at export the host is the only element carrying the id: a selector that also requires a class, an id, an attribute, or `:not(.visual-host)` on the same element, or a `:scope >` child selector, matches nothing at export, the script throws before it registers, and the export refuses the moment. Scope styles and element queries to the composition's content so multiple moments can coexist in the same document. Keep the composition root visible at its base pose; animate an inner wrapper or its children, not the composition root or host. The editor mounts only what is inside `<template>`, and the export mounts the template itself: a `<script>` written after `</template>` is not part of the moment in either, so write nothing after `</template>`; the file needs no mount script of its own. Timeline time 0 is the host's `data-start`, and the player seeks the timeline rather than playing it. Create and register the paused timeline synchronously after its DOM exists. Render-critical changes belong on that timeline, not in timers, requestAnimationFrame loops, playback callbacks, or CSS animations. Do not call `tl.play()` or start media playback yourself; the player owns the clock. Keep animation repeats finite and randomness seeded so a seek reaches a deterministic state. The host attributes own the duration and active window; do not add empty tweens to set duration or manually nest the child timeline into the root timeline.
 
 ## Timing attributes
 
