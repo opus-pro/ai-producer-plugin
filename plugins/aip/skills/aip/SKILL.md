@@ -25,7 +25,7 @@ Use only this package's [AIP composition contract](../aip-composition/SKILL.md) 
 
 ## Show progress in Codex
 
-In Codex, as soon as an AIP creation/preparation tool returns `project_id`, call `get_view_url`, then `open_in_codex` with `target: {type: "browser", url: <exact returned url>}` and `placement: "right"`, omitting `threadId`. Open during preparation; retain the exact `agent_page_url` for reopening in that browser, and `page_url` for the hand-back. The exchange URL is single-use: do not fetch it separately or include it in messages or files.
+In Codex, as soon as an AIP creation/preparation tool returns `project_id`, call `get_view_url`, then `open_in_codex` with `target: {type: "browser", url: <exact returned url>}` and `placement: "right"`, omitting `threadId`. Open during preparation; retain the exact `agent_page_url` for reopening in that browser and for the hand-back. The exchange URL is single-use: do not fetch it separately or include it in messages or files.
 
 Opening is a status-only handoff to the user, not inspection. Use no external browser or computer-use action that returns page content. Keep the tab for live updates without reopening, refreshing, polling, playing, or inspecting it.
 
@@ -61,4 +61,4 @@ Inspect the supplied media and plan once. Batch independent metadata reads and m
 
 Author the complete first version locally. Before upload, run [preflight.py](scripts/preflight.py) as described in the workspace reference, or skip it and let admission report contract errors if no Python 3.9+ interpreter is available. Fix its concrete errors before submission; it does not judge aesthetics. Request upload signatures in a batch and run the uploads together with [upload_batch.py](scripts/upload_batch.py), or the host's batch HTTP tools, then commit. If admission refuses specific files with deterministic contract errors, fix only those errors and resubmit once. Report a second refusal and stop; do not expand this into playback or aesthetic repair. Tool descriptions own authentication, limits, and task state; use their current schema instead of inventing parameters.
 
-After acceptance, deliver the durable project link (`page_url`, retrieved if missing) in the final reply, then stop unless an export was explicitly requested. Report service refusals or warnings without starting a playback or repair loop. Label the result as not playback-verified; do not claim visual quality, audio synchronization, or export compatibility from upload or render completion alone.
+After acceptance, deliver the durable project link (`agent_page_url`, retrieved if missing) in the final reply, then stop unless an export was explicitly requested. Report service refusals or warnings without starting a playback or repair loop. Label the result as not playback-verified; do not claim visual quality, audio synchronization, or export compatibility from upload or render completion alone.
