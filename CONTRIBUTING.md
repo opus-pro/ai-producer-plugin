@@ -12,7 +12,7 @@ python3 scripts/test.py
 
 The suite validates both manifests, marketplace entries, MCP version headers, skill structure, package-relative Markdown links, and the absence of lifecycle hooks. No authentication or hosted processing is performed.
 
-For packaging changes, validate the marketplace and bundle with Claude Code and test marketplace discovery in an isolated Codex profile. Report client versions and distinguish static validation from authenticated integration checks. Validation runs on GitHub-hosted runners without service credentials; release publication uses `opus-runner-standard`. Private integration checks are maintained separately.
+For packaging changes, validate the marketplace and bundle with Claude Code and test marketplace discovery in an isolated Codex profile. Report client versions and distinguish static validation from authenticated integration checks. CI runs on GitHub-hosted runners without service credentials; private integration checks are maintained separately.
 
 ## Ownership and compatibility
 

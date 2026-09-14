@@ -18,7 +18,7 @@ concurrency:
 jobs:
   publish:
     if: github.event_name == 'push' && github.repository == 'opus-pro/ai-producer-plugin'
-    runs-on: opus-runner-standard
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: write
@@ -37,7 +37,7 @@ jobs:
   # Temporary: exercise the publication runner and token without a version bump.
   test-release-permissions:
     if: github.event_name == 'pull_request' && github.repository == 'opus-pro/ai-producer-plugin' && github.event.pull_request.number == 31 && github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: opus-runner-standard
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: write
