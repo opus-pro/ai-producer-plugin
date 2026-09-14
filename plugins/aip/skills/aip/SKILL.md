@@ -13,7 +13,7 @@ For footage-only or brief requests, apply the default editorial taste and resear
 
 - For missing material, search the Web and open official or primary source pages to find images or clips. An empty `find_broll` result requires this lookup before falling back to diagrams. Use one batch of up to three targeted queries, plus at most one such follow-up batch for unresolved material.
 - Batch page reads and downloads. Before authoring, inspect a downsized image sheet or representative source frames for subject match, usable detail, and crop suitability. Replace unsuitable candidates within the research limit.
-- Use accepted assets in relevant beats with framing or motion that explains the speech. Record source URLs locally and label illustrative material where it could be mistaken for the speaker's demonstration. If lookup is unavailable or the limit yields no usable material, use a meaningful diagram and disclose the gap at delivery.
+- Use accepted assets in relevant beats with framing or motion that explains the speech. Unless the user says otherwise, use each supplied asset once, at the single beat it fits best. Record source URLs locally and label illustrative material where it could be mistaken for the speaker's demonstration. If lookup is unavailable or the limit yields no usable material, use a meaningful diagram and disclose the gap at delivery.
 
 ## Delivery boundary
 
