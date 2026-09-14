@@ -46,4 +46,4 @@ Place `host_div` as written (its duration and canvas come from the root you comm
 | Short imperative narration, step-throughs, hype delivery, where the caption is a beat                                                         | `solo-word-punch`   | reflective or information-dense narration                                              |
 | Vlogs, hot takes, sticker energy, loud and playful; a real brand accent                                                                       | `tilt-slam`         | a formal or corporate register; dense small on-screen text; captions should stay quiet |
 
-One pattern per video. The pick is yours; the pattern's typography, motion, and layout are the service's.
+One pattern per video. The pick is yours; the pattern's typography, motion, and layout are the service's. The typeface is fixed: Geist for the words, Fraunces italic for the emphasis word, staged with the composition under `public/fonts/`; there is no font knob.
