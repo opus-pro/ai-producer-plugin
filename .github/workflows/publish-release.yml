@@ -4,9 +4,6 @@ on:
   push:
     branches: [main]
     paths: [releases/latest_version.json]
-  # Temporary permission check for PR #31; remove after the live test.
-  pull_request:
-    types: [opened, reopened, synchronize]
 
 permissions: {}
 
@@ -17,7 +14,7 @@ concurrency:
 
 jobs:
   publish:
-    if: github.event_name == 'push' && github.repository == 'opus-pro/ai-producer-plugin'
+    if: github.repository == 'opus-pro/ai-producer-plugin'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -33,22 +30,3 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/publish_release.py
-
-  # Temporary: exercise the publication runner and token without a version bump.
-  test-release-permissions:
-    if: github.event_name == 'pull_request' && github.repository == 'opus-pro/ai-producer-plugin' && github.event.pull_request.number == 31 && github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: write
-    steps:
-      - name: Read the test commit
-        shell: bash
-        run: curl -fsSL "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/archive/$GITHUB_SHA.tar.gz" | tar -xz --strip-components=1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.13"
-      - name: Create, verify, and remove the test tag and release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: python3 scripts/test_release_permissions.py
