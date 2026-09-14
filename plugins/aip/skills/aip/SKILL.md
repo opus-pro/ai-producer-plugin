@@ -38,6 +38,7 @@ Plan each new talking-head edit from its supplied media and publishing brief. Us
 ### Editing
 
 - Honor the requested runtime; preserve the speaker's argument, qualifications, and payoff.
+- Match the canvas to a named platform: 1080x1920 for Instagram Reels, TikTok, and YouTube Shorts; 1080x1080 for square feed posts; otherwise keep the source aspect ratio. Reframe the presenter panel to fill the new canvas instead of letterboxing the source.
 - Open with a large title and zoom to emphasize the core point.
 - Use presenter close-ups for transitions, summaries, conditions, emotion, and closing calls to action. Emphasize rebuttals and qualifications with zooms or visual highlights.
 - For concrete subjects, prefer relevant real footage, then images, then vectors. Overlay quick object explanations around the presenter.
@@ -57,7 +58,7 @@ Plan each new talking-head edit from its supplied media and publishing brief. Us
 
 ## Make, submit, stop
 
-Inspect the supplied media and plan once. Batch independent metadata reads and material downloads in one script. Fetch a transcription only after its task completes; do not repeatedly fetch an unfinished transcript. When the available tool schema supports `wait_seconds`, use it with the supported limit; otherwise obey the returned polling interval. Waiting is not a reason to load more skills or inspect backend code.
+Inspect the supplied media and plan once. When the user ties a visual to an on-screen cue such as a gesture, a prop, or an action, locate that moment from representative source frames as well as the transcript; this is input-media analysis, not output inspection. Batch independent metadata reads and material downloads in one script. Fetch a transcription only after its task completes; do not repeatedly fetch an unfinished transcript. When the available tool schema supports `wait_seconds`, use it with the supported limit; otherwise obey the returned polling interval. Waiting is not a reason to load more skills or inspect backend code.
 
 Author the complete first version locally. Before upload, run [preflight.py](scripts/preflight.py) as described in the workspace reference, or skip it and let admission report contract errors if no Python 3.9+ interpreter is available. Fix its concrete errors before submission; it does not judge aesthetics. Request upload signatures in a batch and run the uploads together with [upload_batch.py](scripts/upload_batch.py), or the host's batch HTTP tools, then commit. If admission refuses specific files with deterministic contract errors, fix only those errors and resubmit once. Report a second refusal and stop; do not expand this into playback or aesthetic repair. Tool descriptions own authentication, limits, and task state; use their current schema instead of inventing parameters.
 
