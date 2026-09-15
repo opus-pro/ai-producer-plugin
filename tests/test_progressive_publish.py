@@ -36,6 +36,7 @@ class FakeMcp:
         self.refuse_sign = False
         self.refuse_commit = False
         self.fail_task = False
+        self.task_issues = []
         self.warnings = []
         self.pending_once = False
         self.extra_accepted = []
@@ -47,7 +48,10 @@ class FakeMcp:
                     {"path": "render-engine/public/source.mp3"}], "staged": [], "next_cursor": None}
         if tool == "sign_workspace_upload":
             if self.refuse_sign:
-                return {"uploads": [], "rejected": [{"code": "refused"}]}
+                return {"uploads": [], "rejected": [{
+                    "code": "invalid_content_type", "path": args["files"][0]["path"],
+                    "repair_hint": "Use a bare MIME type.",
+                }]}
             return {"uploads": [{"path": row["path"], "upload_url": "https://example.invalid/signed",
                                  "headers": {}} for row in args["files"]], "rejected": []}
         if tool == "commit_workspace":
@@ -64,9 +68,10 @@ class FakeMcp:
                 self.pending_once = False
                 return {"terminal": False, "succeeded": False}
             return {"terminal": True, "succeeded": not self.fail_task, "result": {
-                "outcome": "accepted_with_warnings" if self.warnings else "accepted",
+                "outcome": "refused" if self.fail_task else (
+                    "accepted_with_warnings" if self.warnings else "accepted"),
                 "accepted": [row["path"] for row in self.expected] + self.extra_accepted, "digest": self.digest,
-                "warnings": self.warnings}}
+                "issues": self.task_issues, "warnings": self.warnings}}
         if tool == "get_project":
             return {"active_task_id": None, "editable_ready": True,
                     "external_authoring": {"host": "codex"} if self.commits[-1]["authoring"] else None}
@@ -161,7 +166,7 @@ class ProgressivePublishTests(unittest.TestCase):
 
     def test_signing_refusal_stops_before_upload(self):
         self.mcp.refuse_sign = True
-        with self.assertRaisesRegex(RuntimeError, "signing_refused"):
+        with self.assertRaisesRegex(RuntimeError, "signing_refused.*invalid_content_type.*Use a bare MIME type"):
             self.publisher.publish(self.author(1))
         self.assertEqual(self.uploads, [])
         self.assertEqual(self.mcp.commits, [])
@@ -175,8 +180,22 @@ class ProgressivePublishTests(unittest.TestCase):
 
     def test_terminal_failure_does_not_continue(self):
         self.mcp.fail_task = True
-        with self.assertRaisesRegex(RuntimeError, "publication_task_failed"):
+        self.mcp.task_issues = [{
+            "code": "unpromotable_type",
+            "path": "render-engine/public/images/clipping.avif",
+            "repair_hint": "Convert the image to PNG or WebP and publish again.",
+        }, {
+            "code": "unsafe code",
+            "path": "https://private.invalid/secret",
+            "repair_hint": "Read https://private.invalid/?token=secret",
+        }]
+        with self.assertRaisesRegex(
+            RuntimeError,
+            "publication_task_failed.*unpromotable_type.*clipping.avif.*Convert the image",
+        ) as raised:
             self.publisher.publish(self.author(1))
+        self.assertNotIn("private.invalid", str(raised.exception))
+        self.assertNotIn("secret", str(raised.exception))
         self.assertEqual(self.events, [])
         self.assertEqual(len(self.mcp.commits), 1)
 

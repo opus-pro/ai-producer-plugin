@@ -19,6 +19,8 @@ MAX_FILES = 200
 TASK_WAIT_SECONDS = 45
 STAGE_TIMEOUT_SECONDS = 900
 UNLOCK_ATTEMPTS = 5
+MAX_ERROR_ISSUES = 3
+MAX_REPAIR_HINT_CHARS = 300
 # The service includes its own runtime files in a host-authored commit receipt.
 SERVER_RUNTIME_PATHS = frozenset({
     "render-engine/package.json", "render-engine/public/vendor/gsap.min.js",
@@ -35,6 +37,42 @@ def relative_path(value):
     if not value or path.is_absolute() or ".." in path.parts:
         raise ValueError("invalid_publication_path")
     return path.as_posix()
+
+
+def _safe_issue(value):
+    if not isinstance(value, dict):
+        return None
+    issue = {}
+    code = value.get("code", value.get("rule"))
+    if isinstance(code, str) and re.fullmatch(r"[a-zA-Z0-9_-]{1,100}", code):
+        issue["code"] = code
+    path = value.get("path")
+    if isinstance(path, str) and path.startswith("render-engine/") and len(path) <= 512:
+        try:
+            relative = relative_path(path)
+        except ValueError:
+            relative = None
+        if relative and all(re.fullmatch(r"[a-zA-Z0-9._-]+", part) for part in Path(relative).parts):
+            issue["path"] = "render-engine/" + relative
+    hint = value.get("repair_hint")
+    if isinstance(hint, str):
+        hint = " ".join(hint.split())
+        if (hint and len(hint) <= MAX_REPAIR_HINT_CHARS and hint.isascii()
+                and re.search(r"(?:[a-z][a-z0-9+.-]*:)?//", hint, re.IGNORECASE) is None):
+            issue["repair_hint"] = hint
+    return issue or None
+
+
+def _publication_error(prefix, values):
+    issues = []
+    for value in values if isinstance(values, list) else []:
+        issue = _safe_issue(value)
+        if issue:
+            issues.append(issue)
+        if len(issues) == MAX_ERROR_ISSUES:
+            break
+    detail = ":" + json.dumps({"issues": issues}, separators=(",", ":")) if issues else ""
+    return RuntimeError(prefix + detail)
 
 
 def upload_signed(root, rows):
@@ -144,7 +182,7 @@ class ProgressPublisher:
             requested = {relative_path(row["path"]) for row in batch}
             returned = [relative_path(row["path"]) for row in uploads]
             if result.get("rejected") or len(returned) != len(requested) or set(returned) != requested:
-                raise RuntimeError("publication_signing_refused")
+                raise _publication_error("publication_signing_refused", result.get("rejected"))
             self.uploader(snapshot, uploads)
 
     def _wait(self, task_id):
@@ -152,11 +190,13 @@ class ProgressPublisher:
         while time.monotonic() < deadline:
             task = self._call("get_task", {"task_id": task_id, "wait_seconds": TASK_WAIT_SECONDS})
             if task.get("terminal") is True:
-                if task.get("succeeded") is not True:
-                    raise RuntimeError("publication_task_failed")
                 result = task.get("result")
+                if task.get("succeeded") is not True:
+                    issues = result.get("issues") if isinstance(result, dict) else None
+                    raise _publication_error("publication_task_failed", issues)
                 if not isinstance(result, dict) or result.get("outcome") not in {"accepted", "accepted_with_warnings"}:
-                    raise RuntimeError("publication_not_accepted")
+                    issues = result.get("issues") if isinstance(result, dict) else None
+                    raise _publication_error("publication_not_accepted", issues)
                 return result
         raise TimeoutError("publication_task_timeout")
 
