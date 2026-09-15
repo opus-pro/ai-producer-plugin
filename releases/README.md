@@ -1,6 +1,6 @@
 # Release history
 
-This directory records the declared plugin version and release notes. Local preparation does not publish. Changes to the version file on main trigger automatic publication as described below; existing tags are preserved.
+This directory records the declared plugin version and release notes. Local preparation does not publish. After an authorized release PR merge, Codex or Claude Code completes publication using the user's GitHub identity as described below; existing tags are preserved.
 
 ## latest_version.json
 
@@ -16,23 +16,21 @@ It must match both host manifests, the Claude marketplace entry, and both MCP ve
 
 ## template.md
 
-Use `template.md` for new releases. From the repository root, run `python3 scripts/prepare_release.py X.Y.Z` to align all six version values and create `releases/vX.Y.Z.md`. The helper fills the version and previous-version placeholders, including the final Full Changelog comparison link; complete the remaining content before running checks.
+Use `template.md` for new releases. First follow the shared [version-selection procedure](../.agents/rules/release.md#choose-a-new-version): verify the published GitHub Release version, default to the next patch, and obtain a separate second confirmation before any minor or major version edits. From the repository root, run `python3 scripts/prepare_release.py X.Y.Z` with that selected version to align all six version values and create `releases/vX.Y.Z.md`. The helper fills the version and previous-version placeholders, including the final Full Changelog comparison link; complete the remaining content before running checks.
 
 Changes, Compatibility, and Validation are optional and appear in that order when retained. Delete sections and categories with nothing noteworthy to report. Group concise change summaries by category and end each entry with one or more related PR-number links. Do not leave placeholders or empty sections.
 
 Keep each version update in its own PR titled `chore: release vX.Y.Z`. Follow the shared [release rule](../.agents/rules/release.md) and [contributing guide](../CONTRIBUTING.md) for the allowed files and checks. Changes to this README, the template, or release tooling belong in ordinary PRs.
 
-## Automatic publication
+## Publication with a user account
 
-The `Publish release` workflow runs only when a push to `main` in `opus-pro/ai-producer-plugin` changes `releases/latest_version.json`. It has no manual-dispatch or pull-request trigger. Publication is controlled by access to main; external PRs and fork pushes cannot run the publisher in this repository.
+Codex and Claude Code use the shared [release rule](../.agents/rules/release.md#request-scope-and-progress) to complete a full release request in one session with the user's authenticated GitHub CLI session: fetch the published version, announce the target and inspection links, prepare the PR, wait for checks and required reviews, merge, publish, and verify. Default patch releases continue without another version or merge confirmation; minor and major increases require the user's separate second confirmation before version edits. A preparation-only request stops at the PR. CI continues to validate the package and release PR policy; it does not create tags or Releases.
 
-The workflow reads the triggering commit, finds the exact `releases/vX.Y.Z.md` for the declared version, validates version alignment and the log, creates `vX.Y.Z` at that commit, and publishes a GitHub Release named `vX.Y.Z` with the Markdown file as its body. It does not scan older versions for publication. SemVer prereleases are marked as prereleases; stable releases use GitHub's version-based latest-release selection.
+The agent verifies the release PR's merged commit is on upstream `main`, validates the declared version and matching log in a clean worktree at that commit, and creates `vX.Y.Z` there. It then publishes a GitHub Release named `vX.Y.Z` using the log verbatim. Only the authorized version is published. Prereleases are marked accordingly, and publication is verified before the agent reports the Release URL.
 
-If the version file or matching log is absent, the job skips publication. If the tag already exists, it skips both tag and release creation, even if no Release exists. Tags and Releases are never overwritten. Concurrent attempts to create the same tag also skip when another run has already created it.
+Publication requires the user's account to have permission to create tags and Releases in `opus-pro/ai-producer-plugin`. Authentication, repository access, or API failures leave publication pending with the specific error; they are not treated as missing tags. No Actions token or CI runner is involved.
 
-The workflow runs on GitHub's public hosted runners. Public tag lookups are anonymous; creating tags and Releases uses the job's automatically supplied `GITHUB_TOKEN` with `contents: write`. No manually configured secret, custom token, or private runner is required. API failures include GitHub's error message and fail the job rather than being treated as a missing tag. A successful public lookup does not establish permission to create a new tag or Release.
-
-Tag creation and Release creation are separate operations. If the tag succeeds but the Release fails, the tag is retained and subsequent runs skip it. A maintainer must inspect the failure and create the missing Release from that existing tag and the corresponding Markdown file, without moving or deleting the tag. If publication failed before tag creation, resolve the error and rerun the failed workflow.
+Existing tags and Releases are preserved. If a tag points to the intended merged commit and its Release is already published, the agent verifies and reports it. If the tag exists but its Release is absent, the agent can finish the authorized publication with `gh release create --verify-tag` and the validated log. A conflicting tag or Release is reported without overwriting it. See the shared rule's [existing-tag and recovery procedure](../.agents/rules/release.md#existing-tags-and-partial-publication) for the commands and checks.
 
 ## Legacy releases
 
