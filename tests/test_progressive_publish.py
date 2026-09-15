@@ -41,6 +41,12 @@ class FakeMcp:
         self.pending_once = False
         self.extra_accepted = []
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return None
+
     def call(self, tool, args):
         self.calls.append((tool, args))
         if tool == "list_workspace":
@@ -121,6 +127,21 @@ class ProgressivePublishTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "session_closed"):
             self.publisher.publish(files)
 
+    def test_six_effects_resume_from_six_separate_model_checkpoints(self):
+        state = self.publisher.checkpoint()
+        for count in range(1, 7):
+            files = self.author(count)
+            publisher = ProgressPublisher.resume(
+                self.root, state, self.mcp, uploader=self.upload, on_progress=self.events.append,
+            )
+            publisher.publish(files, final=count == 6)
+            state = publisher.checkpoint()
+            self.assertEqual(state["publications"], count)
+            self.assertEqual(state["status"], "finished" if count == 6 else "ready")
+        self.assertEqual([row["base_digest"] for row in self.mcp.commits],
+                         ["initial"] + [f"revision-{i}" for i in range(1, 6)])
+        self.assertEqual(len(self.events), 6)
+
     def test_short_partial_is_rejected_before_any_mcp_call(self):
         files = self.author(1, 20.2)
         with self.assertRaisesRegex(ValueError, "planned_duration_mismatch"):
@@ -154,6 +175,26 @@ class ProgressivePublishTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "missing_local_reference"):
             self.publisher.publish(files)
         self.assertEqual([row[0] for row in self.mcp.calls], ["list_workspace"])
+
+    def test_future_effect_file_is_rejected_before_signing(self):
+        files = self.author(1)
+        (self.root / "compositions/beat1.html").write_text(
+            '<template><div data-composition-id="beat1"></div></template>')
+        with self.assertRaisesRegex(ValueError, "future_effect_files_present"):
+            self.publisher.publish(files)
+        self.assertEqual([row[0] for row in self.mcp.calls], ["list_workspace"])
+
+    def test_prior_accepted_effect_cannot_change_between_checkpoints(self):
+        publisher = self.publisher
+        publisher.publish(self.author(1))
+        state = publisher.checkpoint()
+        (self.root / "compositions/beat0.html").write_text("<template>changed</template>")
+        resumed = ProgressPublisher.resume(
+            self.root, state, self.mcp, uploader=self.upload, on_progress=self.events.append,
+        )
+        with self.assertRaisesRegex(ValueError, "accepted_file_changed"):
+            resumed.publish(self.author(2))
+        self.assertEqual(len(self.mcp.commits), 1)
 
     def test_failed_upload_never_commits_or_retries(self):
         files = self.author(1)
