@@ -7,11 +7,11 @@ description: "Create an editable AI Producer preview from user footage. Deliver 
 
 Create one editable AIP preview from the user's footage and creative brief. Shape the edit around the user's intent, the footage, and its audience.
 
-## Editing scope
+## Rough cut
 
-Follow the user's requested scope and duration. For rough-cut-only or targeted speech-cleanup requests, make the requested cuts while preserving the speaker's intended meaning. Skip visual research and default visual treatments unless they are also requested.
+For rough-cut-only or targeted speech-cleanup requests, follow the user's requested scope and duration while preserving the speaker's intended meaning. Skip visual research and default visual treatments unless they are also requested.
 
-When editing an existing project, start from its current saved state. Preserve choices outside the requested change, and update affected captions, visuals, and audio timing to follow the revised cut.
+When revising the rough cut of an existing project, start from its current saved state. Preserve choices outside the requested rough-cut change, and update affected captions, visuals, and audio timing to follow the revised cut.
 
 When the request includes both rough cut and fine cut, settle the content cut before finalizing timed treatments, then complete both. Pause for rough-cut review only when the user asks for it.
 
