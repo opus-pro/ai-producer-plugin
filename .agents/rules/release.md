@@ -2,6 +2,14 @@
 
 Follow this rule whenever asked to prepare or publish a release, bump the plugin version, align release metadata, or finish a merged release in this repository. Codex and Claude Code share this procedure. Preparation updates version files and a release log; after an authorized merge, the agent completes tag and GitHub Release publication by default using the user's authenticated GitHub identity. CI only validates; there is no publication workflow to wait for or rerun.
 
+## Request scope and progress
+
+A request to release or publish a new version authorizes the complete workflow in the current session: fetch release and repository state, select the version, prepare and validate the release PR, commit and push it, wait for checks, merge it under repository rules, publish the tag and GitHub Release, and verify publication. For the default patch path, continue through these steps without another version or merge confirmation. The separate minor or major confirmation below still applies. An explicit preparation-only, PR-only, or do-not-merge request stops at the completed PR.
+
+Before editing, tell the user the verified current version, target version, and bump type. Link the current GitHub Release and the comparison from its tag to upstream `main` so the user can inspect the pending changes. This is a progress update for patch releases, not an approval question or a reason to end the turn. After preparing notes, link the actual release log; after opening the PR, share its URL and its Files changed and Checks pages, then continue the full release request. Only present an object as created or published after verifying it exists.
+
+Keep working in the same session while checks or a merge queue progress. If required review, failed checks, conflicts, or access errors prevent completion, report the concrete blocker and the PR or check link; do not bypass repository protections or report a release as complete. Resume from the verified state when the blocker is resolved, preserving existing authorization and version confirmations.
+
 ## Version source
 
 `releases/latest_version.json` is the canonical declared plugin version. Its complete shape is `{"version": "X.Y.Z"}`. It records the version in the repository, not confirmation of publication on GitHub. The helper files `latest_version.json` and `template.md` sort before the `vX.Y.Z.md` release logs by name.
@@ -39,8 +47,16 @@ This version-selection step applies to preparing a new version. When completing 
 2. Run `python3 scripts/prepare_release.py X.Y.Z` with the selected version only after the version-selection step is complete. This validates the current copies, aligns all six version values, and copies `releases/template.md` into a new `releases/vX.Y.Z.md`. If existing versions disagree, inspect and resolve the discrepancy before preparing a new release.
 3. Complete the new log using the format below. Replace placeholders in retained sections and delete unused sections and categories entirely. Use public information and preserve third-party notices; never include private data or invent validation results. Keep the full validation evidence and checks not run in the PR description even when the release log omits Validation.
 4. Run `python3 scripts/test.py` and the packaging checks required by `CONTRIBUTING.md`. Inspect the complete diff. A release PR may change only the version fields in the five JSON files above and add exactly one matching release log. Keep `template.md`, previous logs, rules, scripts, workflow configuration, and functional changes out of the release PR.
-5. After the release changes are committed, run `python3 scripts/check_release_pr.py --base origin/main --head HEAD --title 'chore: release vX.Y.Z'`, using the actual PR base when it differs from `main`. Fetch complete base and head history first. The committed PR diff is what this check validates.
-6. Use the exact PR title `chore: release vX.Y.Z`, replacing `X.Y.Z` with the version in the JSON files and log. Include the release summary and validation results in the PR description. A request to prepare a release does not by itself authorize merging it. Approval to merge a release PR also authorizes the agent to publish that release with the user's GitHub identity. After the merge completes, continue with publication without requesting the same approval again, unless the user explicitly limited the task to merging or preparation.
+5. Commit only the release files, fetch complete base and head history, and run `python3 scripts/check_release_pr.py --base origin/main --head HEAD --title 'chore: release vX.Y.Z'`, using the actual PR base when it differs from `main`. The committed PR diff is what this check validates.
+6. Push the release branch and open the PR with the exact title `chore: release vX.Y.Z`, replacing `X.Y.Z` with the version in the JSON files and log. Include the release summary and validation results in the PR description. Share the actual PR, Files changed, and Checks links. For a preparation-only request, finish here. For a full release request, continue with the steps below; opening the PR does not complete the task.
+
+## Merge and continue
+
+For a full release request, the original request authorizes merging its validated release PR and publishing that version. A preparation-only request does not authorize merging. Approval to merge a prepared release PR also authorizes publication unless the user explicitly limits the task to merging. Do not ask again for authorization already granted; minor or major version confirmation remains a separate requirement.
+
+Check the release PR's current head SHA, base, required reviews, and CI results. Wait for the package validation and Release PR policy checks and all other required checks to pass for that head, using bounded polls so progress remains visible. If the head or base changes, revalidate the release diff and version before merging. Use the repository's supported merge method and bind the merge to the validated head with `gh pr merge <pr-number> --repo opus-pro/ai-producer-plugin --squash --match-head-commit <validated-head-sha>` when squash merging is supported. Never use `--admin` to bypass checks, reviews, or a merge queue.
+
+Confirm `gh pr view <pr-number> --repo opus-pro/ai-producer-plugin --json state,mergeCommit,url` reports `MERGED` and record the actual merged SHA. Enabling auto-merge or entering a merge queue is not a completed merge; keep checking its status. Once merged, continue directly to publication in this session and return the verified Release URL at completion.
 
 ## Release log format
 

@@ -24,7 +24,7 @@ Keep each version update in its own PR titled `chore: release vX.Y.Z`. Follow th
 
 ## Publication with a user account
 
-Codex and Claude Code use the shared [release rule](../.agents/rules/release.md#publish-with-the-users-github-identity) to publish from the local environment with the user's authenticated GitHub CLI session. Approval to merge a release PR includes completing publication by default, unless the user limits the scope. A preparation-only request stops at the PR. CI continues to validate the package and release PR policy; it does not create tags or Releases.
+Codex and Claude Code use the shared [release rule](../.agents/rules/release.md#request-scope-and-progress) to complete a full release request in one session with the user's authenticated GitHub CLI session: fetch the published version, announce the target and inspection links, prepare the PR, wait for checks and required reviews, merge, publish, and verify. Default patch releases continue without another version or merge confirmation; minor and major increases require the user's separate second confirmation before version edits. A preparation-only request stops at the PR. CI continues to validate the package and release PR policy; it does not create tags or Releases.
 
 The agent verifies the release PR's merged commit is on upstream `main`, validates the declared version and matching log in a clean worktree at that commit, and creates `vX.Y.Z` there. It then publishes a GitHub Release named `vX.Y.Z` using the log verbatim. Only the authorized version is published. Prereleases are marked accordingly, and publication is verified before the agent reports the Release URL.
 
