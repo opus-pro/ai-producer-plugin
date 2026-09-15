@@ -19,6 +19,11 @@ MAX_FILES = 200
 TASK_WAIT_SECONDS = 45
 STAGE_TIMEOUT_SECONDS = 900
 UNLOCK_ATTEMPTS = 5
+# The service includes its own runtime files in a host-authored commit receipt.
+SERVER_RUNTIME_PATHS = frozenset({
+    "render-engine/package.json", "render-engine/public/vendor/gsap.min.js",
+    "render-engine/public/vendor/fit-engine.js", "render-engine/public/vendor/connector-engine.js",
+})
 
 
 def relative_path(value):
@@ -180,7 +185,7 @@ class ProgressPublisher:
             if self.digest is None:
                 self._listing()
             with tempfile.TemporaryDirectory(prefix="aip-publication-") as directory:
-                snapshot = Path(directory)
+                snapshot = Path(directory).resolve()
                 manifest = self._snapshot(paths, snapshot)
                 if (snapshot / "index.html").read_text(encoding="utf-8") != candidate:
                     raise RuntimeError("workspace_changed_during_snapshot")
@@ -193,7 +198,11 @@ class ProgressPublisher:
                 if not isinstance(task_id, str) or not task_id:
                     raise RuntimeError("publication_task_missing")
                 receipt = self._wait(task_id)
-                if set(receipt.get("accepted", [])) != {row["path"] for row in manifest}:
+                accepted = receipt.get("accepted", [])
+                expected = {row["path"] for row in manifest}
+                if (not isinstance(accepted, list) or not all(isinstance(path, str) for path in accepted)
+                        or not expected.issubset(accepted)
+                        or set(accepted).difference(expected, SERVER_RUNTIME_PATHS)):
                     raise RuntimeError("publication_receipt_mismatch")
                 digest = receipt.get("digest")
                 if not isinstance(digest, str) or not digest:
@@ -201,7 +210,7 @@ class ProgressPublisher:
                 self._settled(final)
             self.digest = digest
             self.previous = candidate
-            self.remote.update(paths)
+            self.remote.update(relative_path(path) for path in accepted)
             self.publications += 1
             self.finished = final
             report = {"published_effects": len(state["effects"]), "duration_seconds": state["duration"],
