@@ -6,6 +6,8 @@ The entry is `render-engine/index.html`. Supporting documents go in `composition
 
 The workspace accepts HTML, CSS, JSON, images, fonts, video, and audio. HTML is limited to 64 KiB per file; `narrator_captions.html` to 256 KiB. Use the runtime scripts provided by the project and embed vector graphics in HTML.
 
+A commit replaces a document or a stylesheet already at a path under `compositions/`, `styles/`, or `fonts/`. It never replaces a file already committed under `public/`, nor any committed image, video, audio file, or font: different bytes at such a path are refused as `immutable_asset`, because an export reads those by path, and a replaced file would leave an earlier export reading as current. Upload the new bytes under a new name, repoint every reference to that name in the same commit, and leave the old file in the workspace.
+
 An editable effect or caption is a composition document containing a `<template>`, mounted from the entry:
 
 ```html
@@ -22,6 +24,8 @@ The inner composition and its `window.__timelines` registration share the host's
 Split speaker video/audio pairs use `class="clip speaker-clip"` and matching `data-hf-id`. The first pair has IDs `speaker` and `speaker-audio`. `data-start` is output time; `data-media-start` is the offset in the referenced media.
 
 Read project sources with `list_workspace` and `get_workspace_file`; stage uploads and apply them with `commit_workspace`. The workspace digest supplies `base_digest`, and `last_promote` reports the accepted files or specific refusals. Tool descriptions provide the transfer details.
+
+Every `start_export` and `get_export_url` reply reports `current_workspace_digest` (the workspace accepted now, the same token above), `staged_files_present`, and warnings for uploads no commit accepted and for a last commit that moved nothing, so a refused commit, an upload nobody committed and an unchanged workspace do not read alike. `start_export` also reports `reuse_reason` when it hands back an export it did not start. Those fields describe the workspace, not the returned file, which may have rendered an earlier one; naming the tree you want is not supported. `current_workspace_digest` is null when the workspace could not be read, which does not affect the export.
 
 ## Local handoff
 
