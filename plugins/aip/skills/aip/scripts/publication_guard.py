@@ -179,18 +179,30 @@ def inspect_index(html_text):
 
 def validate_progress(baseline_html, previous_html, candidate_html, planned_duration):
     """Accept exactly one new visual host while holding the approved edit fixed."""
-    planned = _number(planned_duration, "invalid_planned_duration", positive=True)
     baseline = inspect_index(baseline_html)
     previous = inspect_index(previous_html)
-    candidate = inspect_index(candidate_html)
-    for snapshot in (baseline, previous, candidate):
+    planned = _number(planned_duration, "invalid_planned_duration", positive=True)
+    for snapshot in (baseline, previous):
         if not math.isclose(snapshot["duration"], planned, abs_tol=_EPSILON):
             _fail("planned_duration_mismatch")
         if snapshot["speaker"] != baseline["speaker"]:
             _fail("speaker_timeline_changed")
+    return validate_checkpoint_progress(baseline, previous["effects"], candidate_html, planned)
+
+
+def validate_checkpoint_progress(baseline, previous_effects, candidate_html, planned_duration):
+    """Validate one step from semantic state saved between model checkpoints."""
+    planned = _number(planned_duration, "invalid_planned_duration", positive=True)
+    if not isinstance(baseline, dict) or not isinstance(previous_effects, dict):
+        _fail("invalid_progress_state")
+    candidate = inspect_index(candidate_html)
+    for snapshot in (baseline, candidate):
+        if not math.isclose(snapshot.get("duration", -1), planned, abs_tol=_EPSILON):
+            _fail("planned_duration_mismatch")
+        if snapshot.get("speaker") != baseline.get("speaker"):
+            _fail("speaker_timeline_changed")
     if baseline["effects"]:
         _fail("baseline_has_visual_effects")
-    previous_effects = previous["effects"]
     candidate_effects = candidate["effects"]
     if len(candidate_effects) != len(previous_effects) + 1:
         _fail("invalid_effect_transition")

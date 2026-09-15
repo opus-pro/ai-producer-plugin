@@ -11,7 +11,7 @@ import tempfile
 import time
 
 from preflight import check
-from publication_guard import inspect_index, validate_progress
+from publication_guard import inspect_index, validate_checkpoint_progress
 import upload_batch
 
 SIGN_BATCH_SIZE = 50
@@ -26,6 +26,8 @@ SERVER_RUNTIME_PATHS = frozenset({
     "render-engine/package.json", "render-engine/public/vendor/gsap.min.js",
     "render-engine/public/vendor/fit-engine.js", "render-engine/public/vendor/connector-engine.js",
 })
+CHECKPOINT_SCHEMA = 1
+CHECKPOINT_STATUSES = frozenset({"ready", "publishing", "failed", "finished"})
 
 
 def relative_path(value):
@@ -106,11 +108,66 @@ class ProgressPublisher:
         if base["effects"] or not math.isclose(base["duration"], self.duration, abs_tol=1e-6):
             raise ValueError("full_timeline_base_required")
         self.previous = self.baseline
+        self.baseline_snapshot = base
+        self.previous_effects = {}
         self.digest = None
         self.remote = set()
+        self.accepted_hashes = {}
         self.finished = False
         self.failed = False
         self.publications = 0
+
+    @classmethod
+    def resume(cls, workspace, state, transport, uploader=upload_signed, on_progress=None):
+        """Resume an accepted checkpoint without retaining prior HTML or credentials."""
+        root = Path(workspace).resolve(strict=True)
+        values = _validate_checkpoint_state(state, root)
+        if values["status"] != "ready":
+            raise RuntimeError("publication_checkpoint_closed")
+        self = cls.__new__(cls)
+        self.root = root
+        self.project_id = values["project_id"]
+        self.transport = transport
+        self.uploader = uploader
+        self.on_progress = on_progress or self._print_progress
+        self.duration = values["planned_duration"]
+        self.baseline = None
+        self.previous = None
+        self.baseline_snapshot = values["baseline"]
+        self.previous_effects = values["effects"]
+        self.digest = values["digest"]
+        self.remote = set(values["remote"])
+        self.accepted_hashes = values["accepted_hashes"]
+        self.finished = False
+        self.failed = False
+        self.publications = values["publications"]
+        return self
+
+    def checkpoint(self, status=None):
+        """Return the credential-free semantic state needed by the next process."""
+        if status is None:
+            status = "failed" if self.failed else "finished" if self.finished else "ready"
+        if status not in CHECKPOINT_STATUSES:
+            raise ValueError("invalid_checkpoint_status")
+        if status == "failed" and not self.failed:
+            raise ValueError("invalid_checkpoint_status")
+        if status == "finished" and not self.finished:
+            raise ValueError("invalid_checkpoint_status")
+        if status in {"ready", "publishing"} and (self.failed or self.finished):
+            raise ValueError("invalid_checkpoint_status")
+        return {
+            "schema": CHECKPOINT_SCHEMA,
+            "status": status,
+            "workspace": str(self.root),
+            "project_id": self.project_id,
+            "planned_duration": self.duration,
+            "baseline": _json_snapshot(self.baseline_snapshot),
+            "effects": self.previous_effects,
+            "digest": self.digest,
+            "remote": sorted(self.remote),
+            "accepted_hashes": self.accepted_hashes,
+            "publications": self.publications,
+        }
 
     @staticmethod
     def _print_progress(row):
@@ -171,6 +228,26 @@ class ProgressPublisher:
             raise ValueError("publication_preflight_failed:" + ",".join(codes))
         return manifest
 
+    def _reject_unpublished_compositions(self, paths):
+        allowed = set(paths).union(self.remote)
+        ahead = []
+        directory = self.root / "compositions"
+        if directory.is_dir():
+            for file in directory.rglob("*.html"):
+                relative = file.relative_to(self.root).as_posix()
+                if relative not in allowed:
+                    ahead.append(relative)
+        if ahead:
+            raise ValueError("future_effect_files_present")
+
+    def _verify_accepted_files(self):
+        for relative, expected in self.accepted_hashes.items():
+            if relative == "index.html":
+                continue
+            file = self.root / relative
+            if file.is_file() and hashlib.sha256(file.read_bytes()).hexdigest() != expected:
+                raise ValueError("accepted_file_changed")
+
     def _upload(self, snapshot, manifest):
         for offset in range(0, len(manifest), SIGN_BATCH_SIZE):
             batch = manifest[offset:offset + SIGN_BATCH_SIZE]
@@ -221,9 +298,13 @@ class ProgressPublisher:
             if not paths or len(paths) > MAX_FILES or len(set(paths)) != len(paths) or "index.html" not in paths:
                 raise ValueError("invalid_publication_files")
             candidate = (self.root / "index.html").read_text(encoding="utf-8")
-            state = validate_progress(self.baseline, self.previous, candidate, self.duration)
+            state = validate_checkpoint_progress(
+                self.baseline_snapshot, self.previous_effects, candidate, self.duration,
+            )
             if self.digest is None:
                 self._listing()
+            self._reject_unpublished_compositions(paths)
+            self._verify_accepted_files()
             with tempfile.TemporaryDirectory(prefix="aip-publication-") as directory:
                 snapshot = Path(directory).resolve()
                 manifest = self._snapshot(paths, snapshot)
@@ -250,7 +331,9 @@ class ProgressPublisher:
                 self._settled(final)
             self.digest = digest
             self.previous = candidate
+            self.previous_effects = state["effects"]
             self.remote.update(relative_path(path) for path in accepted)
+            self.accepted_hashes.update({relative_path(row["path"]): row["sha256"] for row in manifest})
             self.publications += 1
             self.finished = final
             report = {"published_effects": len(state["effects"]), "duration_seconds": state["duration"],
@@ -264,3 +347,99 @@ class ProgressPublisher:
         except Exception:
             self.failed = True
             raise
+
+
+def _json_snapshot(snapshot):
+    return {
+        "duration": snapshot["duration"],
+        "effects": snapshot["effects"],
+        "speaker": [dict(item) for item in snapshot["speaker"]],
+    }
+
+
+def _semantic_snapshot(value):
+    if not isinstance(value, dict) or set(value) != {"duration", "effects", "speaker"}:
+        raise ValueError("invalid_checkpoint_state")
+    if value["effects"] != {} or not isinstance(value["speaker"], list):
+        raise ValueError("invalid_checkpoint_state")
+    try:
+        speaker = tuple(sorted(tuple(sorted(item.items())) for item in value["speaker"] if isinstance(item, dict)))
+        duration = float(value["duration"])
+    except (AttributeError, TypeError, ValueError):
+        raise ValueError("invalid_checkpoint_state") from None
+    if len(speaker) != len(value["speaker"]) or not math.isfinite(duration) or duration <= 0:
+        raise ValueError("invalid_checkpoint_state")
+    return {"duration": duration, "effects": {}, "speaker": speaker}
+
+
+def _valid_effects(value):
+    if not isinstance(value, dict):
+        raise ValueError("invalid_checkpoint_state")
+    for identifier, effect in value.items():
+        if not isinstance(identifier, str) or not isinstance(effect, dict) or effect.get("id") != identifier:
+            raise ValueError("invalid_checkpoint_state")
+        if set(effect) != {"id", "src", "start", "duration", "track"}:
+            raise ValueError("invalid_checkpoint_state")
+        if not isinstance(effect["src"], str) or not effect["src"]:
+            raise ValueError("invalid_checkpoint_state")
+        if (not isinstance(effect["track"], int) or isinstance(effect["track"], bool)
+                or not all(isinstance(effect[key], (int, float)) and not isinstance(effect[key], bool)
+                           and math.isfinite(effect[key]) for key in ("start", "duration"))
+                or effect["start"] < 0 or effect["duration"] <= 0):
+            raise ValueError("invalid_checkpoint_state")
+    return value
+
+
+def _validate_checkpoint_state(state, root):
+    required = {
+        "schema", "status", "workspace", "project_id", "planned_duration", "baseline",
+        "effects", "digest", "remote", "accepted_hashes", "publications",
+    }
+    if not isinstance(state, dict) or set(state) != required or state.get("schema") != CHECKPOINT_SCHEMA:
+        raise ValueError("invalid_checkpoint_state")
+    if state["status"] not in CHECKPOINT_STATUSES or state["workspace"] != str(root):
+        raise ValueError("invalid_checkpoint_state")
+    if not isinstance(state["project_id"], str) or not state["project_id"]:
+        raise ValueError("invalid_checkpoint_state")
+    baseline = _semantic_snapshot(state["baseline"])
+    effects = _valid_effects(state["effects"])
+    try:
+        duration = float(state["planned_duration"])
+    except (TypeError, ValueError):
+        raise ValueError("invalid_checkpoint_state") from None
+    if not math.isfinite(duration) or duration <= 0 or not math.isclose(
+            baseline["duration"], duration, abs_tol=1e-6):
+        raise ValueError("invalid_checkpoint_state")
+    publications = state["publications"]
+    if (not isinstance(publications, int) or isinstance(publications, bool)
+            or publications < 0 or publications != len(effects)):
+        raise ValueError("invalid_checkpoint_state")
+    digest = state["digest"]
+    if ((digest is not None and (not isinstance(digest, str) or not digest))
+            or (publications > 0 and not digest)
+            or (state["status"] == "ready" and publications == 0 and digest is not None)
+            or (state["status"] == "finished" and publications == 0)):
+        raise ValueError("invalid_checkpoint_state")
+    remote = state["remote"]
+    if (not isinstance(remote, list) or not all(isinstance(path, str) for path in remote)
+            or len(remote) != len(set(remote))):
+        raise ValueError("invalid_checkpoint_state")
+    try:
+        remote = [relative_path(path) for path in remote]
+    except ValueError:
+        raise ValueError("invalid_checkpoint_state") from None
+    accepted_hashes = state["accepted_hashes"]
+    if not isinstance(accepted_hashes, dict):
+        raise ValueError("invalid_checkpoint_state")
+    try:
+        accepted_hashes = {relative_path(path): digest for path, digest in accepted_hashes.items()}
+    except (AttributeError, ValueError):
+        raise ValueError("invalid_checkpoint_state") from None
+    if (not all(isinstance(digest, str) and re.fullmatch(r"[0-9a-f]{64}", digest)
+                for digest in accepted_hashes.values())
+            or not set(accepted_hashes).issubset(remote)):
+        raise ValueError("invalid_checkpoint_state")
+    return {
+        **state, "planned_duration": duration, "baseline": baseline,
+        "effects": effects, "remote": remote, "accepted_hashes": accepted_hashes,
+    }
