@@ -44,7 +44,7 @@ Plan each new talking-head edit from its supplied media and publishing brief. Us
 - For concrete subjects, prefer relevant real footage, then images, then vectors. Overlay quick object explanations around the presenter.
 - Prefer visuals above/presenter below for examples, comparisons, and processes. Use a large rounded presenter panel with the head centered and filling it. Keep the outer layout stable; animate within the visual area.
 - Use full-screen visuals when source text or visual detail needs the whole canvas. Then switch visuals or return to the presenter.
-- Omit speech subtitles, caption tracks, caption sidecars, and burned-in captions. Reserve text overlays on the presenter for the opening hook; elsewhere, use only short labels within explanatory visuals. Use transcription for planning and timing.
+- Reserve text overlays on the presenter for the opening hook; elsewhere, use only short labels within explanatory visuals. Use transcription for planning and timing.
 - For sarcasm, self-deprecation, or brief reminders, use a monochrome or desaturated presenter close-up for at most one sentence, then restore color.
 - Use smooth effects and layout transitions; minimize hard cuts.
 
