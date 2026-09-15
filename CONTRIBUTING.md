@@ -58,7 +58,9 @@ To run the same check locally with both commits and their history fetched:
 python3 scripts/check_release_pr.py --base origin/main --head HEAD --title 'chore: release v1.1.4'
 ```
 
-Use patch versions for compatible fixes, minor versions for new behavior, and major versions for breaking changes. Describe user-visible behavior and validation in the pull request. Maintainers review and merge release PRs. After an authorized merge, Codex or Claude Code completes publication by default using the user's authenticated GitHub CLI session. The agent creates the version tag at the release PR's merged commit on upstream `main` and publishes the matching log as the GitHub Release body. CI validates release PRs but does not publish. See [publication with a user account](releases/README.md#publication-with-a-user-account) for the shared procedure, existing tags, and failure recovery.
+Before preparing a new version, verify the latest published stable GitHub Release and compare it with the repository's declared version. Default to the next patch version. Minor or major increases require a separate second confirmation from the user before editing version files, even when the initial request specifies the bump type or exact target. Follow the shared [version-selection procedure](.agents/rules/release.md#choose-a-new-version) for discrepancies and confirmation details.
+
+Describe user-visible behavior and validation in the pull request. Maintainers review and merge release PRs. After an authorized merge, Codex or Claude Code completes publication by default using the user's authenticated GitHub CLI session. The agent creates the version tag at the release PR's merged commit on upstream `main` and publishes the matching log as the GitHub Release body. CI validates release PRs but does not publish. See [publication with a user account](releases/README.md#publication-with-a-user-account) for the shared procedure, existing tags, and failure recovery.
 
 ## Source and assets
 

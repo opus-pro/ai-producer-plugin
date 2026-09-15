@@ -14,12 +14,29 @@ Keep these six values identical:
 - `.claude-plugin/marketplace.json`: the AIP entry's `version`.
 - `plugins/aip/.mcp.json`: `mcpServers.aip.headers.X-AIP-Plugin-Version` and `mcpServers.aip.http_headers.X-AIP-Plugin-Version`.
 
-Use the user's requested version when provided. Otherwise inspect the unreleased changes and select patch for compatible fixes, minor for new compatible behavior, or major for breaking changes; state the choice. Use SemVer without `v` in JSON, and with `v` in log names and PR titles. Prerelease and build suffixes are allowed, but a build-metadata-only change is not a version increase. The new version must have greater precedence than both the starting version and the current base branch version.
+Use SemVer without `v` in JSON, and with `v` in log names and PR titles. Prerelease and build suffixes are allowed, but a build-metadata-only change is not a version increase. A new version must have greater precedence than the verified published version, the starting version, and the current base branch version.
+
+## Choose a new version
+
+Before proposing a new version or editing version files, query the published GitHub Releases in `opus-pro/ai-producer-plugin` using the user's authenticated GitHub CLI session. For a normal stable release, select the highest stable SemVer from published Releases, excluding drafts and prereleases. Do not infer publication from local metadata or Git tags, or assume the first result is the highest version. This read-only command includes all pages:
+
+```bash
+gh api --hostname github.com --paginate repos/opus-pro/ai-producer-plugin/releases \
+  --jq '.[] | select(.draft == false and .prerelease == false) | {tag_name, html_url}'
+```
+
+Record the published version and Release URL, then compare it with the version on freshly fetched upstream `main` and the local version fields. Resolve a discrepancy before selecting a new version: inspect whether a merged release is still unpublished or the checkout is stale, and do not silently downgrade metadata or increment an unpublished version. If GitHub cannot be queried, report the blocker rather than guessing. If no stable Release exists, ask the user to establish the initial version or prerelease baseline.
+
+Default to the next patch version of the verified published stable release, incrementing only the patch component, for example `v1.1.6` to `v1.1.7`. State the current version and proposed target, then proceed with patch preparation within the user's requested scope without an extra version-choice confirmation. A user-specified patch target takes precedence over this default. Do not automatically promote the release to minor or major based on the change categories.
+
+Any minor or major increase requires a separate second confirmation from the user before running `prepare_release.py` or modifying version files. This applies even when the initial request names `minor`, `major`, or an exact target version with a higher minor or major component, including a prerelease target. Present the verified current version, proposed target, and bump type, explain that this rule requires a second confirmation for minor or major changes, and wait for an explicit answer. The initial request alone, silence, and generic release or merge approval do not satisfy this confirmation. Reuse an explicit second confirmation already given for that same target; if the target changes, confirm the new target. If the changes call for a larger bump, explain why and seek this confirmation instead of silently selecting it or publishing incompatible changes as a patch.
+
+This version-selection step applies to preparing a new version. When completing publication of an already merged release, use that release's recorded version and existing confirmations; do not calculate another patch bump.
 
 ## Prepare a release PR
 
-1. Read `AGENTS.md`, `CONTRIBUTING.md`, the latest-version file, and the latest release log. Check the working tree and the current base branch. Keep unrelated user changes intact and use a dedicated release branch or isolated worktree if needed. Functional changes must already be in the base branch.
-2. Run `python3 scripts/prepare_release.py X.Y.Z` with the selected version. This validates the current copies, aligns all six version values, and copies `releases/template.md` into a new `releases/vX.Y.Z.md`. If existing versions disagree, inspect and resolve the discrepancy before preparing a new release.
+1. Read `AGENTS.md`, `CONTRIBUTING.md`, the latest-version file, and the latest release log. Check the working tree and the current base branch. Follow the version-selection step above to verify GitHub Releases, choose the default patch target, and obtain any required minor or major confirmation before editing. Keep unrelated user changes intact and use a dedicated release branch or isolated worktree if needed. Functional changes must already be in the base branch.
+2. Run `python3 scripts/prepare_release.py X.Y.Z` with the selected version only after the version-selection step is complete. This validates the current copies, aligns all six version values, and copies `releases/template.md` into a new `releases/vX.Y.Z.md`. If existing versions disagree, inspect and resolve the discrepancy before preparing a new release.
 3. Complete the new log using the format below. Replace placeholders in retained sections and delete unused sections and categories entirely. Use public information and preserve third-party notices; never include private data or invent validation results. Keep the full validation evidence and checks not run in the PR description even when the release log omits Validation.
 4. Run `python3 scripts/test.py` and the packaging checks required by `CONTRIBUTING.md`. Inspect the complete diff. A release PR may change only the version fields in the five JSON files above and add exactly one matching release log. Keep `template.md`, previous logs, rules, scripts, workflow configuration, and functional changes out of the release PR.
 5. After the release changes are committed, run `python3 scripts/check_release_pr.py --base origin/main --head HEAD --title 'chore: release vX.Y.Z'`, using the actual PR base when it differs from `main`. Fetch complete base and head history first. The committed PR diff is what this check validates.

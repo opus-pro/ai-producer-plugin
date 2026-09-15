@@ -16,7 +16,7 @@ It must match both host manifests, the Claude marketplace entry, and both MCP ve
 
 ## template.md
 
-Use `template.md` for new releases. From the repository root, run `python3 scripts/prepare_release.py X.Y.Z` to align all six version values and create `releases/vX.Y.Z.md`. The helper fills the version and previous-version placeholders, including the final Full Changelog comparison link; complete the remaining content before running checks.
+Use `template.md` for new releases. First follow the shared [version-selection procedure](../.agents/rules/release.md#choose-a-new-version): verify the published GitHub Release version, default to the next patch, and obtain a separate second confirmation before any minor or major version edits. From the repository root, run `python3 scripts/prepare_release.py X.Y.Z` with that selected version to align all six version values and create `releases/vX.Y.Z.md`. The helper fills the version and previous-version placeholders, including the final Full Changelog comparison link; complete the remaining content before running checks.
 
 Changes, Compatibility, and Validation are optional and appear in that order when retained. Delete sections and categories with nothing noteworthy to report. Group concise change summaries by category and end each entry with one or more related PR-number links. Do not leave placeholders or empty sections.
 
