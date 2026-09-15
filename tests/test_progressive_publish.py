@@ -1,5 +1,6 @@
 """Exercise the entire publication loop with a deterministic MCP service double."""
 import hashlib
+from contextlib import nullcontext
 from pathlib import Path
 import sys
 import tempfile
@@ -8,7 +9,8 @@ from unittest.mock import patch
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "plugins/aip/skills/aip/scripts"
 sys.path.insert(0, str(SCRIPTS))
-from progressive_publish import ProgressPublisher
+from progressive_publish import ProgressPublisher, SERVER_RUNTIME_PATHS
+import upload_batch
 
 
 def index(count=0, duration=59.85):
@@ -36,6 +38,7 @@ class FakeMcp:
         self.fail_task = False
         self.warnings = []
         self.pending_once = False
+        self.extra_accepted = []
 
     def call(self, tool, args):
         self.calls.append((tool, args))
@@ -62,7 +65,7 @@ class FakeMcp:
                 return {"terminal": False, "succeeded": False}
             return {"terminal": True, "succeeded": not self.fail_task, "result": {
                 "outcome": "accepted_with_warnings" if self.warnings else "accepted",
-                "accepted": [row["path"] for row in self.expected], "digest": self.digest,
+                "accepted": [row["path"] for row in self.expected] + self.extra_accepted, "digest": self.digest,
                 "warnings": self.warnings}}
         if tool == "get_project":
             return {"active_task_id": None, "editable_ready": True,
@@ -118,6 +121,18 @@ class ProgressivePublishTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "planned_duration_mismatch"):
             self.publisher.publish(files)
         self.assertEqual(self.mcp.calls, [])
+
+    def test_service_staged_runtime_is_accepted_alongside_requested_files(self):
+        self.mcp.extra_accepted = sorted(SERVER_RUNTIME_PATHS)
+        self.publisher.publish(self.author(1), final=True)
+        self.assertTrue(self.publisher.finished)
+        self.assertIn("public/vendor/fit-engine.js", self.publisher.remote)
+
+    def test_unexpected_document_in_receipt_stops_publication(self):
+        self.mcp.extra_accepted = ["render-engine/compositions/unexpected.html"]
+        with self.assertRaisesRegex(RuntimeError, "receipt_mismatch"):
+            self.publisher.publish(self.author(1))
+        self.assertTrue(self.publisher.failed)
 
     def test_three_effect_batch_is_rejected_before_any_mcp_call(self):
         files = self.author(3)
@@ -196,6 +211,21 @@ class ProgressivePublishTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "workspace_changed_during_snapshot"):
                 self.publisher.publish(files)
         self.assertEqual(self.uploads, [])
+
+    def test_temporary_snapshot_alias_is_resolved_for_real_upload_preflight(self):
+        files = self.author(1)
+        physical = self.root / "snapshot-physical"
+        physical.mkdir()
+        alias = self.root / "snapshot-alias"
+        alias.symlink_to(physical, target_is_directory=True)
+        def checked_upload(snapshot, rows):
+            jobs = upload_batch.prepare(snapshot, rows)
+            self.assertEqual(len(jobs), 2)
+            self.upload(snapshot, rows)
+        self.publisher.uploader = checked_upload
+        with patch("progressive_publish.tempfile.TemporaryDirectory", return_value=nullcontext(str(alias))):
+            self.publisher.publish(files, final=True)
+        self.assertEqual(self.events[0]["published_effects"], 1)
 
 
 if __name__ == "__main__":
