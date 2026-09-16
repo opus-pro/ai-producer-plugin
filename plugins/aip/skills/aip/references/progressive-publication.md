@@ -1,43 +1,62 @@
 # Progressive publication in Codex
 
-Use this path for a fresh prepared project with no visual effects. Each completed effect ends one host execution by publishing and waiting for acceptance. Control returns to the model only after that effect is visible, so the next effect's codegen happens after the prior publication. The helper never starts a model turn, calls a media provider, extracts OAuth credentials, changes host configuration or approves a permission request. Do not add a separate host call just to publish or deliberately delay publication to simulate work. A commit still uses normal server hydration, admission capacity and rate limits.
+Use this path for a fresh prepared project with no visual effects. Each completed effect is signed, uploaded, committed, and accepted before source for the next effect is authored. Call the AIP MCP tools already loaded in the current task. Never run `codex`, start an app server, create an ephemeral task, extract OAuth credentials, change host configuration, or approve a permission request for publication.
 
-The native transport requires a Codex CLI exposing `mcpServer/tool/call` on its app-server protocol. It uses `codex` from PATH by default; pass `--codex-cli` only for a known installed Codex executable when the host supplies its path. It fails closed if unavailable or if approval or input is requested. Do not install a runtime, disable permission checks, change authentication or fall back to a different MCP server. The `--server` value is the exact server name of the loaded plugin, not an endpoint URL.
+The local checkpoint helper performs no network or MCP call. It validates the fixed timeline, one-effect transition, references, file hashes, and accepted receipt. The current task remains the only MCP client and uses its normal plugin authentication. A commit still uses normal service admission capacity and rate limits.
 
-## Create the checkpoint
+## Initialize the checkpoint
 
-Load the checkpoint helper from this skill's own `scripts/` directory. Read the current project workspace once as usual. Plan the full edit duration and write a complete base `index.html` with no visual hosts. Its root and continuous speaker/audio clips must cover the whole planned output. Keep source audio and video paired with the same `data-hf-id`, output starts and durations. Declare explicit IDs, source paths, `data-media-start`, `data-track-index` and `data-volume`. The base may represent a deliberately shortened edit; intermediate effects cannot shorten it further.
+Read the current workspace once with `list_workspace`. Require no staged files, keep its `digest`, and collect every confirmed remote path. Plan the full edit duration and write a complete base `index.html` with no visual hosts. Its root and continuous speaker/audio clips must cover the whole planned output. Keep source audio and video paired with the same `data-hf-id`, output starts and durations. Declare explicit IDs, source paths, `data-media-start`, `data-track-index`, and `data-volume`. The base may represent a deliberately shortened edit; intermediate effects cannot shorten it further.
 
-Initialize a task-local checkpoint outside `render-engine/` before writing the first effect. The checkpoint contains semantic timeline state, accepted paths and the workspace digest. It contains no effect source, signed URL or credential. Never place it in the published workspace.
+Initialize task-local state outside `render-engine/` before writing the first effect. Pass the workspace digest as `--base-digest` and every listed path as a repeated `--remote-file`. The checkpoint contains semantic timeline state, accepted paths, hashes, and the latest digest. It contains no effect source, signed URL, OAuth credential, or tool response body. Never place it in the published workspace.
 
 ```sh
 python3 "$AIP_SKILL/scripts/progressive_checkpoint.py" init \
   --workspace "$TASK_ROOT/render-engine" \
   --state "$TASK_ROOT/.aip-progress.json" \
   --project-id "$PROJECT_ID" \
-  --duration "$PLANNED_DURATION"
+  --duration "$PLANNED_DURATION" \
+  --base-digest "$WORKSPACE_DIGEST" \
+  --remote-file render-engine/public/source.mp4 \
+  --remote-file render-engine/public/source.mp3
 ```
 
-## Author one effect, then publish it
+## Prepare and publish one effect
 
-In the same host shell call, write only the current effect and its newly needed dependencies, update the cumulative index with exactly one additional host, and finish the command with `publish`. Include `index.html`, the new composition and every newly referenced dependency in `--file`. Paths are relative to `render-engine/` or begin with that service prefix. Already accepted dependencies need not be uploaded again.
+Write only the current effect and its newly needed dependencies, then update the cumulative index with exactly one additional host. Do not define a multi-effect authoring function, fill a list with future effect source, embed future HTML in Python or shell, or create later composition files before the current publication is accepted.
+
+Run `prepare` with `index.html`, the new composition, and every new dependency. Add `--final` only for the last requested effect. The command checks the full planned duration, unchanged speaker/audio ranges and earlier effects, performs preflight on an immutable snapshot, closes the checkpoint against another prepare, and returns one JSON publication plan.
 
 ```sh
-# Earlier commands in this host call write effect-1 and mount it in index.html.
-python3 "$AIP_SKILL/scripts/progressive_checkpoint.py" publish \
+python3 "$AIP_SKILL/scripts/progressive_checkpoint.py" prepare \
   --workspace "$TASK_ROOT/render-engine" \
   --state "$TASK_ROOT/.aip-progress.json" \
-  --server "$AIP_MCP_SERVER" \
   --file index.html \
   --file compositions/effect-1.html
 ```
 
-Wait for this shell call to return an accepted effect count. Only then begin a new model continuation and host call for effect 2. Repeat the same sequence, adding `--final` to the last effect. The first host call may initialize the checkpoint, write effect 1 and publish it in sequence. Do not define a multi-effect authoring function, fill a list with future effect source, embed future HTML in Python or shell, or create later composition files before the current publication returns. The helper also refuses unaccepted composition HTML left ahead in the workspace.
+Use the returned plan without changing its values:
 
-The helper snapshots the named batch, checks references against that immutable snapshot and confirmed remote files, and uses the accepted receipt digest for the next checkpoint. Each return exposes only the accepted effect count, fixed planned duration, task ID, final flag and bounded warning codes. Intermediate commits retain authoring state; `--final` closes it. The final cumulative index must mount every requested effect. No additional `finish_project`, publication, transcript read or status heartbeat is needed.
+1. For each entry in `sign_batches`, call `sign_workspace_upload` in the current task with its `project_id`, `authoring: true`, and that entry as `files`. Each frozen batch stays within the service's 50-file limit. Stop on any rejection.
+2. Combine every returned upload target and upload from the workspace with [upload_batch.py](../scripts/upload_batch.py), or the host's batch HTTP tools. Stop if any upload fails.
+3. Call `commit_workspace` with the plan's `project_id`, `base_digest`, `expected_files`, and `authoring`. Do not retry a stale or refused mutation.
+4. Wait on the returned `task_id` with the task tool's held-wait arguments until `terminal=true`. Require `succeeded=true` and an outcome of `accepted` or `accepted_with_warnings`.
+5. Run `accept` with that exact task ID, receipt digest, every accepted path, and each bounded warning code. Do not pass messages, signed URLs, or repair text.
+
+```sh
+python3 "$AIP_SKILL/scripts/progressive_checkpoint.py" accept \
+  --workspace "$TASK_ROOT/render-engine" \
+  --state "$TASK_ROOT/.aip-progress.json" \
+  --task-id "$TASK_ID" \
+  --digest "$ACCEPTED_DIGEST" \
+  --accepted-file render-engine/index.html \
+  --accepted-file render-engine/compositions/effect-1.html
+```
+
+Only after `accept` returns the new accepted effect count may the model begin a continuation that authors the next effect. Repeat the same sequence. The final plan sets `authoring` to `false`; intermediate plans set it to `true`. The final cumulative index must mount every requested effect. No additional `finish_project`, transcript read, status heartbeat, app-server call, or hidden Codex task is needed.
 
 Root framing may change as effects arrive, but unfinished beats must retain a usable presenter view. Do not move the presenter aside for a visual that has not been mounted. Keep BGM and caption changes outside these per-effect steps unless their dependencies are included and the speaker timeline stays unchanged.
 
-The helper holds a process lock across each read, mutation and state write, and atomically marks the checkpoint as publishing before the mutation. It saves the next resumable state only after the service accepts the commit. A concurrent command is refused. A process interruption in between leaves a closed checkpoint instead of risking a duplicate mutation. An invalid duration, incomplete AV coverage, changed speaker timing, changed prior host, more than one new effect, future composition file, upload failure, task failure, stale digest, permission request or unaccepted receipt also closes the checkpoint. Preserve the last accepted project and report the failure; do not delete, rewrite or automatically restart the sequence.
+The helper holds a process lock for every state transition and saves state atomically. A concurrent command is refused. After `prepare`, any signing, upload, commit, task, receipt, process, or host failure leaves a closed checkpoint so the mutation is not replayed. An invalid duration, incomplete AV coverage, changed speaker timing, changed prior host, more than one new effect, future composition file, changed prepared file, unexpected accepted path, or malformed receipt is also refused. Preserve the last accepted project and report the failure; do not delete, rewrite, or automatically restart the sequence.
 
-The helper's zero-model-turn property covers publication control. Creative authoring intentionally resumes once per accepted effect. For N effects this creates at most N-1 extra model continuations, while cached context limits the incremental model cost. Measure the actual host session when changing the flow. Other hosts and existing effect graphs use the ordinary complete-graph path until they provide a matching continuation and transport contract.
+Publication now uses the current task's normal MCP tool continuations. For N effects it creates no extra Codex task or provider call, but the current model reads the bounded signing, commit, and held-task results for each effect. Measure actual client tokens when changing this flow. Other hosts and existing effect graphs use the ordinary complete-graph path until they provide a matching checkpoint contract.

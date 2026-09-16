@@ -1,5 +1,5 @@
-"""Verify crash-safe state across one-effect host-model checkpoints."""
-import hashlib
+"""Exercise persisted progressive state across host-model checkpoints."""
+
 import json
 from pathlib import Path
 import sys
@@ -7,38 +7,46 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+
 SCRIPTS = Path(__file__).resolve().parents[1] / "plugins/aip/skills/aip/scripts"
 sys.path.insert(0, str(SCRIPTS))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 import progressive_checkpoint as checkpoint
-from progressive_checkpoint import checkpoint_lock, initialize, publish, read_checkpoint, write_checkpoint
-from progressive_publish import ProgressPublisher
-from test_progressive_publish import FakeMcp, index
+from progressive_checkpoint import accept, checkpoint_lock, initialize, prepare, read_checkpoint, write_checkpoint
+
+
+def index(count=0, duration=59.85):
+    av = "".join(
+        f'<{tag} id="{identifier}" class="clip speaker-clip" data-hf-id="speaker-main" '
+        f'src="public/source.{extension}" data-start="0" data-duration="{duration}" '
+        f'data-media-start="0" data-track-index="{track}" data-volume="{volume}"></{tag}>'
+        for tag, identifier, extension, track, volume in [
+            ("video", "speaker", "mp4", 0, 0), ("audio", "speaker-audio", "mp3", 2, 1)])
+    hosts = "".join(
+        f'<div class="visual-host clip" data-composition-id="beat{i}" '
+        f'data-composition-src="compositions/beat{i}.html" data-start="{i}" '
+        'data-duration="1" data-track-index="3"></div>' for i in range(count))
+    return f'<div id="stage" data-composition-id="finecut-root" data-start="0" data-duration="{duration}">{av}{hosts}</div>'
 
 
 class ProgressiveCheckpointTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.task = Path(self.temp.name)
-        self.root = self.task / "render-engine"
+        self.base = Path(self.temp.name)
+        self.root = self.base / "render-engine"
         self.root.mkdir()
         (self.root / "index.html").write_text(index(), encoding="utf-8")
-        self.state_path = self.task / ".aip-progress.json"
-        self.mcp = FakeMcp()
-        self.events = []
+        self.state_path = self.base / ".aip-progress.json"
 
-    def upload(self, snapshot, rows):
-        self.mcp.expected = []
-        for row in rows:
-            relative = row["path"].removeprefix("render-engine/")
-            self.mcp.expected.append({
-                "path": row["path"],
-                "sha256": hashlib.sha256((snapshot / relative).read_bytes()).hexdigest(),
-            })
-
-    def factory(self, *_args, **_kwargs):
-        return self.mcp
+    def init(self):
+        return initialize(
+            self.root,
+            self.state_path,
+            "test-project",
+            59.85,
+            "initial",
+            ["render-engine/public/source.mp4", "render-engine/public/source.mp3"],
+        )
 
     def author(self, count):
         (self.root / "index.html").write_text(index(count), encoding="utf-8")
@@ -50,59 +58,57 @@ class ProgressiveCheckpointTests(unittest.TestCase):
         )
         return ["index.html", child.relative_to(self.root).as_posix()]
 
-    def test_each_effect_publishes_from_a_new_process_state(self):
-        initialize(self.root, self.state_path, "test-project", 59.85)
+    def test_each_effect_uses_prepare_and_accept_process_states(self):
+        self.assertEqual(self.init()["status"], "ready")
         for count in range(1, 7):
-            report = publish(
-                self.root, self.state_path, "aip", self.author(count), count == 6,
-                mcp_factory=self.factory, uploader=self.upload, on_progress=self.events.append,
+            plan = prepare(self.root, self.state_path, self.author(count), final=count == 6)
+            self.assertEqual(read_checkpoint(self.state_path)["status"], "prepared")
+            report = accept(
+                self.root,
+                self.state_path,
+                f"task-{count}",
+                f"revision-{count}",
+                [row["path"] for row in plan["expected_files"]],
             )
             self.assertEqual(report["published_effects"], count)
             state = read_checkpoint(self.state_path)
             self.assertEqual(state["publications"], count)
             self.assertEqual(state["status"], "finished" if count == 6 else "ready")
-        self.assertEqual(len(self.mcp.commits), 6)
 
     def test_tampered_state_is_refused(self):
-        initialize(self.root, self.state_path, "test-project", 59.85)
+        self.init()
         envelope = json.loads(self.state_path.read_text(encoding="utf-8"))
         envelope["state"]["project_id"] = "other-project"
         self.state_path.write_text(json.dumps(envelope), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "invalid_checkpoint_checksum"):
             read_checkpoint(self.state_path)
 
-    def test_in_flight_checkpoint_cannot_resume(self):
-        publisher = ProgressPublisher(self.root, "test-project", 59.85, self.mcp)
-        write_checkpoint(self.state_path, publisher.checkpoint("publishing"))
+    def test_prepared_checkpoint_cannot_start_another_publication(self):
+        self.init()
+        prepare(self.root, self.state_path, self.author(1))
         with self.assertRaisesRegex(RuntimeError, "checkpoint_closed"):
-            ProgressPublisher.resume(self.root, read_checkpoint(self.state_path), self.mcp)
+            prepare(self.root, self.state_path, self.author(2))
 
-    def test_failure_is_persisted_and_cannot_restart(self):
-        initialize(self.root, self.state_path, "test-project", 59.85)
-        self.mcp.refuse_sign = True
-        with self.assertRaisesRegex(RuntimeError, "publication_signing_refused"):
-            publish(
-                self.root, self.state_path, "aip", self.author(1),
-                mcp_factory=self.factory, uploader=self.upload,
-            )
-        state = read_checkpoint(self.state_path)
-        self.assertEqual(state["status"], "failed")
+    def test_failed_receipt_leaves_checkpoint_closed(self):
+        self.init()
+        prepare(self.root, self.state_path, self.author(1))
+        with self.assertRaisesRegex(ValueError, "receipt_mismatch"):
+            accept(self.root, self.state_path, "task-1", "revision-1", ["render-engine/index.html"])
+        self.assertEqual(read_checkpoint(self.state_path)["status"], "prepared")
         with self.assertRaisesRegex(RuntimeError, "checkpoint_closed"):
-            ProgressPublisher.resume(self.root, state, self.mcp)
+            prepare(self.root, self.state_path, self.author(2))
 
     def test_checkpoint_must_stay_outside_published_workspace(self):
         with self.assertRaisesRegex(ValueError, "checkpoint_must_be_outside_workspace"):
-            initialize(self.root, self.root / ".aip-progress.json", "test-project", 59.85)
+            initialize(
+                self.root, self.root / ".aip-progress.json", "test-project", 59.85, "initial", [],
+            )
 
-    def test_concurrent_transition_is_refused_before_mcp_start(self):
-        initialize(self.root, self.state_path, "test-project", 59.85)
+    def test_concurrent_transition_is_refused_before_state_change(self):
+        self.init()
         with checkpoint_lock(self.state_path):
             with self.assertRaisesRegex(RuntimeError, "checkpoint_busy"):
-                publish(
-                    self.root, self.state_path, "aip", self.author(1),
-                    mcp_factory=self.factory, uploader=self.upload,
-                )
-        self.assertEqual(self.mcp.calls, [])
+                prepare(self.root, self.state_path, self.author(1))
         self.assertEqual(read_checkpoint(self.state_path)["status"], "ready")
 
     def test_atomic_write_does_not_require_posix_fchmod(self):

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Persist one accepted AIP publication between host-model checkpoints."""
+"""Persist progressive AIP state while the current host performs MCP calls."""
+
 from __future__ import annotations
 
 import argparse
@@ -12,8 +13,8 @@ from pathlib import Path
 import re
 import tempfile
 
-from codex_mcp import CodexMcp
-from progressive_publish import ProgressPublisher
+from progressive_publish import ProgressCheckpoint
+
 
 MAX_CHECKPOINT_BYTES = 1024 * 1024
 SAFE_ERROR = re.compile(r"[\x20-\x7e]{1,1200}")
@@ -134,39 +135,35 @@ def read_checkpoint(path):
     return envelope["state"]
 
 
-def initialize(workspace, state_path, project_id, duration):
+def initialize(workspace, state_path, project_id, duration, digest, remote_files=()):
     root = Path(workspace).resolve(strict=True)
     checkpoint = _state_path(state_path, root)
     with checkpoint_lock(checkpoint):
         if checkpoint.exists():
             raise ValueError("checkpoint_already_exists")
-        publisher = ProgressPublisher(root, project_id, duration, transport=None)
-        write_checkpoint(checkpoint, publisher.checkpoint())
-    print(json.dumps({"status": "ready", "published_effects": 0,
-                      "duration_seconds": publisher.duration}, separators=(",", ":")), flush=True)
+        progress = ProgressCheckpoint(root, project_id, duration, digest, remote_files)
+        write_checkpoint(checkpoint, progress.checkpoint())
+    return {"status": "ready", "published_effects": 0, "duration_seconds": progress.duration}
 
 
-def publish(workspace, state_path, server, files, final=False, cli=None,
-            mcp_factory=CodexMcp, uploader=None, on_progress=None):
+def prepare(workspace, state_path, files, final=False):
     root = Path(workspace).resolve(strict=True)
     checkpoint = _state_path(state_path, root)
     with checkpoint_lock(checkpoint):
-        state = read_checkpoint(checkpoint)
-        options = {}
-        if uploader is not None:
-            options["uploader"] = uploader
-        if on_progress is not None:
-            options["on_progress"] = on_progress
-        with mcp_factory(server, root, cli=cli) as mcp:
-            publisher = ProgressPublisher.resume(root, state, mcp, **options)
-            write_checkpoint(checkpoint, publisher.checkpoint("publishing"))
-            try:
-                report = publisher.publish(files, final=final)
-            except Exception:
-                write_checkpoint(checkpoint, publisher.checkpoint("failed"))
-                raise
-            write_checkpoint(checkpoint, publisher.checkpoint())
-            return report
+        progress = ProgressCheckpoint.resume(root, read_checkpoint(checkpoint))
+        report = progress.prepare(files, final=final)
+        write_checkpoint(checkpoint, progress.checkpoint())
+        return report
+
+
+def accept(workspace, state_path, task_id, digest, accepted_files, warning_codes=()):
+    root = Path(workspace).resolve(strict=True)
+    checkpoint = _state_path(state_path, root)
+    with checkpoint_lock(checkpoint):
+        progress = ProgressCheckpoint.resume(root, read_checkpoint(checkpoint))
+        report = progress.accept(task_id, digest, accepted_files, warning_codes)
+        write_checkpoint(checkpoint, progress.checkpoint())
+        return report
 
 
 def _parser():
@@ -177,13 +174,20 @@ def _parser():
     init.add_argument("--state", required=True)
     init.add_argument("--project-id", required=True)
     init.add_argument("--duration", required=True, type=float)
-    step = commands.add_parser("publish")
+    init.add_argument("--base-digest", required=True)
+    init.add_argument("--remote-file", action="append", default=[])
+    step = commands.add_parser("prepare")
     step.add_argument("--workspace", required=True)
     step.add_argument("--state", required=True)
-    step.add_argument("--server", required=True)
-    step.add_argument("--codex-cli")
     step.add_argument("--file", action="append", required=True)
     step.add_argument("--final", action="store_true")
+    receipt = commands.add_parser("accept")
+    receipt.add_argument("--workspace", required=True)
+    receipt.add_argument("--state", required=True)
+    receipt.add_argument("--task-id", required=True)
+    receipt.add_argument("--digest", required=True)
+    receipt.add_argument("--accepted-file", action="append", required=True)
+    receipt.add_argument("--warning-code", action="append", default=[])
     return parser
 
 
@@ -191,9 +195,18 @@ def main():
     args = _parser().parse_args()
     try:
         if args.command == "init":
-            initialize(args.workspace, args.state, args.project_id, args.duration)
+            report = initialize(
+                args.workspace, args.state, args.project_id, args.duration,
+                args.base_digest, args.remote_file,
+            )
+        elif args.command == "prepare":
+            report = prepare(args.workspace, args.state, args.file, args.final)
         else:
-            publish(args.workspace, args.state, args.server, args.file, args.final, args.codex_cli)
+            report = accept(
+                args.workspace, args.state, args.task_id, args.digest,
+                args.accepted_file, args.warning_code,
+            )
+        print(json.dumps(report, separators=(",", ":")), flush=True)
     except Exception as error:
         message = str(error)
         if not SAFE_ERROR.fullmatch(message) or "://" in message:
