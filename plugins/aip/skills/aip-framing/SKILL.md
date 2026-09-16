@@ -24,6 +24,14 @@ Framing decides who owns the frame for each beat: the speaker, the footage, or t
 | The footage carries the beat and a short note sharpens it: a term labelled as it is spoken, a figure drawn beside the speaker, the opening hook title | `overlay` (footage stays full-bleed and sharp; one payload group at a time) | the text runs past one line, would cross the face, or needs a dimmed backdrop |
 | The payload is self-standing and deserves the whole page: a full-scale figure, a photo moment, dense source text, one oversized statement | `full-cover` (the canvas owns the frame; the speaker is covered) | it would hold longer than the sentence it illustrates; return to the speaker after it |
 
+## Video asset defaults
+
+For a portrait canvas, choose the first-draft layout from the video's displayed aspect ratio. These defaults take precedence over register variety and general seat placement; user choices and content readability come first.
+
+- Portrait video: use PIP, with the asset as the main picture and the speaker in a small inset that avoids important subjects, action, and text.
+- Landscape video: use a top/bottom split, with the asset above and the speaker in a bottom `stratum`, starting at half the canvas each. Use adjoining panels without floating-card margins.
+- Preserve the asset's aspect ratio and important content; adjust panel proportions or inset placement as needed. Avoid redundant titles, frames, and empty margins.
+
 ## Seat shapes
 
 Every seat is one of these shapes at one of the positions its canvas allows. Name the shape and the position in the plan; the numbers follow.
@@ -39,7 +47,7 @@ A cutout (the speaker's silhouette standing on the ground) needs matted footage 
 
 ## Positions by canvas
 
-The canvas decides where a seat may sit. A left or right column is a landscape layout; a portrait seat stays horizontally centered with its payload above it.
+The canvas decides where a seat may sit. A left or right column is a landscape layout; a portrait seat stays horizontally centered with its payload above it except for video-asset PIP.
 
 | canvas | seats that fit | do not use |
 | --- | --- | --- |
@@ -54,8 +62,8 @@ Overlay forms follow the same rule: a headline sits in the lower third on every 
 - **One speaker identity.** The speaker is the root track-0 video; a layout change moves that element and never adds a second copy of the footage inside a composition. A static duplicate inside a moment is a picture of the speaker, not a frame, and on cut media it drifts from the audible one.
 - **The head stays whole.** Crown to jaw with room to breathe: a seat that cuts the forehead or shaves the chin has failed at its one job. When the head cannot fit, deepen the seat; never choose which edge to sever.
 - **Center the head, measured, not guessed.** `object-position` comes from where the face sits in this footage: read it from representative source frames (input-media analysis is allowed) and keep it per speaker clip on cut media. `50% 50%` is a guess that crops a high-framed head at the crown; a narrow column crops harder, so measure again for each shape.
-- **The seat is an object on a ground.** A seated beat's composition paints an opaque ground across the frame and leaves the seat region clear so the live speaker shows through; an aperture paints the ground over the speaker with the hole cut out. Nothing tucks under, overlaps into, or straddles the seat to buy room; content low in the band clears the seat's width as well as its top edge.
-- **The payload lives in the band the seat leaves.** Judge fullness and dead space against that band, not the whole frame. Keep text and graphics at least 10% from the band's edges.
+- **The seat is an object on a ground.** For video-asset PIP, the asset fills the ground behind the speaker inset while its important content stays visible. Other seated beats paint an opaque ground across the frame and leave the seat region clear so the live speaker shows through; an aperture paints the ground over the speaker with the hole cut out. In those layouts, nothing tucks under, overlaps into, or straddles the seat to buy room; content low in the band clears the seat's width as well as its top edge.
+- **A separate payload lives in the band the seat leaves.** When the layout reserves a payload band, judge fullness and dead space against that band, not the whole frame. Keep text and graphics at least 10% from the band's edges.
 - **A seat arrives once per run of beats.** Adjacent beats that share a framing keep the seat where it is: it does not re-enter, re-settle, or re-announce itself; only the payload turns over. A new framing arrives at a beat boundary, either from the full frame or as a morph from the previous seat. An entry shorter than 0.35 s lands the speaker before the eye can follow; a monotonic ease (no back, elastic, or bounce) keeps the crop from overshooting the frame.
 - **The overlay rides sharp footage.** The composition never pauses, scales, or reframes the source under an overlay; ink polarity reads the footage's tone where the text lands, with a plate, stroke, or shadow bed where the ground is mixed.
 - **The full cover releases the frame.** Cover, then switch visuals or return to the speaker; the speaker underneath does not move during a full cover.
