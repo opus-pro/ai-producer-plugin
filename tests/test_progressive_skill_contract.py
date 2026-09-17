@@ -23,8 +23,8 @@ class ProgressiveSkillContractTests(unittest.TestCase):
     def test_publication_uses_the_current_task_mcp(self):
         skill = SKILL.read_text(encoding="utf-8")
         reference = REFERENCE.read_text(encoding="utf-8")
-        self.assertIn("AIP MCP tools already loaded in the current task", skill)
-        self.assertIn("Call the AIP MCP tools already loaded in the current task", reference)
+        self.assertIn("AI Producer MCP tools already loaded in the current task", skill)
+        self.assertIn("Call the AI Producer MCP tools already loaded in the current task", reference)
         self.assertNotIn("mcpServer/tool/call", reference)
         self.assertIn("Never run `codex`, start an app server, create an ephemeral task", reference)
 

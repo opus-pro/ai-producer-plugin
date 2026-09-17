@@ -1,6 +1,6 @@
 # Progressive publication in Codex
 
-Use this path for a fresh prepared project with no visual effects. Plan once, generate the first effect alone, then generate up to two effects per continuation. Publish each effect in order while drafting the next batch. Call the AIP MCP tools already loaded in the current task. Never run `codex`, start an app server, create an ephemeral task, extract OAuth credentials, or change host configuration for publication.
+Use this path for a fresh prepared project with no visual effects. Plan once, generate the first effect alone, then generate up to two effects per continuation. Publish each effect in order while drafting the next batch. Call the AI Producer MCP tools already loaded in the current task. Never run `codex`, start an app server, create an ephemeral task, extract OAuth credentials, or change host configuration for publication.
 
 ## Initialize once
 

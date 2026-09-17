@@ -1,4 +1,4 @@
-"""Keep progressive AIP publications on one approved speaker timeline."""
+"""Keep progressive AI Producer publications on one approved speaker timeline."""
 
 from __future__ import annotations
 

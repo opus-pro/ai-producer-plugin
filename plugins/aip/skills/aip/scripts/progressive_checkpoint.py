@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Persist progressive AIP state while the current host performs MCP calls."""
+"""Persist progressive AI Producer state while the current host performs MCP calls."""
 
 from __future__ import annotations
 

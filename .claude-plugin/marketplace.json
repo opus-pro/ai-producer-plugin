@@ -1,6 +1,6 @@
 {
   "name": "ai-producer-plugins",
-  "description": "AI Producer video editing for coding agents: an editing skill, workspace contract, and remote AIP MCP server.",
+  "description": "AI Producer video editing for coding agents: an editing skill, workspace contract, and remote AI Producer MCP server.",
   "owner": {
     "name": "OpusClip"
   },

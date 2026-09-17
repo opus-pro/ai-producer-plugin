@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "AI Producer",
     "shortDescription": "Cut, caption and animate a talking-head video",
-    "longDescription": "Cut an attached talking-head video, prepare captions and motion graphics in an AIP-compatible workspace, and deliver an editable preview. Export on explicit request; playback review and follow-up edits stay with the user.",
+    "longDescription": "Cut an attached talking-head video, prepare captions and motion graphics in an AI Producer-compatible workspace, and deliver an editable preview. Export on explicit request; playback review and follow-up edits stay with the user.",
     "developerName": "OpusClip",
     "category": "Productivity",
     "capabilities": [
