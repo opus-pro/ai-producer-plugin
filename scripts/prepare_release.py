@@ -11,7 +11,7 @@ from pathlib import Path
 
 from check_release_pr import (
     RELEASE_TEMPLATE, VERSION_FIELDS, precedence, reject_constant,
-    release_log_path, unique_object, validate_release_log, version_from_documents,
+    release_log_path, unique_object, validate_release_log, version_fields_for, version_from_documents,
 )
 
 
@@ -41,8 +41,8 @@ def prepare_release(root: Path, version: str) -> Path:
     validate_release_log(preview, version, previous_version=current)
 
     # Validate every input before modifying any file.
-    for relative, fields in VERSION_FIELDS.items():
-        for field in fields:
+    for relative in VERSION_FIELDS:
+        for field in version_fields_for(relative, documents[relative]):
             parent = documents[relative]
             for key in field[:-1]:
                 parent = parent[key]

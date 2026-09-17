@@ -62,9 +62,9 @@ class ReleasePRTest(unittest.TestCase):
         previous = self.document(policy.LATEST_VERSION_FILE)["version"]
         if policy.precedence(previous) >= policy.precedence(version):
             previous = "0.0.0"
-        for path, fields in policy.VERSION_FIELDS.items():
+        for path in policy.VERSION_FIELDS:
             document = self.document(path)
-            for field in fields:
+            for field in policy.version_fields_for(path, document):
                 parent = document
                 for key in field[:-1]:
                     parent = parent[key]
@@ -95,6 +95,55 @@ class ReleasePRTest(unittest.TestCase):
         document["description"] = "Updated description"
         self.write_document(path, document)
         self.assertIn("ordinary PR", self.check("fix: clarify the plugin"))
+
+    def use_mcp_identity(self, name: str) -> None:
+        path = "plugins/aip/.mcp.json"
+        document = self.document(path)
+        document["mcpServers"] = {name: next(iter(document["mcpServers"].values()))}
+        self.write_document(path, document)
+
+    def test_ordinary_pr_can_migrate_production_mcp_identity(self) -> None:
+        self.use_mcp_identity("aip")
+        self.base = self.commit()
+        self.use_mcp_identity("ai-producer")
+        self.assertIn("ordinary PR", self.check("fix: migrate production identity"))
+
+    def test_release_pr_cannot_also_migrate_identity(self) -> None:
+        self.use_mcp_identity("aip")
+        self.base = self.commit()
+        self.use_mcp_identity("ai-producer")
+        self.set_version("0.8.34")
+        with self.assertRaisesRegex(ValueError, "not other content"):
+            self.check()
+
+    def test_release_supports_either_existing_identity(self) -> None:
+        for name in ("aip", "ai-producer"):
+            with self.subTest(name=name):
+                self.git("reset", "--hard", self.base)
+                self.use_mcp_identity(name)
+                base = self.commit()
+                self.set_version("0.8.34")
+                self.assertIn("OK: release", self.check(base=base))
+
+    def test_unknown_or_ambiguous_mcp_identity_fails(self) -> None:
+        path = "plugins/aip/.mcp.json"
+        server = next(iter(self.document(path)["mcpServers"].values()))
+        for names in ((), ("other",), ("aip", "ai-producer"), ("ai-producer", "other")):
+            with self.subTest(names=names):
+                self.write_document(path, {"mcpServers": dict.fromkeys(names, server)})
+                with self.assertRaisesRegex(ValueError, "exactly one production server"):
+                    self.check("fix: ambiguous server")
+
+    def test_migration_cannot_hide_stale_header(self) -> None:
+        self.use_mcp_identity("aip")
+        self.base = self.commit()
+        self.use_mcp_identity("ai-producer")
+        path = "plugins/aip/.mcp.json"
+        document = self.document(path)
+        document["mcpServers"]["ai-producer"]["http_headers"]["X-AIP-Plugin-Version"] = "0.8.32"
+        self.write_document(path, document)
+        with self.assertRaisesRegex(ValueError, "six version fields must match"):
+            self.check("fix: migrate production identity")
 
     def test_version_change_requires_exact_title(self) -> None:
         self.set_version("0.8.34")
@@ -150,8 +199,8 @@ class ReleasePRTest(unittest.TestCase):
                     self.check()
 
     def test_stale_version_in_each_field_fails(self) -> None:
-        for path, fields in policy.VERSION_FIELDS.items():
-            for field in fields:
+        for path in policy.VERSION_FIELDS:
+            for field in policy.version_fields_for(path, self.document(path)):
                 with self.subTest(path=path, field=field):
                     self.set_version("0.8.34")
                     document = self.document(path)
@@ -167,7 +216,7 @@ class ReleasePRTest(unittest.TestCase):
         self.set_version("0.8.34")
         path = "plugins/aip/.mcp.json"
         document = self.document(path)
-        del document["mcpServers"]["aip"]["http_headers"]
+        del next(iter(document["mcpServers"].values()))["http_headers"]
         self.write_document(path, document)
         with self.assertRaisesRegex(ValueError, "Invalid version file"):
             self.check()
