@@ -18,7 +18,7 @@ For packaging changes, validate the marketplace and bundle with Claude Code and 
 
 This repository owns the public client plugin. Keep shared editing knowledge under `plugins/aip/skills/` and keep the Codex and Claude manifests separate. Do not introduce employee environments, private fixtures, internal notification integrations, or organization-specific release orchestration.
 
-Preserve the `ai-producer-plugins` marketplace identifier, `aip` plugin name, and `aip` MCP server name unless a change includes an explicit migration. The plugin contains no lifecycle hooks or self-update commands. Users manage installation and updates through their client.
+Preserve the `ai-producer-plugin` marketplace identifier, `ai-producer` plugin name, and `ai-producer` MCP server name unless a change includes an explicit migration. The plugin contains no lifecycle hooks or self-update commands. Users manage installation and updates through their client; see the [production identity migration](README.md#existing-installations) for older installations.
 
 ## Workspace contract
 

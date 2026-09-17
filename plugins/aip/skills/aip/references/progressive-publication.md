@@ -27,15 +27,15 @@ Generate one effect in the first batch and up to two thereafter. A final singlet
 
 ## Publish and continue
 
-Append this helper call to the execution that writes the draft files. Bind the loaded plugin's current-task tool functions; the example uses server `aip`:
+Append this helper call to the execution that writes the draft files. Bind the loaded plugin's current-task tool functions; the example uses server `ai-producer` (normalized as `ai_producer` in these JavaScript tool bindings):
 
 ```javascript
 const runBatch = eval(source)({
   tools, yieldControl: yield_control, onReady: text,
   skill: aipSkillPath, workspace: renderEnginePath, state: checkpointPath,
-  signUpload: tools.mcp__aip__sign_workspace_upload,
-  commitWorkspace: tools.mcp__aip__commit_workspace,
-  waitTask: tools.mcp__aip__wait_task,
+  signUpload: tools.mcp__ai_producer__sign_workspace_upload,
+  commitWorkspace: tools.mcp__ai_producer__commit_workspace,
+  waitTask: tools.mcp__ai_producer__wait_task,
 });
 text(await runBatch({
   afterEffect: 1,

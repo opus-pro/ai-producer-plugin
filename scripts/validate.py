@@ -25,6 +25,9 @@ from check_release_pr import (
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_DIRNAME = "aip"
+PLUGIN_NAME = "ai-producer"
+MARKETPLACE_NAME = "ai-producer-plugin"
+MCP_SERVER_NAME = "ai-producer"
 EXPECTED_REPOSITORY = "https://github.com/opus-pro/ai-producer-plugin"
 EXPECTED_ENDPOINT = "https://producer.opus.pro/api/mcp"
 EXPECTED_SKILLS = {"aip", "aip-captions", "aip-composition", "aip-framing"}
@@ -74,7 +77,7 @@ def validate_manifests(root: Path) -> str:
     codex_manifest = load_json(plugin / ".codex-plugin" / "plugin.json")
     claude_manifest = load_json(plugin / ".claude-plugin" / "plugin.json")
 
-    assert codex_manifest["name"] == claude_manifest["name"] == PLUGIN_DIRNAME
+    assert codex_manifest["name"] == claude_manifest["name"] == PLUGIN_NAME
     version = codex_manifest["version"]
     assert version == claude_manifest["version"], "manifest versions must match"
     assert isinstance(version, str) and SEMVER.fullmatch(version)
@@ -97,10 +100,10 @@ def validate_marketplaces(root: Path, version: str) -> None:
     codex_marketplace = load_json(root / ".agents" / "plugins" / "marketplace.json")
     claude_marketplace = load_json(root / ".claude-plugin" / "marketplace.json")
 
-    assert codex_marketplace["name"] == claude_marketplace["name"] == "ai-producer-plugins"
+    assert codex_marketplace["name"] == claude_marketplace["name"] == MARKETPLACE_NAME
     codex_entry = codex_marketplace["plugins"][0]  # type: ignore[index]
     claude_entry = claude_marketplace["plugins"][0]  # type: ignore[index]
-    assert codex_entry["name"] == claude_entry["name"] == PLUGIN_DIRNAME  # type: ignore[index]
+    assert codex_entry["name"] == claude_entry["name"] == PLUGIN_NAME  # type: ignore[index]
     assert codex_entry["source"]["path"] == f"./plugins/{PLUGIN_DIRNAME}"  # type: ignore[index]
     assert claude_entry["source"] == f"./plugins/{PLUGIN_DIRNAME}"  # type: ignore[index]
     assert claude_entry["version"] == version  # type: ignore[index]
@@ -108,15 +111,17 @@ def validate_marketplaces(root: Path, version: str) -> None:
 
 def validate_mcp(root: Path, version: str) -> None:
     mcp = load_json(plugin_dir(root) / ".mcp.json")
-    aip = mcp["mcpServers"]["aip"]  # type: ignore[index]
-    assert aip["type"] == "http"  # type: ignore[index]
-    assert aip["url"] == aip["oauth_resource"] == EXPECTED_ENDPOINT  # type: ignore[index]
+    servers = mcp["mcpServers"]
+    assert isinstance(servers, dict) and set(servers) == {MCP_SERVER_NAME}, "unexpected MCP server identity"
+    server = servers[MCP_SERVER_NAME]
+    assert server["type"] == "http"  # type: ignore[index]
+    assert server["url"] == server["oauth_resource"] == EXPECTED_ENDPOINT  # type: ignore[index]
 
     # A version bump that forgets this header leaves the service reading a stale
     # version for every install of the new bundle, and nothing else fails, so
     # pin it to the manifests here.
     for key in MCP_HEADER_KEYS:
-        headers = aip.get(key)  # type: ignore[union-attr]
+        headers = server.get(key)  # type: ignore[union-attr]
         assert isinstance(headers, dict) and headers, (
             f".mcp.json must set {key!r}; without it the "
             f"{'Claude Code' if key == 'headers' else 'Codex'} bundle sends no "
@@ -201,7 +206,7 @@ def main(root: Path = ROOT) -> None:
     validate_host_hooks(root)
     validate_relative_links(root)
     validate_notices(root)
-    print(f"Validated {PLUGIN_DIRNAME} {version} for Codex and Claude Code")
+    print(f"Validated {PLUGIN_NAME} {version} for Codex and Claude Code")
 
 
 if __name__ == "__main__":

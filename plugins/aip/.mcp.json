@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "aip": {
+    "ai-producer": {
       "type": "http",
       "url": "https://producer.opus.pro/api/mcp",
       "oauth_resource": "https://producer.opus.pro/api/mcp",

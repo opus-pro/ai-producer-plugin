@@ -1,11 +1,11 @@
 {
-  "name": "ai-producer-plugins",
+  "name": "ai-producer-plugin",
   "interface": {
-    "displayName": "AI Producer Plugins"
+    "displayName": "AI Producer Plugin"
   },
   "plugins": [
     {
-      "name": "aip",
+      "name": "ai-producer",
       "source": {
         "source": "local",
         "path": "./plugins/aip"
