@@ -321,6 +321,56 @@ class ProgressiveDraftTests(unittest.TestCase):
             self.accept_first(first)
         self.assertEqual(self.state_path.read_bytes(), failed)
 
+    def test_accept_and_fail_wait_for_a_concurrent_join_poll_lock(self):
+        acquire = checkpoint.checkpoint_lock
+        for action in ("accept", "fail"):
+            with self.subTest(action=action):
+                root, state = self.initialize_at(self.base / f"settlement-{action}")
+                plan = prepare(root, state, author(root, 1))
+                before = state.read_bytes()
+                attempted, completed = threading.Event(), threading.Event()
+                outcome = {}
+
+                def observe_lock(path):
+                    attempted.set()
+                    return acquire(path)
+
+                def settle():
+                    try:
+                        outcome["report"] = (accept(root, state, "task-1", "revision-1", receipt_files(plan))
+                                             if action == "accept" else fail(root, state, 1))
+                    except Exception as error:
+                        outcome["error"] = error
+                    finally:
+                        completed.set()
+
+                with acquire(state):
+                    with patch.object(checkpoint, "checkpoint_lock", side_effect=observe_lock):
+                        thread = threading.Thread(target=settle, daemon=True)
+                        thread.start()
+                        self.addCleanup(thread.join, 1.1)
+                        self.assertTrue(attempted.wait(1))
+                        self.assertFalse(completed.wait(0.02), outcome)
+                        self.assertEqual(state.read_bytes(), before)
+                self.assertTrue(completed.wait(1), outcome)
+                self.assertNotIn("error", outcome)
+                self.assertEqual(read_checkpoint(state)["status"], "ready" if action == "accept" else "failed")
+                self.assertEqual(read_checkpoint(state)["publications"], 1 if action == "accept" else 0)
+
+    def test_settlement_lock_timeout_preserves_the_pending_receipt(self):
+        first = self.prepare_first()
+        before = self.state_path.read_bytes()
+        with checkpoint.checkpoint_lock(self.state_path):
+            with patch.object(checkpoint, "SETTLEMENT_LOCK_SECONDS", 0):
+                for action in ("accept", "fail"):
+                    with self.subTest(action=action):
+                        with self.assertRaisesRegex(TimeoutError, "publication_settlement_lock_timeout"):
+                            if action == "accept":
+                                self.accept_first(first)
+                            else:
+                                fail(self.root, self.state_path, 1)
+                        self.assertEqual(self.state_path.read_bytes(), before)
+
     def test_delayed_failure_does_not_poison_accepted_effect_or_next_preparation(self):
         draft, files = self.accepted_first_and_draft()
         for next_prepared in (False, True):

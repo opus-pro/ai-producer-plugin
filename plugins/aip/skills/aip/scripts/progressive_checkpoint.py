@@ -21,6 +21,7 @@ MAX_CHECKPOINT_BYTES = 1024 * 1024
 SAFE_ERROR = re.compile(r"[\x20-\x7e]{1,1200}")
 MAX_JOIN_SECONDS = 600
 JOIN_INTERVAL_SECONDS = 0.1
+SETTLEMENT_LOCK_SECONDS = 10
 
 
 def _canonical(value):
@@ -199,13 +200,32 @@ def prepare(workspace, state_path, files, final=False, draft=None, after_effect=
         return report
 
 
+@contextmanager
+def settlement_lock(checkpoint):
+    """Let receipt writes outlast a concurrent join poll without replaying work."""
+    deadline = time.monotonic() + SETTLEMENT_LOCK_SECONDS
+    while True:
+        with ExitStack() as held:
+            try:
+                held.enter_context(checkpoint_lock(checkpoint))
+            except RuntimeError as error:
+                if str(error) != "publication_checkpoint_busy":
+                    raise
+            else:
+                yield
+                return
+        if time.monotonic() >= deadline:
+            raise TimeoutError("publication_settlement_lock_timeout")
+        time.sleep(JOIN_INTERVAL_SECONDS)
+
+
 def fail(workspace, state_path, effect):
     """Close a failed step, including draft validation, so later batches stop."""
     root = Path(workspace).resolve(strict=True)
     checkpoint = _state_path(state_path, root)
     if not isinstance(effect, int) or isinstance(effect, bool) or effect < 1:
         raise ValueError("invalid_failed_effect_count")
-    with checkpoint_lock(checkpoint):
+    with settlement_lock(checkpoint):
         progress = ProgressCheckpoint.resume(root, read_checkpoint(checkpoint))
         if progress.publications >= effect:
             return {"status": "already_accepted", "published_effects": progress.publications}
@@ -223,7 +243,7 @@ def fail(workspace, state_path, effect):
 def accept(workspace, state_path, task_id, digest, accepted_files, warning_codes=()):
     root = Path(workspace).resolve(strict=True)
     checkpoint = _state_path(state_path, root)
-    with checkpoint_lock(checkpoint):
+    with settlement_lock(checkpoint):
         progress = ProgressCheckpoint.resume(root, read_checkpoint(checkpoint))
         report = progress.accept(task_id, digest, accepted_files, warning_codes)
         write_checkpoint(checkpoint, progress.checkpoint())
