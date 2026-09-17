@@ -11,6 +11,17 @@ from urllib.parse import unquote, urlsplit
 
 CSS_URL = re.compile(r"url\(\s*(['\"]?)(.*?)\1\s*\)", re.I)
 
+# What the service accepts, by extension. Any other type, a script or an .svg included, is
+# rejected at signing and refused at commit as unpromotable_type; vector graphics go inline
+# in the HTML, and scripts are the ones the project already carries.
+PROMOTABLE_SUFFIXES = {
+    ".html", ".htm", ".css", ".json",
+    ".png", ".jpg", ".jpeg", ".webp", ".gif",
+    ".woff", ".woff2", ".ttf", ".otf",
+    ".mp4", ".mov", ".webm",
+    ".mp3", ".wav", ".m4a", ".ogg",
+}
+
 
 class Document(HTMLParser):
     def __init__(self):
@@ -90,7 +101,14 @@ def check(root, remote_files=()):
         return candidate
 
     for path in sorted(root.rglob("*")):
-        if not path.is_file() or path.suffix.lower() not in {".html", ".css"}:
+        # Hidden entries are editor and OS metadata, never part of a publication.
+        if not path.is_file() or any(part.startswith(".") for part in path.relative_to(root).parts):
+            continue
+        suffix = path.suffix.lower()
+        if suffix not in PROMOTABLE_SUFFIXES and path.resolve() not in declared:
+            issue(errors, "unpromotable_type", path)
+            continue
+        if suffix not in {".html", ".css"}:
             continue
         if not path.resolve().is_relative_to(root):
             issue(errors, "symlink_outside_workspace", path)
@@ -100,7 +118,7 @@ def check(root, remote_files=()):
         except (UnicodeError, OSError):
             issue(errors, "unreadable_text", path)
             continue
-        if path.suffix.lower() == ".css":
+        if suffix == ".css":
             for match in CSS_URL.finditer(source):
                 reference(match[2], path, "css-url", base=path.parent)
             continue
