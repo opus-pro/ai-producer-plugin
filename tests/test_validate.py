@@ -45,33 +45,6 @@ class ValidateFixtureTest(unittest.TestCase):
     def test_pristine_copy_passes(self) -> None:
         validate.main(self.root)
 
-    def test_legacy_manifest_or_marketplace_identity_fails(self) -> None:
-        for relative, field, legacy in (
-            ("plugins/aip/.codex-plugin/plugin.json", "name", "aip"),
-            ("plugins/aip/.claude-plugin/plugin.json", "name", "aip"),
-            (".agents/plugins/marketplace.json", "name", "ai-producer-plugins"),
-            (".claude-plugin/marketplace.json", "name", "ai-producer-plugins"),
-        ):
-            with self.subTest(relative=relative):
-                path = self.root / relative
-                document = validate.load_json(path)
-                document[field] = legacy
-                path.write_text(json.dumps(document))
-                with self.assertRaises(AssertionError):
-                    validate.main(self.root)
-                shutil.copyfile(REPO / relative, path)
-
-    def test_legacy_marketplace_plugin_entry_fails(self) -> None:
-        for relative in (".agents/plugins/marketplace.json", ".claude-plugin/marketplace.json"):
-            with self.subTest(relative=relative):
-                path = self.root / relative
-                document = validate.load_json(path)
-                document["plugins"][0]["name"] = "aip"
-                path.write_text(json.dumps(document))
-                with self.assertRaises(AssertionError):
-                    validate.main(self.root)
-                shutil.copyfile(REPO / relative, path)
-
     def test_legacy_or_duplicate_mcp_server_fails(self) -> None:
         path = self.root / MCP_CONFIG
         original = validate.load_json(path)

@@ -1,12 +1,12 @@
 {
-  "name": "ai-producer-plugin",
+  "name": "ai-producer-plugins",
   "description": "AI Producer video editing for coding agents: an editing skill, workspace contract, and remote AI Producer MCP server.",
   "owner": {
     "name": "OpusClip"
   },
   "plugins": [
     {
-      "name": "ai-producer",
+      "name": "aip",
       "source": "./plugins/aip",
       "description": "Create an editable talking-head video with AI Producer. Deliver the preview link by default; export only on explicit request, without automatic playback inspection.",
       "version": "1.1.12",

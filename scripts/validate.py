@@ -25,8 +25,6 @@ from check_release_pr import (
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_DIRNAME = "aip"
-PLUGIN_NAME = "ai-producer"
-MARKETPLACE_NAME = "ai-producer-plugin"
 MCP_SERVER_NAME = "ai-producer"
 EXPECTED_REPOSITORY = "https://github.com/opus-pro/ai-producer-plugin"
 EXPECTED_ENDPOINT = "https://producer.opus.pro/api/mcp"
@@ -77,7 +75,7 @@ def validate_manifests(root: Path) -> str:
     codex_manifest = load_json(plugin / ".codex-plugin" / "plugin.json")
     claude_manifest = load_json(plugin / ".claude-plugin" / "plugin.json")
 
-    assert codex_manifest["name"] == claude_manifest["name"] == PLUGIN_NAME
+    assert codex_manifest["name"] == claude_manifest["name"] == PLUGIN_DIRNAME
     version = codex_manifest["version"]
     assert version == claude_manifest["version"], "manifest versions must match"
     assert isinstance(version, str) and SEMVER.fullmatch(version)
@@ -100,10 +98,10 @@ def validate_marketplaces(root: Path, version: str) -> None:
     codex_marketplace = load_json(root / ".agents" / "plugins" / "marketplace.json")
     claude_marketplace = load_json(root / ".claude-plugin" / "marketplace.json")
 
-    assert codex_marketplace["name"] == claude_marketplace["name"] == MARKETPLACE_NAME
+    assert codex_marketplace["name"] == claude_marketplace["name"] == "ai-producer-plugins"
     codex_entry = codex_marketplace["plugins"][0]  # type: ignore[index]
     claude_entry = claude_marketplace["plugins"][0]  # type: ignore[index]
-    assert codex_entry["name"] == claude_entry["name"] == PLUGIN_NAME  # type: ignore[index]
+    assert codex_entry["name"] == claude_entry["name"] == PLUGIN_DIRNAME  # type: ignore[index]
     assert codex_entry["source"]["path"] == f"./plugins/{PLUGIN_DIRNAME}"  # type: ignore[index]
     assert claude_entry["source"] == f"./plugins/{PLUGIN_DIRNAME}"  # type: ignore[index]
     assert claude_entry["version"] == version  # type: ignore[index]
@@ -206,7 +204,7 @@ def main(root: Path = ROOT) -> None:
     validate_host_hooks(root)
     validate_relative_links(root)
     validate_notices(root)
-    print(f"Validated {PLUGIN_NAME} {version} for Codex and Claude Code")
+    print(f"Validated {PLUGIN_DIRNAME} {version} for Codex and Claude Code")
 
 
 if __name__ == "__main__":

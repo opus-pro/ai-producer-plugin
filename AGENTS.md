@@ -3,7 +3,7 @@
 This repository owns the public OpusClip AI Producer plugin for Codex and Claude Code. Read README.md and CONTRIBUTING.md before changing the package.
 
 - Keep public plugin content in `plugins/aip/`; retain both host manifests and both marketplaces as separate files.
-- Preserve marketplace `ai-producer-plugin`, plugin `ai-producer`, and server `ai-producer` unless a coordinated migration is requested.
+- Preserve marketplace `ai-producer-plugins`, plugin `aip`, and server `ai-producer` unless a coordinated migration is requested.
 - Keep the production MCP URL and OAuth resource aligned.
 - Ship only skills and MCP configuration: no lifecycle hooks, no self-update commands. Installation and updates belong to the host client.
 - Skills teach capabilities; tool descriptions own service procedures and refusals. Keep each SKILL.md at most 500 lines, with its linked references and helper scripts.
