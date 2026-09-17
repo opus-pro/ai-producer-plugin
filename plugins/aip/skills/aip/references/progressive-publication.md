@@ -4,7 +4,7 @@ Use this path for a fresh prepared project with no visual effects. Plan once, ge
 
 ## Initialize once
 
-Read `list_workspace` once: require no staged files, retain its digest and confirmed remote paths. Write a base `index.html` with the full planned duration, no visual hosts, and continuous paired speaker/audio clips. Each pair uses the same `data-hf-id`, output starts and durations, with explicit IDs, sources, `data-media-start`, `data-track-index`, and `data-volume`. A deliberate rough cut can shorten the source; progressive effects cannot shorten that planned output.
+Read `list_workspace` once: require no staged files, retain its digest and confirmed remote paths. In the same initialization execution, fetch `render-engine/compositions/editing-script.json` with `get_workspace_file` and save its complete content locally without printing its word data. Keep the fetched document's source and tracks; do not invent a replacement. Write a base `index.html` with the full planned duration, no visual hosts, and continuous paired speaker/audio clips. Each pair uses the same `data-hf-id`, output starts and durations, with explicit IDs, sources, `data-media-start`, `data-track-index`, and `data-volume`. A deliberate rough cut can shorten the source; progressive effects cannot shorten that planned output.
 
 Keep the checkpoint and drafts outside `render-engine/`. Initialize before authoring the first effect:
 
@@ -17,7 +17,7 @@ python3 "$AIP_SKILL/scripts/progressive_checkpoint.py" init \
   --remote-file render-engine/public/source.mp3
 ```
 
-Pass every listed path as a repeated `--remote-file`. In a completed initialization execution, load [publication_batch.js](../scripts/publication_batch.js) into host memory without printing its implementation; retain its source and these local paths for later executions. Keep only serializable initialization data in host memory; live publication state crosses executions through the atomic checkpoint file.
+Pass every listed path as a repeated `--remote-file`. Initialization synchronizes the fetched EditingScript's AV clips and caption times to the base speaker cut. The helper includes that document in the first effect's upload automatically and validates it locally thereafter; no separate commit or model check is needed. In a completed initialization execution, load [publication_batch.js](../scripts/publication_batch.js) into host memory without printing its implementation; retain its source and these local paths for later executions. Keep only serializable initialization data in host memory; live publication state crosses executions through the atomic checkpoint file.
 
 ## Author a batch
 

@@ -13,6 +13,7 @@ import tempfile
 
 from preflight import check
 from publication_guard import inspect_index, validate_checkpoint_progress
+from editing_script_sync import EDITING_SCRIPT, sync_workspace, validate_workspace
 
 
 MAX_FILES = 200
@@ -61,6 +62,7 @@ class ProgressCheckpoint:
         baseline = inspect_index((self.root / "index.html").read_text(encoding="utf-8"))
         if baseline["effects"] or not math.isclose(baseline["duration"], self.duration, abs_tol=1e-6):
             raise ValueError("full_timeline_base_required")
+        sync_workspace(self.root)
         self.baseline_snapshot = baseline
         self.effects = {}
         self.digest = digest
@@ -118,7 +120,7 @@ class ProgressCheckpoint:
 
     def _snapshot(self, paths, target):
         for relative in self.remote.difference(paths):
-            if Path(relative).suffix.lower() in {".html", ".css"} and (self.root / relative).is_file():
+            if (Path(relative).suffix.lower() in {".html", ".css"} or relative == EDITING_SCRIPT) and (self.root / relative).is_file():
                 self._copy(relative, target)
         manifest = []
         for relative in paths:
@@ -168,6 +170,7 @@ class ProgressCheckpoint:
             for relative in self.remote:
                 if Path(relative).suffix.lower() in {".html", ".css"} and (self.root / relative).is_file():
                     self._copy(relative, candidate_root)
+            self._copy(EDITING_SCRIPT, candidate_root)
             for relative in paths:
                 file = (source / relative).resolve(strict=True)
                 destination = (self.root / relative).resolve()
@@ -186,6 +189,7 @@ class ProgressCheckpoint:
                 **self.checkpoint(), "workspace": str(candidate_root),
             })
             plan = candidate.prepare(paths, final=final)
+            installed_paths = [relative_path(row["path"]) for row in plan["expected_files"]]
             def installed():
                 self.pending = candidate.pending
                 self.status = candidate.status
@@ -193,7 +197,7 @@ class ProgressCheckpoint:
                     save(self.checkpoint())
 
             try:
-                self._install_draft(candidate_root, paths, installed)
+                self._install_draft(candidate_root, installed_paths, installed)
             except Exception:
                 self.pending = None
                 self.status = "ready"
@@ -241,12 +245,19 @@ class ProgressCheckpoint:
         paths = [relative_path(path) for path in files]
         if not paths or len(paths) > MAX_FILES or len(set(paths)) != len(paths) or "index.html" not in paths:
             raise ValueError("invalid_publication_files")
+        # The initial reconciled document is part of the first real publication,
+        # even when the host lists only the effect's HTML files.
+        if EDITING_SCRIPT not in self.accepted_hashes and EDITING_SCRIPT not in paths:
+            paths.append(EDITING_SCRIPT)
+        if len(paths) > MAX_FILES:
+            raise ValueError("invalid_publication_files")
         candidate = (self.root / "index.html").read_text(encoding="utf-8")
         state = validate_checkpoint_progress(
             self.baseline_snapshot, self.effects, candidate, self.duration,
         )
         self._reject_unpublished_compositions(paths)
         self._verify_accepted_files()
+        validate_workspace(self.root)
         with tempfile.TemporaryDirectory(prefix="aip-publication-") as directory:
             snapshot = Path(directory).resolve()
             manifest = self._snapshot(paths, snapshot)

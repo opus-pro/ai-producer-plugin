@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from editing_script_fixtures import write_editing_script
 import sys
 import tempfile
 import unittest
@@ -36,6 +37,7 @@ class ProgressiveCheckpointTests(unittest.TestCase):
         self.root = self.base / "render-engine"
         self.root.mkdir()
         (self.root / "index.html").write_text(index(), encoding="utf-8")
+        write_editing_script(self.root)
         self.state_path = self.base / ".aip-progress.json"
 
     def init(self):

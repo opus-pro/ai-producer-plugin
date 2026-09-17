@@ -8,6 +8,7 @@ import math
 from pathlib import Path
 import re
 from urllib.parse import unquote, urlsplit
+from editing_script_sync import EDITING_SCRIPT, sync_workspace, validate_workspace
 
 CSS_URL = re.compile(r"url\(\s*(['\"]?)(.*?)\1\s*\)", re.I)
 
@@ -164,6 +165,13 @@ def check(root, remote_files=()):
                 if depth > 0 and identifier and values.get("data-composition-id") == identifier]
             if len(matches) != 1:
                 issue(errors, "composition_id_mismatch", path)
+    script = root / EDITING_SCRIPT
+    if script.exists() or script in declared:
+        try:
+            validate_workspace(root)
+        except (ValueError, OSError, UnicodeError) as error:
+            code = str(error) if isinstance(error, ValueError) else "editing_script_unreadable"
+            issue(errors, code, script)
     return {"ok": not errors, "html_files": len(documents), "errors": errors, "warnings": warnings,
             "scope": "Static checks only; no playback, editability, or export validation."}
 
@@ -173,8 +181,20 @@ def main():
     parser.add_argument("workspace", type=Path)
     parser.add_argument("--remote-file", action="append", default=[],
                         help="Workspace-relative file confirmed staged by the service; repeat per file")
+    parser.add_argument("--sync-editing-script", action="store_true",
+                        help="Synchronize the fetched editing document before checking; upload it with index.html")
     args = parser.parse_args()
+    synchronized_files = None
+    if args.sync_editing_script:
+        try:
+            synchronized_files = sync_workspace(args.workspace)["files"]
+        except (ValueError, OSError, UnicodeError) as error:
+            code = str(error) if isinstance(error, ValueError) else "editing_script_unreadable"
+            print(json.dumps({"ok": False, "errors": [{"code": code}], "warnings": []}))
+            return 1
     result = check(args.workspace, args.remote_file)
+    if synchronized_files is not None:
+        result["synchronized_files"] = synchronized_files
     print(json.dumps(result, separators=(",", ":")))
     return 0 if result["ok"] else 1
 
