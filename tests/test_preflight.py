@@ -59,6 +59,21 @@ class PreflightTests(unittest.TestCase):
         report = preflight.check(self.root, ["render-engine/../outside"])
         self.assertIn("invalid_service_file", self.codes(report))
 
+    def test_a_type_no_commit_accepts_is_reported_before_upload(self):
+        self.write("compositions/beat.html", CHILD.format('<img src="public/images/logo.svg">'))
+        self.write("public/images/logo.svg", "<svg xmlns='http://www.w3.org/2000/svg'/>")
+        self.write("public/notes", "source: example")
+        report = preflight.check(self.root)
+        self.assertIn({"code": "unpromotable_type", "file": "public/images/logo.svg"}, report["errors"])
+        self.assertIn({"code": "unpromotable_type", "file": "public/notes"}, report["errors"])
+
+    def test_service_scripts_and_hidden_entries_are_not_publication_files(self):
+        self.write("public/vendor/gsap.min.js", "// provided by the service")
+        self.write(".DS_Store")
+        self.write("compositions/.cache/build.js")
+        self.assertIn("unpromotable_type", self.codes(preflight.check(self.root)))
+        self.assertTrue(preflight.check(self.root, ["public/vendor/gsap.min.js"])["ok"])
+
     def test_composition_id_and_timing_are_checked(self):
         self.write("compositions/beat.html", '<template><div data-composition-id="wrong" data-start="nan" data-duration="0"></div></template>')
         codes = self.codes(preflight.check(self.root))

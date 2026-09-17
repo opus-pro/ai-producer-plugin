@@ -4,7 +4,7 @@ Before source upload, check the format and size: `.mp4`, `.mov`, or `.webm`; at 
 
 The entry is `render-engine/index.html`. Supporting documents go in `compositions/`, assets in `public/`, styles in `styles/`, and fonts in `fonts/`, all beneath `render-engine/`.
 
-The workspace accepts HTML, CSS, JSON, images, fonts, video, and audio. HTML is limited to 64 KiB per file; `narrator_captions.html` to 4 MiB. Use the runtime scripts provided by the project and embed vector graphics in HTML.
+The workspace accepts HTML, CSS, JSON, images (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`), fonts (`.woff`, `.woff2`, `.ttf`, `.otf`), video (`.mp4`, `.mov`, `.webm`), and audio (`.mp3`, `.wav`, `.m4a`, `.ogg`). Any other type, scripts and `.svg` files included, is rejected at signing and refused at commit as `unpromotable_type`: use the runtime scripts provided by the project and write vector graphics inline in the HTML. HTML is limited to 64 KiB per file; `narrator_captions.html` to 4 MiB.
 
 An editable effect or caption is a composition document containing a `<template>`, mounted from the entry:
 
