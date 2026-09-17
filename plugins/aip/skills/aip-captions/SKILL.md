@@ -18,7 +18,7 @@ The caption layer is one composition, `compositions/narrator_captions.html`, wit
 
 ## The call
 
-Call `build_captions` with `project_id`, `caption_style` (the pattern), and any of `position`, `placement`, `hide_intervals`, `emphasis_word_ids`, `font`, `accent`. It returns a task; read it with `get_task` (its `poll_args` say when). The finished task's `result` names the two files the service staged (`staged`), the pattern and position it baked, the emphasis it used as `word_id` values, and `host_div`, the one element for `index.html`:
+Call `build_captions` with `project_id`, `caption_style` (the pattern), and any of `position`, `placement`, `hide_intervals`, `emphasis_word_ids`, `font`, `accent`. It returns a task; read it with `get_task` (its `poll_args` say when). The finished task's `result` names the files the service staged (`files`, one `{path, sha256}` per file; `staged` lists the same paths), the pattern and position it baked, the emphasis it used as `word_id` values, and `host_div`, the one element for `index.html`:
 
 ```html
 <div
@@ -33,7 +33,7 @@ Call `build_captions` with `project_id`, `caption_style` (the pattern), and any 
 ></div>
 ```
 
-Place `host_div` as written (its duration and canvas come from the root you committed; placeholders mean commit the root first) inside the root, last, on its own track, then upload your tree and `commit_workspace` as usual: the staged caption files promote with your round, and the editor finds the running caption by the `.caption-band` element inside that host. A file you stage yourself at `compositions/narrator_captions.html` or `compositions/transcript-src.json` replaces the service's. A caption layer you write yourself must carry its words the way the editor and the export read them: one inline `const WORDS = [...];` JSON array, one object per word with `word`, `start` and `end` (seconds on the cut), and an integer `group_id` shared by the words of one phrase. Hand back the editor link; there is no local inspection step. One `build_captions` run is one flat charge, whether or not you named the emphasis words.
+Place `host_div` as written (its duration and canvas come from the root you committed; placeholders mean commit the root first) inside the root, last, on its own track, then upload your tree and `commit_workspace`. When that commit names `expected_files`, add the result's `files` entries to the list exactly as returned; a batch that leaves them out keeps the caption files staged and the round reports them in `retained_staged`. A commit that names no batch promotes them with everything staged. The editor finds the running caption by the `.caption-band` element inside that host. A file you stage yourself at `compositions/narrator_captions.html` or `compositions/transcript-src.json` replaces the service's. A caption layer you write yourself must carry its words the way the editor and the export read them: one inline `const WORDS = [...];` JSON array, one object per word with `word`, `start` and `end` (seconds on the cut), and an integer `group_id` shared by the words of one phrase. Hand back the editor link; there is no local inspection step. One `build_captions` run is one flat charge, whether or not you named the emphasis words.
 
 ## Patterns
 
