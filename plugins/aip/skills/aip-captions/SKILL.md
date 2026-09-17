@@ -3,7 +3,7 @@ name: aip-captions
 description: "Pick the caption style for an AI Producer project. Read when the brief asks for captions or subtitles: how to choose one of the eight subtitle patterns from the video's content, which knobs the host controls, and the one call that has the service build the caption layer."
 ---
 
-# Captions for an AIP project
+# Captions for an AI Producer project
 
 The caption layer is one composition, `compositions/narrator_captions.html`, with `compositions/transcript-src.json` beside it. The service builds both from a subtitle pattern you pick and the project's transcript; you do not write caption HTML, CSS, or word data. Your job is the pick and its few knobs, made from what you know about the video.
 

@@ -3,7 +3,7 @@ name: aip-framing
 description: "Frame the speaker for an AI Producer project. Read once before authoring the root layout: pick the canvas first, then who owns the frame for each beat (the speaker, the footage, or the canvas), which seat shapes and positions that canvas allows, the geometry a speaker frame keeps, and the root-timeline mechanism that moves the speaker."
 ---
 
-# Framing for an AIP project
+# Framing for an AI Producer project
 
 Framing decides who owns the frame for each beat: the speaker, the footage, or the canvas. It is one decision per beat, made from the canvas, the transcript, and the footage, and it is yours. How anything looks (color, corners, shadows, type) is the visual style's; this page owns the choice and the geometry it must keep. The [composition contract](../aip-composition/SKILL.md) owns what the editor and the export read.
 

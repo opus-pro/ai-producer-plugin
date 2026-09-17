@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check a local AIP workspace without network, media decoding, or rendering."""
+"""Check a local AI Producer workspace without network, media decoding, or rendering."""
 
 import argparse
 from html.parser import HTMLParser
