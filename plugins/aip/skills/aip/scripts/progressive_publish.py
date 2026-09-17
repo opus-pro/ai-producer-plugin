@@ -400,6 +400,12 @@ def _validate_checkpoint_state(state, root):
         "schema", "status", "workspace", "project_id", "planned_duration", "baseline",
         "effects", "digest", "remote", "accepted_hashes", "publications", "pending", "warning_codes",
     }
+    if isinstance(state, dict) and state.get("schema") == 2:
+        if set(state) != required - {"warning_codes"} or state.get("status") not in {
+                "ready", "prepared", "finished"}:
+            raise ValueError("invalid_checkpoint_state")
+        # Older checkpoints did not retain warning codes; upgrade on the next save.
+        state = {**state, "schema": CHECKPOINT_SCHEMA, "warning_codes": []}
     if not isinstance(state, dict) or set(state) != required or state.get("schema") != CHECKPOINT_SCHEMA:
         raise ValueError("invalid_checkpoint_state")
     status = state["status"]

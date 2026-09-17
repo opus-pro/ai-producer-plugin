@@ -256,6 +256,49 @@ class ProgressiveDraftTests(unittest.TestCase):
         self.assertEqual(state["status"], "finished")
         self.assertEqual(report["warning_codes"], ["asset_warning", "runtime_check_unavailable"])
 
+    def write_legacy_checkpoint(self):
+        state = read_checkpoint(self.state_path)
+        state["schema"] = 2
+        del state["warning_codes"]
+        checkpoint.write_checkpoint(self.state_path, state)
+        return state
+
+    def test_schema_two_ready_checkpoint_upgrades_on_prepare(self):
+        draft, files = self.accepted_first_and_draft()
+        legacy = self.write_legacy_checkpoint()
+        report = prepare(self.root, self.state_path, files, draft=draft, after_effect=1)
+        upgraded = read_checkpoint(self.state_path)
+        self.assertEqual(report["base_digest"], legacy["digest"])
+        self.assertEqual(upgraded["schema"], 3)
+        self.assertEqual(upgraded["warning_codes"], [])
+        for field in ("baseline", "effects", "accepted_hashes", "publications"):
+            self.assertEqual(upgraded[field], legacy[field])
+        self.assertEqual(upgraded["status"], "prepared")
+
+    def test_schema_two_prepared_checkpoint_upgrades_on_accept(self):
+        first = self.prepare_first()
+        legacy = self.write_legacy_checkpoint()
+        report = accept(self.root, self.state_path, "task-1", "revision-1", receipt_files(first),
+                        warning_codes=["runtime_check_unavailable"])
+        upgraded = read_checkpoint(self.state_path)
+        self.assertEqual(upgraded["schema"], 3)
+        self.assertEqual(upgraded["baseline"], legacy["baseline"])
+        self.assertEqual(upgraded["digest"], "revision-1")
+        self.assertEqual(upgraded["publications"], 1)
+        self.assertEqual(report["warning_codes"], ["runtime_check_unavailable"])
+
+    def test_schema_two_malformed_states_remain_rejected(self):
+        legacy = self.write_legacy_checkpoint()
+        missing = dict(legacy)
+        del missing["digest"]
+        invalid = [missing, {**legacy, "warning_codes": []}, {**legacy, "status": "failed"},
+                   {**legacy, "publications": 1}, {**legacy, "unknown": True}]
+        for state in invalid:
+            with self.subTest(state=state):
+                with self.assertRaisesRegex(ValueError, "invalid_checkpoint_state"):
+                    publication.ProgressCheckpoint.resume(self.root, state)
+        self.assertEqual(read_checkpoint(self.state_path), legacy)
+
     def test_publisher_failure_wakes_waiting_draft_without_changing_root(self):
         first = self.prepare_first()
         published = workspace_bytes(self.root)
