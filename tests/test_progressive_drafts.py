@@ -9,6 +9,7 @@ import tempfile
 import threading
 import unittest
 from unittest.mock import patch
+from editing_script_fixtures import write_editing_script
 
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "plugins/aip/skills/aip/scripts"
@@ -70,6 +71,7 @@ class ProgressiveDraftTests(unittest.TestCase):
         root = directory / "render-engine"
         root.mkdir(parents=True)
         (root / "index.html").write_text(index(), encoding="utf-8")
+        write_editing_script(root)
         state_path = directory / ".aip-progress.json"
         initialize(root, state_path, "test-project", DURATION, "initial", REMOTE_FILES)
         return root, state_path
@@ -588,7 +590,9 @@ class ProgressiveDraftTests(unittest.TestCase):
         self.assertEqual(plan["base_digest"], "initial")
         self.assertFalse(plan["authoring"])
         self.assertTrue(plan["final"])
-        self.assertEqual(workspace_bytes(self.root), workspace_bytes(draft))
+        self.assertEqual({path: data for path, data in workspace_bytes(self.root).items()
+                          if path != "compositions/editing-script.json"}, workspace_bytes(draft))
+        self.assertIn("render-engine/compositions/editing-script.json", receipt_files(plan))
         self.assertEqual(read_checkpoint(self.state_path)["status"], "prepared")
 
     def test_batch_join_waits_across_two_accepted_effects(self):

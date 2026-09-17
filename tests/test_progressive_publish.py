@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+from editing_script_fixtures import write_editing_script
 
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "plugins/aip/skills/aip/scripts"
@@ -33,6 +34,7 @@ class ProgressivePublishTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         (self.root / "index.html").write_text(index(), encoding="utf-8")
+        write_editing_script(self.root)
         self.progress = ProgressCheckpoint(
             self.root,
             "test-project",
@@ -113,7 +115,7 @@ class ProgressivePublishTests(unittest.TestCase):
             encoding="utf-8",
         )
         plan = self.progress.prepare(files + dependencies)
-        self.assertEqual([len(batch) for batch in plan["sign_batches"]], [SIGN_BATCH_SIZE, 2])
+        self.assertEqual([len(batch) for batch in plan["sign_batches"]], [SIGN_BATCH_SIZE, 3])
 
     def test_unexpected_document_in_receipt_stops_acceptance(self):
         plan = self.progress.prepare(self.author(1))
@@ -176,7 +178,7 @@ class ProgressivePublishTests(unittest.TestCase):
         alias.symlink_to(physical, target_is_directory=True)
         with patch("progressive_publish.tempfile.TemporaryDirectory", return_value=nullcontext(str(alias))):
             plan = self.progress.prepare(files, final=True)
-        self.assertEqual(sum(len(batch) for batch in plan["sign_batches"]), 2)
+        self.assertEqual(sum(len(batch) for batch in plan["sign_batches"]), 3)
 
 
 if __name__ == "__main__":
