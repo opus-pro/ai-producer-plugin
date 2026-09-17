@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import math
 import mimetypes
+import os
 from pathlib import Path
 import re
 import shutil
@@ -23,8 +24,8 @@ SERVER_RUNTIME_PATHS = frozenset({
     "render-engine/public/vendor/fit-engine.js",
     "render-engine/public/vendor/connector-engine.js",
 })
-CHECKPOINT_SCHEMA = 2
-CHECKPOINT_STATUSES = frozenset({"ready", "prepared", "finished"})
+CHECKPOINT_SCHEMA = 3
+CHECKPOINT_STATUSES = frozenset({"ready", "prepared", "failed", "finished"})
 _HASH = re.compile(r"[0-9a-f]{64}")
 _WARNING = re.compile(r"[a-zA-Z0-9_-]{1,100}")
 
@@ -68,6 +69,7 @@ class ProgressCheckpoint:
         self.publications = 0
         self.status = "ready"
         self.pending = None
+        self.warning_codes = []
 
     @classmethod
     def resume(cls, workspace, state):
@@ -85,6 +87,7 @@ class ProgressCheckpoint:
         self.publications = values["publications"]
         self.status = values["status"]
         self.pending = values["pending"]
+        self.warning_codes = values["warning_codes"]
         return self
 
     def checkpoint(self):
@@ -101,6 +104,7 @@ class ProgressCheckpoint:
             "accepted_hashes": self.accepted_hashes,
             "publications": self.publications,
             "pending": self.pending,
+            "warning_codes": self.warning_codes,
         }
 
     def _copy(self, relative, target):
@@ -150,10 +154,90 @@ class ProgressCheckpoint:
             if file.is_file() and hashlib.sha256(file.read_bytes()).hexdigest() != expected:
                 raise ValueError("accepted_file_changed")
 
-    def prepare(self, files, *, final=False):
+    def _prepare_draft(self, files, draft, final, save):
+        """Validate an isolated next-effect draft before touching publication files."""
+        source = Path(draft).resolve(strict=True)
+        if not source.is_dir() or source.is_relative_to(self.root) or self.root.is_relative_to(source):
+            raise ValueError("draft_must_be_outside_workspace")
+        paths = [relative_path(path) for path in files]
+        if not paths or len(paths) > MAX_FILES or len(set(paths)) != len(paths) or "index.html" not in paths:
+            raise ValueError("invalid_publication_files")
+        self._verify_accepted_files()
+        with tempfile.TemporaryDirectory(prefix="aip-draft-") as directory:
+            candidate_root = Path(directory).resolve()
+            for relative in self.remote:
+                if Path(relative).suffix.lower() in {".html", ".css"} and (self.root / relative).is_file():
+                    self._copy(relative, candidate_root)
+            for relative in paths:
+                file = (source / relative).resolve(strict=True)
+                destination = (self.root / relative).resolve()
+                if not file.is_relative_to(source) or not file.is_file():
+                    raise ValueError("draft_path_outside_workspace")
+                if not destination.is_relative_to(self.root):
+                    raise ValueError("publication_path_outside_workspace")
+                target = candidate_root / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(file, target)
+            # Unlisted draft compositions must not silently bypass the one-effect contract.
+            for file in (source / "compositions").rglob("*.html"):
+                if file.relative_to(source).as_posix() not in paths:
+                    raise ValueError("future_effect_files_present")
+            candidate = type(self).resume(candidate_root, {
+                **self.checkpoint(), "workspace": str(candidate_root),
+            })
+            plan = candidate.prepare(paths, final=final)
+            def installed():
+                self.pending = candidate.pending
+                self.status = candidate.status
+                if save is not None:
+                    save(self.checkpoint())
+
+            try:
+                self._install_draft(candidate_root, paths, installed)
+            except Exception:
+                self.pending = None
+                self.status = "ready"
+                raise
+        return plan
+
+    def _install_draft(self, candidate, paths, installed_callback):
+        """Replace validated files atomically per path, rolling back a failed batch."""
+        with tempfile.TemporaryDirectory(prefix=".aip-install-", dir=self.root) as directory:
+            stage = Path(directory)
+            previous = set()
+            for relative in paths:
+                target = self.root / relative
+                staged = stage / "new" / relative
+                staged.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(candidate / relative, staged)
+                if target.exists():
+                    backup = stage / "old" / relative
+                    backup.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(target, backup)
+                    previous.add(relative)
+            installed = []
+            try:
+                for relative in paths:
+                    target = self.root / relative
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    os.replace(stage / "new" / relative, target)
+                    installed.append(relative)
+                installed_callback()
+            except Exception:
+                for relative in reversed(installed):
+                    target = self.root / relative
+                    if relative in previous:
+                        os.replace(stage / "old" / relative, target)
+                    else:
+                        target.unlink()
+                raise
+
+    def prepare(self, files, *, final=False, draft=None, save=None):
         """Freeze the exact batch the current host must sign, upload, and commit."""
         if self.status != "ready":
             raise RuntimeError("publication_checkpoint_closed")
+        if draft is not None:
+            return self._prepare_draft(files, draft, final, save)
         paths = [relative_path(path) for path in files]
         if not paths or len(paths) > MAX_FILES or len(set(paths)) != len(paths) or "index.html" not in paths:
             raise ValueError("invalid_publication_files")
@@ -212,6 +296,7 @@ class ProgressCheckpoint:
             if not file.is_file() or hashlib.sha256(file.read_bytes()).hexdigest() != row["sha256"]:
                 raise ValueError("prepared_file_changed")
         warnings = sorted({code for code in warning_codes if isinstance(code, str) and _WARNING.fullmatch(code)})
+        self.warning_codes = sorted(set(self.warning_codes).union(warnings))
         final = self.pending["final"]
         self.effects = self.pending["effects"]
         self.digest = digest
@@ -225,7 +310,7 @@ class ProgressCheckpoint:
             "duration_seconds": self.duration,
             "task_id": task_id,
             "final": final,
-            "warning_codes": warnings,
+            "warning_codes": self.warning_codes,
         }
 
 
@@ -313,7 +398,7 @@ def _valid_pending(value, effects, duration, status):
 def _validate_checkpoint_state(state, root):
     required = {
         "schema", "status", "workspace", "project_id", "planned_duration", "baseline",
-        "effects", "digest", "remote", "accepted_hashes", "publications", "pending",
+        "effects", "digest", "remote", "accepted_hashes", "publications", "pending", "warning_codes",
     }
     if not isinstance(state, dict) or set(state) != required or state.get("schema") != CHECKPOINT_SCHEMA:
         raise ValueError("invalid_checkpoint_state")
@@ -358,6 +443,10 @@ def _validate_checkpoint_state(state, root):
             or not set(accepted_hashes).issubset(remote)):
         raise ValueError("invalid_checkpoint_state")
     pending = _valid_pending(state["pending"], effects, duration, status)
+    warning_codes = state["warning_codes"]
+    if (not isinstance(warning_codes, list) or not all(
+            isinstance(code, str) and _WARNING.fullmatch(code) for code in warning_codes)):
+        raise ValueError("invalid_checkpoint_state")
     return {
         **state,
         "planned_duration": duration,
