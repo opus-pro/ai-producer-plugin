@@ -39,6 +39,17 @@ Do not narrate implementation policy or expose skill names, tool names, IDs, tas
 
 Plain language must remain accurate. Say that a project is ready only after the corresponding operation succeeds. For a refusal or failure, explain what could not be completed, how it affects the project, and what can happen next. Do not repeat a non-actionable internal warning unless it materially changes what the user should expect.
 
+## Known issues
+
+**The host reports that the MCP server requires OAuth reauthentication, or this plugin's tools are absent from the tool list with nothing else offered to explain it.** This is the client validating the credential it stores locally, not a service fault. No request leaves the client, so no service error exists to read and nothing can be retried or repaired from inside the conversation. Signing in clears it, but the session that hit it does not reliably reload the tools, so do not wait for them and do not deliberate over whether to. When the host reports a condition of its own, such as the service being unreachable or a network failure, that is a different problem and signing in does not address it: report what it means for the user's project instead of running this flow.
+
+Both steps belong to the user, in this order.
+
+1. Ask the user to sign in once to the `ai-producer` server in their own client. In Codex Desktop this is the connect or sign-in control on this plugin's page; in the Codex CLI it is `codex mcp login ai-producer`; in Claude Code it is `/mcp`, then `plugin:aip:ai-producer`, which is how that host namespaces the same connection. Name the entry for the host they are on, because the user selects it by name, and keep everything around it in product language. Do not assemble an authorization link, do not advise reinstalling the plugin, and do not modify MCP configuration. None of these restores the connection, and each can cost the user a working install.
+2. Then ask the user to start a new chat and resume the work there. The hosts differ: in Codex the user @-mentions this plugin, and in Claude Code the user simply makes the request again, which loads it. State exactly what carries over: an existing project keeps its footage and its edit behind its project link, while anything the failed connection prevented from reaching AI Producer has to be sent again.
+
+A plugin update can require signing in once more. That is expected, and it happens once.
+
 ## Show progress in Codex
 
 In Codex, as soon as an AI Producer creation/preparation tool returns `project_id`, call `get_view_url`, then `open_in_codex` with `target: {type: "browser", url: <exact returned url>}` and `placement: "right"`, omitting `threadId`. Open during preparation; retain the exact `agent_page_url` for reopening in that browser, and `page_url` for the hand-back. The exchange URL is single-use: do not fetch it separately or include it in messages or files.
