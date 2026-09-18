@@ -76,14 +76,22 @@ class PreflightTests(unittest.TestCase):
         self.assertIn("unpromotable_type", self.codes(preflight.check(self.root)))
         self.assertTrue(preflight.check(self.root, ["public/vendor/gsap.min.js"])["ok"])
 
-    def test_declared_service_composition_is_reported_as_a_warning(self):
-        (self.root / "compositions/beat.html").unlink()
+    def test_declared_service_caption_layer_is_reported_as_a_warning(self):
+        captions = ('<div class="visual-host clip" data-composition-id="narrator-captions" '
+                    'data-composition-src="compositions/narrator_captions.html" data-start="0" data-duration="8"></div>')
+        self.write("index.html", ROOT.format(HOST + captions))
         undeclared = preflight.check(self.root)
         self.assertIn("composition_not_locally_inspectable", self.codes(undeclared))
-        declared = preflight.check(self.root, ["render-engine/compositions/beat.html"])
+        declared = preflight.check(self.root, ["render-engine/compositions/narrator_captions.html"])
         self.assertNotIn("composition_not_locally_inspectable", self.codes(declared))
         self.assertIn({"code": "composition_not_locally_inspectable", "file": "index.html"}, declared["warnings"])
         self.assertTrue(declared["ok"])
+
+    def test_declared_missing_composition_other_than_the_caption_layer_stays_an_error(self):
+        (self.root / "compositions/beat.html").unlink()
+        report = preflight.check(self.root, ["render-engine/compositions/beat.html"])
+        self.assertIn("composition_not_locally_inspectable", self.codes(report))
+        self.assertFalse(report["ok"])
 
     def test_composition_id_and_timing_are_checked(self):
         self.write("compositions/beat.html", '<template><div data-composition-id="wrong" data-start="nan" data-duration="0"></div></template>')
