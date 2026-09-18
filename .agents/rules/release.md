@@ -20,7 +20,7 @@ Keep these six values identical:
 - `plugins/aip/.codex-plugin/plugin.json`: `version`.
 - `plugins/aip/.claude-plugin/plugin.json`: `version`.
 - `.claude-plugin/marketplace.json`: the AIP entry's `version`.
-- `plugins/aip/.mcp.json`: `mcpServers.aip.headers.X-AIP-Plugin-Version` and `mcpServers.aip.http_headers.X-AIP-Plugin-Version`.
+- `plugins/aip/.mcp.json`: `mcpServers.ai-producer.headers.X-AIP-Plugin-Version` and `mcpServers.ai-producer.http_headers.X-AIP-Plugin-Version`.
 
 Use SemVer without `v` in JSON, and with `v` in log names and PR titles. Prerelease and build suffixes are allowed, but a build-metadata-only change is not a version increase. A new version must have greater precedence than the verified published version, the starting version, and the current base branch version.
 

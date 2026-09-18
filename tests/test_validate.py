@@ -45,6 +45,16 @@ class ValidateFixtureTest(unittest.TestCase):
     def test_pristine_copy_passes(self) -> None:
         validate.main(self.root)
 
+    def test_legacy_or_duplicate_mcp_server_fails(self) -> None:
+        path = self.root / MCP_CONFIG
+        original = validate.load_json(path)
+        server = original["mcpServers"][validate.MCP_SERVER_NAME]
+        for names in (("aip",), ("aip", "ai-producer")):
+            with self.subTest(names=names):
+                path.write_text(json.dumps({"mcpServers": dict.fromkeys(names, server)}))
+                with self.assertRaisesRegex(AssertionError, "unexpected MCP server identity"):
+                    validate.main(self.root)
+
     def test_missing_skill_reference_fails(self) -> None:
         reference = self.root / "plugins/aip/skills/aip/references/workspace.md"
         reference.unlink()
@@ -98,7 +108,7 @@ class ValidateFixtureTest(unittest.TestCase):
             with self.subTest(key=key):
                 path = self.root / MCP_CONFIG
                 config = validate.load_json(path)
-                config["mcpServers"]["aip"].pop(key)
+                config["mcpServers"][validate.MCP_SERVER_NAME].pop(key)
                 path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
 
                 with self.assertRaisesRegex(AssertionError, key):

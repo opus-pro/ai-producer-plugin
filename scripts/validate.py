@@ -25,6 +25,7 @@ from check_release_pr import (
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_DIRNAME = "aip"
+MCP_SERVER_NAME = "ai-producer"
 EXPECTED_REPOSITORY = "https://github.com/opus-pro/ai-producer-plugin"
 EXPECTED_ENDPOINT = "https://producer.opus.pro/api/mcp"
 EXPECTED_SKILLS = {"aip", "aip-captions", "aip-composition", "aip-framing"}
@@ -108,15 +109,17 @@ def validate_marketplaces(root: Path, version: str) -> None:
 
 def validate_mcp(root: Path, version: str) -> None:
     mcp = load_json(plugin_dir(root) / ".mcp.json")
-    aip = mcp["mcpServers"]["aip"]  # type: ignore[index]
-    assert aip["type"] == "http"  # type: ignore[index]
-    assert aip["url"] == aip["oauth_resource"] == EXPECTED_ENDPOINT  # type: ignore[index]
+    servers = mcp["mcpServers"]
+    assert isinstance(servers, dict) and set(servers) == {MCP_SERVER_NAME}, "unexpected MCP server identity"
+    server = servers[MCP_SERVER_NAME]
+    assert server["type"] == "http"  # type: ignore[index]
+    assert server["url"] == server["oauth_resource"] == EXPECTED_ENDPOINT  # type: ignore[index]
 
     # A version bump that forgets this header leaves the service reading a stale
     # version for every install of the new bundle, and nothing else fails, so
     # pin it to the manifests here.
     for key in MCP_HEADER_KEYS:
-        headers = aip.get(key)  # type: ignore[union-attr]
+        headers = server.get(key)  # type: ignore[union-attr]
         assert isinstance(headers, dict) and headers, (
             f".mcp.json must set {key!r}; without it the "
             f"{'Claude Code' if key == 'headers' else 'Codex'} bundle sends no "

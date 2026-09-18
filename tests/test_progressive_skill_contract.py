@@ -1,5 +1,9 @@
 """Keep the skill's model boundary aligned with visible publication progress."""
 from pathlib import Path
+import json
+import re
+import shutil
+import subprocess
 import unittest
 
 
@@ -27,6 +31,40 @@ class ProgressiveSkillContractTests(unittest.TestCase):
         self.assertIn("Call the AI Producer MCP tools already loaded in the current task", reference)
         self.assertNotIn("mcpServer/tool/call", reference)
         self.assertIn("Never run `codex`, start an app server, create an ephemeral task", reference)
+
+    @unittest.skipUnless(shutil.which("node"), "Node is needed only for host-JavaScript tests")
+    def test_publication_example_uses_advertised_callable_names(self):
+        example = re.search(r"```javascript\n(.*?)\n```", REFERENCE.read_text(), re.DOTALL).group(1)
+        harness = r"""
+const assert = require("node:assert/strict");
+(async () => {
+  for (const prefix of ["mcp__ai_producer__", "mcp__ai-producer__", "host_selected_plugin__"]) {
+    const publicationToolNames = {
+      signUpload: prefix + "sign_workspace_upload",
+      commitWorkspace: prefix + "commit_workspace",
+      waitTask: prefix + "wait_task",
+    };
+    const tools = Object.fromEntries(Object.values(publicationToolNames).map(name => [name, () => name]));
+    const source = `bindings => {
+      for (const key of Object.keys(publicationToolNames)) {
+        assert.equal(bindings[key], tools[publicationToolNames[key]]);
+        assert.equal(typeof bindings[key], "function");
+      }
+      return async () => ({ bound: true });
+    }`;
+    const yield_control = () => {}, text = value => assert.deepEqual(value, { bound: true });
+    const aipSkillPath = "skill", renderEnginePath = "workspace", checkpointPath = "checkpoint";
+    const draft2Path = "draft2", draft3Path = "draft3";
+    await eval("(async () => {" + EXAMPLE + "})()");
+  }
+})().catch(error => { console.error(error); process.exitCode = 1; });
+"""
+        result = subprocess.run(
+            ["node", "-e", harness.replace("EXAMPLE", json.dumps(example))],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
