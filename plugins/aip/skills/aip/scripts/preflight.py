@@ -158,7 +158,13 @@ def check(root, remote_files=()):
             target = reference(attrs["data-composition-src"], path, "data-composition-src")
             child = documents.get(target)
             if child is None:
-                issue(errors, "composition_not_locally_inspectable", path)
+                # The caption layer the service built and staged is declared with
+                # --remote-file and cannot be read here, so it is reported as a warning.
+                # Every other missing composition, declared or not, stays an error: its
+                # id and contents were never checked.
+                service_caption = (target is not None and target in declared
+                    and attrs.get("data-composition-id") == "narrator-captions")
+                issue(warnings if service_caption else errors, "composition_not_locally_inspectable", path)
                 continue
             identifier = attrs.get("data-composition-id")
             matches = [values for _, values, depth in child.elements

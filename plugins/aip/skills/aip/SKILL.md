@@ -29,7 +29,7 @@ Deliver the editable project link by default. Treat "finished video" or "final c
 
 Do not inspect the generated preview or MP4, including browser playback, screenshots, contact sheets, frame extraction, audio analysis, or delegated inspection. Do not start a post-delivery review, repair, or aesthetic iteration. This stopping condition applies whether the deliverable is a preview or an explicitly requested export. Input-media analysis, including retrieved source assets, and local static contract checks before submission remain allowed.
 
-Use only this package's [AI Producer composition contract](../aip-composition/SKILL.md) and [workspace reference](references/workspace.md) for integration. Read the workspace reference once before source upload or export, the composition contract once before authoring, and the [framing skill](../aip-framing/SKILL.md) once before deciding the speaker's frame for each beat; load the linked PIP example only when needed, and the [captions skill](../aip-captions/SKILL.md) only when the brief asks for captions. Do not search global HyperFrames or media-use skills, backend source, or repository documentation to make this video. Resolve these links relative to the skill actually loaded, never a remembered versioned cache path. If that path is stale, use the host's installed-plugin listing once to find the enabled package and its version.
+Use only this package's [AI Producer composition contract](../aip-composition/SKILL.md) and [workspace reference](references/workspace.md) for integration. Read the workspace reference once before source upload or export, the composition contract once before authoring, and the [framing skill](../aip-framing/SKILL.md) once before deciding the speaker's frame for each beat; load the linked PIP example only when needed, and the [dynamic caption skill](../aip-dynamic-caption/SKILL.md) once before the caption layer when it is listed. Do not search global HyperFrames or media-use skills, backend source, or repository documentation to make this video. Resolve these links relative to the skill actually loaded, never a remembered versioned cache path. If that path is stale, use the host's installed-plugin listing once to find the enabled package and its version.
 
 ## Talk to the user
 
@@ -49,7 +49,7 @@ Opening is a status-only handoff to the user, not inspection. Use no external br
 
 ## Default editorial taste
 
-Plan each new talking-head edit from its supplied media and publishing brief. User instructions override matching defaults; keep the rest. Preserve established choices in follow-up edits unless the user requests changes.
+Plan each new talking-head edit from its supplied media and publishing brief. The user's request, in the brief or in a later edit, is the highest instruction: it overrides any default below, and nothing listed or unlisted among your skills blocks it. A listed skill sets a default and the method for it; an unlisted one only drops that default, so a treatment the user asks for is still delivered with the tools the service exposes. Keep the rest of the defaults. Preserve established choices in follow-up edits unless the user requests changes.
 
 ### Editing
 
@@ -59,6 +59,7 @@ Plan each new talking-head edit from its supplied media and publishing brief. Us
 - Use presenter close-ups for transitions, summaries, conditions, emotion, and closing calls to action. Emphasize rebuttals and qualifications with zooms or visual highlights.
 - For concrete subjects, prefer relevant real footage, then images, then vectors. Overlay quick object explanations around the presenter.
 - Reserve text overlays on the presenter for the opening hook; elsewhere, use only short labels within explanatory visuals. Use transcription for planning and timing.
+- Captions are on by default while `aip-dynamic-caption` is listed.
 - For sarcasm, self-deprecation, or brief reminders, use a monochrome or desaturated presenter close-up for at most one sentence, then restore color.
 - Use smooth effects and layout transitions; minimize hard cuts.
 
@@ -76,7 +77,7 @@ Inspect the supplied media and plan once. When the user ties a visual to an on-s
 
 Plan the whole edit locally. When the current schema exposes `authoring`, set it to `true` on a new project's creation/preparation request or an existing project's first `sign_workspace_upload` request. Set it to `true` on any intermediate commit and `false` on the final commit, so the service can retain and then close external-authoring status. This uses existing calls only; never add a provider call, model subtask, heartbeat, or polling round for status. Omit the field when the schema lacks it.
 
-For a fresh project in Codex, use the [progressive checkpoint flow](references/progressive-publication.md). Plan the complete edit once. Publish the first effect as soon as it is ready. Then author the remaining effects in batches of up to two while the preceding batch publishes. Keep drafts isolated and let the helper publish each effect in order using the AI Producer MCP tools already loaded in the current task. Preserve the planned effects, timing, and transitions; batching controls scheduling only. Keep unfinished beats full-length with normal presenter framing, and publish without intentional delays. Do not launch another Codex CLI, app server, task, or model subtask. The last effect closes authoring status.
+For a fresh project in Codex, use the [progressive checkpoint flow](references/progressive-publication.md). Plan the complete edit once. Publish the first effect as soon as it is ready. Then author the remaining effects in batches of up to two while the preceding batch publishes. Keep drafts isolated and let the helper publish each effect in order using the AI Producer MCP tools already loaded in the current task. Preserve the planned effects, timing, and transitions; batching controls scheduling only. Keep unfinished beats full-length with normal presenter framing, and publish without intentional delays. Do not launch another Codex CLI, app server, task, or model subtask. The last commit closes authoring status: the final batch of a caption-free edit, otherwise the caption commit that follows the last batch.
 
 Run the batch helper in the execution that writes its drafts. It handles signing, uploading, committing, held waiting, and receipt acceptance without separate model coordination or receipt-collection turns. The final receipt includes earlier warnings. If the host cannot keep an execution alive while authoring continues, await each batch without claiming overlap. Other hosts, existing effect graphs, and zero-effect edits use ordinary complete-graph publication. Measure actual tokens and duration; overlapping work is not a cost or quality guarantee.
 
