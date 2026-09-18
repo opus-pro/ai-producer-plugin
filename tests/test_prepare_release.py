@@ -14,7 +14,7 @@ sys.path.insert(0, str(REPO / "scripts"))
 import prepare_release
 from check_release_pr import (
     LATEST_VERSION_FILE, RELEASE_TEMPLATE, VERSION_FIELDS, release_log_path,
-    validate_release_log, version_from_documents,
+    validate_release_log, version_fields_for, version_from_documents,
 )
 
 
@@ -43,8 +43,8 @@ class PrepareReleaseTest(unittest.TestCase):
         after = self.documents()
         self.assertEqual(version_from_documents(after), self.target)
         self.assertEqual(json.loads((self.root / LATEST_VERSION_FILE).read_text()), {"version": self.target})
-        for path, fields in VERSION_FIELDS.items():
-            for field in fields:
+        for path in VERSION_FIELDS:
+            for field in version_fields_for(path, after[path]):
                 parent = after[path]
                 original = before[path]
                 for key in field[:-1]:
@@ -56,6 +56,23 @@ class PrepareReleaseTest(unittest.TestCase):
         self.assertEqual(log.read_text(), template.replace("{{version}}", self.target).replace("{{previous_version}}", self.current))
         with self.assertRaisesRegex(ValueError, "template placeholders"):
             validate_release_log(log.read_text(), self.target)
+
+    def test_preserves_either_mcp_identity(self) -> None:
+        path = self.root / "plugins/aip/.mcp.json"
+        original = path.read_text()
+        for name in ("aip", "ai-producer"):
+            with self.subTest(name=name):
+                document = json.loads(original)
+                document["mcpServers"] = {name: next(iter(document["mcpServers"].values()))}
+                path.write_text(json.dumps(document))
+                # Each iteration needs the same unchanged version baseline.
+                for relative in VERSION_FIELDS:
+                    if relative != "plugins/aip/.mcp.json":
+                        shutil.copyfile(REPO / relative, self.root / relative)
+                log = prepare_release.prepare_release(self.root, self.target)
+                self.assertEqual(set(json.loads(path.read_text())["mcpServers"]), {name})
+                self.assertEqual(version_from_documents(self.documents()), self.target)
+                log.unlink()
 
     def test_unchanged_decreased_and_invalid_versions_leave_files_untouched(self) -> None:
         original = self.files()

@@ -23,8 +23,8 @@ VERSION_FIELDS = {
     "plugins/aip/.claude-plugin/plugin.json": (("version",),),
     ".claude-plugin/marketplace.json": (("plugins", 0, "version"),),
     "plugins/aip/.mcp.json": (
-        ("mcpServers", "aip", "headers", "X-AIP-Plugin-Version"),
-        ("mcpServers", "aip", "http_headers", "X-AIP-Plugin-Version"),
+        ("mcpServers", "ai-producer", "headers", "X-AIP-Plugin-Version"),
+        ("mcpServers", "ai-producer", "http_headers", "X-AIP-Plugin-Version"),
     ),
 }
 SEMVER = re.compile(
@@ -77,17 +77,29 @@ def reject_constant(value: str) -> None:
     raise ValueError(f"Invalid JSON constant: {value!r}")
 
 
+def version_fields_for(path: str, document: dict) -> tuple:
+    """Read either production identity without accepting ambiguous MCP copies."""
+    fields = VERSION_FIELDS[path]
+    if path != "plugins/aip/.mcp.json":
+        return fields
+    servers = document.get("mcpServers") if isinstance(document, dict) else None
+    if not isinstance(servers, dict) or set(servers) not in ({"aip"}, {"ai-producer"}):
+        raise ValueError("MCP config must contain exactly one production server: aip or ai-producer")
+    server = next(iter(servers))
+    return tuple((field[0], server, *field[2:]) for field in fields)
+
+
 def version_from_documents(documents: dict, *, allow_legacy: bool = False) -> str:
     """Check the canonical version and every host-specific copy."""
     versions = []
-    for path, fields in VERSION_FIELDS.items():
+    for path in VERSION_FIELDS:
         if allow_legacy and path == LATEST_VERSION_FILE and path not in documents:
             continue
         try:
             document = documents[path]
             if path == LATEST_VERSION_FILE and set(document) != {"version"}:
                 raise ValueError("The latest-version file must contain only the version key")
-            for field in fields:
+            for field in version_fields_for(path, document):
                 value = document
                 for key in field:
                     value = value[key]
@@ -228,9 +240,11 @@ def check_release_pr(repo: Path, base: str, head: str, title: str) -> str:
     unexpected = changed - (VERSION_FIELDS.keys() | {log_path})
     if unexpected:
         raise ValueError(f"Release PRs may only change the five version files and the new release log; unexpected paths: {sorted(unexpected)!r}")
-    for path, fields in VERSION_FIELDS.items():
+    for path in VERSION_FIELDS:
         original = before.get(path, {"version": old_version})
-        if without_versions(original, fields) != without_versions(after[path], fields):
+        original_content = without_versions(original, version_fields_for(path, original))
+        updated_content = without_versions(after[path], version_fields_for(path, after[path]))
+        if original_content != updated_content:
             raise ValueError(f"Release PRs may only change version fields, not other content in {path}")
 
     if precedence(new_version) <= max(precedence(old_version), precedence(base_version)):
