@@ -13,7 +13,7 @@ Framing decides who owns the frame for each beat: the speaker, the footage, or t
 2. **The register, per beat.** One of the four in the first table. No register is home base: across a video, seat, overlay, and full cover should appear with roughly even odds, and a plan that leans on one throughout reads as a tic. Content fit outranks balance; a run whose beats all need the speaker keeps them, but each pick is a fresh decision, never a default inherited from the previous beat.
 3. **The framing, per moment; its rect, once per framing.** Each seated framing declares its shape, position, and resting rect once. Beats that share that framing keep it, and a different moment may take a different framing; two or three seat framings across a video is normal, and one seat held for every seated beat reads as a template. What never happens is re-deriving a rect inside a run to fit a long line or a wider figure: a payload that does not fit the band needs a different framing, not a nudged seat.
 4. **The windows.** A register that shows the speaker is legal only over a window where the speaker is on camera. When the source cuts away to something the creator chose to show, let it play raw rather than covering it.
-5. **The caption hide windows.** When a beat's payload fills the caption band, pass those windows as `hide_intervals` to the caption call; the [captions skill](../aip-captions/SKILL.md) owns that call.
+5. **The caption hide windows.** When a beat's payload fills the caption band, pass those windows as `hide_intervals` to the caption call; the [dynamic caption skill](../aip-dynamic-caption/SKILL.md) owns that call.
 
 ## Registers
 
