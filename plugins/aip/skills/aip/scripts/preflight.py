@@ -158,7 +158,11 @@ def check(root, remote_files=()):
             target = reference(attrs["data-composition-src"], path, "data-composition-src")
             child = documents.get(target)
             if child is None:
-                issue(errors, "composition_not_locally_inspectable", path)
+                # A composition the service built and staged (a caption layer) is declared
+                # with --remote-file and cannot be read here; report it, but only an
+                # undeclared missing composition is an error.
+                declared_remote = target is not None and target in declared
+                issue(warnings if declared_remote else errors, "composition_not_locally_inspectable", path)
                 continue
             identifier = attrs.get("data-composition-id")
             matches = [values for _, values, depth in child.elements

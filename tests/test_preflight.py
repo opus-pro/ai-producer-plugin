@@ -76,6 +76,15 @@ class PreflightTests(unittest.TestCase):
         self.assertIn("unpromotable_type", self.codes(preflight.check(self.root)))
         self.assertTrue(preflight.check(self.root, ["public/vendor/gsap.min.js"])["ok"])
 
+    def test_declared_service_composition_is_reported_as_a_warning(self):
+        (self.root / "compositions/beat.html").unlink()
+        undeclared = preflight.check(self.root)
+        self.assertIn("composition_not_locally_inspectable", self.codes(undeclared))
+        declared = preflight.check(self.root, ["render-engine/compositions/beat.html"])
+        self.assertNotIn("composition_not_locally_inspectable", self.codes(declared))
+        self.assertIn({"code": "composition_not_locally_inspectable", "file": "index.html"}, declared["warnings"])
+        self.assertTrue(declared["ok"])
+
     def test_composition_id_and_timing_are_checked(self):
         self.write("compositions/beat.html", '<template><div data-composition-id="wrong" data-start="nan" data-duration="0"></div></template>')
         codes = self.codes(preflight.check(self.root))
