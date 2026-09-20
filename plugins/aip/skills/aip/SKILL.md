@@ -69,7 +69,7 @@ Plan each new talking-head edit from its supplied media and publishing brief. Th
 - Open with a large title and zoom to emphasize the core point.
 - Use presenter close-ups for transitions, summaries, conditions, emotion, and closing calls to action. Emphasize rebuttals and qualifications with zooms or visual highlights.
 - For concrete subjects, prefer relevant real footage, then images, then vectors. Overlay quick object explanations around the presenter.
-- Reserve text overlays on the presenter for the opening hook; elsewhere, use only short labels within explanatory visuals. Use transcription for planning and timing.
+- Never use a text overlay as a second caption: it does not repeat the sentence being spoken. Draw text over the presenter only as a beat's own payload: the opening hook title, one spoken phrase at display size, or a short label; the framing skill owns its forms and placement. Use transcription for planning and timing.
 - Captions are on by default while `aip-dynamic-caption` is listed.
 - For sarcasm, self-deprecation, or brief reminders, use a monochrome or desaturated presenter close-up for at most one sentence, then restore color.
 - Use smooth effects and layout transitions; minimize hard cuts.
