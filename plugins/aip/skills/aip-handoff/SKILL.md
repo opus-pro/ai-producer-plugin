@@ -1,0 +1,39 @@
+---
+name: aip-handoff
+description: "Act on a pasted @aip reference line from the AI Producer Motion library, such as `@aip p=<project> t=<seconds> motion-asset id=<id> version=<version>` or `@aip p=<project> t=<seconds> omni-preset slug=<slug>`: resolve the selection, list what the project can place, follow the listed next step to place the card at that time or to buy the named Scene restyle preset, and ask only where the listing or the user's own words require it."
+---
+
+# Acting on a pasted reference
+
+A line that starts with `@aip` is a reference, not an instruction: it names a project, a time, and a card the user picked in the Motion library. The catalogue behind the card lives on the service, never in this package, so nothing here describes what any card does. The default outcome of a paste is the deterministic placement the card offers in the browser; a creative variant is the second path and is taken only when the user asks for one.
+
+Read this once when a request carries such a line. The [AI Producer skill](../aip/SKILL.md) owns the user-facing language and the delivery boundary; the [framing skill](../aip-framing/SKILL.md) and its [cutout reference](../aip-framing/references/cutout.md) own the measurement fields a cutout package reads; the [composition contract](../aip-composition/SKILL.md) owns anything you author yourself.
+
+## The steps
+
+1. **Resolve first.** Call `resolve_selection` with the pasted lines before any other call. Each reference comes back as data: its `project_id`, its `kind` (`motion-asset` or `omni-preset`), its `address` (the card's identity), and `at_ms`, the output time the user was looking at. A line that names a project the session cannot act on is refused there; report that and stop. Never parse the line yourself or guess a card from its name.
+2. **A `motion-asset` reference.** Call `list_motion_assets` for the project and find the entry whose `motion_asset_id` and `version` match the address. Keep the reply's `project_revision`. Follow the entry's `action` and its `next`, nothing else:
+   - `add`: call `materialize_motion_asset` with `timeline_in_ms` equal to `at_ms`, `expected_project_revision` equal to the listed `project_revision`, and a fresh `idempotency_key`. Ask nothing; the card's defaults are the placement the user chose.
+   - `chooseInput`: `next` names the input keys that still need a value. Offer those inputs with `present_choices`, using the options and defaults the entry lists, then place as for `add` with the chosen values in `parameters` or `media_inputs`.
+   - a cutout package (an entry whose `next` carries `frame_speaker` arguments): follow the cutout rules below, then place as for `add` with one segment per window.
+   - `chat` or `unavailable`: report the listed `reason` in plain language and do not substitute another tool or another card.
+3. **An `omni-preset` reference.** Read the `scene_restyle` section of the same `list_motion_assets` reply and find the preset whose `slug` matches. When the section reports the project's Scene restyle switch off, ask the user once whether to turn it on for this project, and pass their literal answer as `enable_skill_quote`; never paraphrase, invent, or reuse a quote from another project. When the switch is on, do not ask. Then call `generate_scene_restyles` with `preset` set to the slug and one window that starts at `at_ms` and lasts between 4 and 10 s. `prompt` stays empty unless the user asked for something beyond the preset. This is the one paid call in this skill: before it, state its price from the tool's own description in the user's terms and proceed only on the user's go-ahead.
+4. **A variant, only on request.** When the user asks for a variant, a derivation, or their own version of the card, call `get_motion_asset` with the address's id and version, read the manifest and the entry source for the project's orientation, author the derived composition under the composition contract, and commit it with `sign_workspace_upload` and `commit_workspace` as a moment at `at_ms`. A variant never goes through `materialize_motion_asset`, and a plain paste never goes through this path.
+5. **Repair once.** A refusal whose `next` names a field to fill or a call to make is repaired by doing exactly that, once, and retrying the same call. A second refusal, or a refusal with no repair, is reported. Never repair by guessing a different tool.
+6. **Verify, then hand back.** Confirm the placement from the receipt (`instance_id`, `timeline_in_ms`, `timeline_out_ms`) or, for a restyle, from the finished task's verdict, and hand back `agent_page_url` (from the receipt, or from `get_project` when the reply carries none) so the user sees the result in the editor. Do not play, screenshot, or otherwise inspect the preview.
+
+## What a cutout placement keeps
+
+- **The windows are the service's.** `next` carries the complete `frame_speaker` call: one matte window per kept span of the speaker inside the effect window, cut at this project's cut boundaries, with the package's `slot` and `headroom_px`. Run it as supplied. Do not widen, merge, shift, or re-derive a window, and never open one window across the whole effect: a window that crosses a cut is refused, and a cutout that splices two takes is wrong even when it is not.
+- **One segment per window.** Read the task and bind, in window order, one segment per accepted window: `path` and `sha256` from that window's staged file, `start_ms` and `end_ms` from that window's cut times, and `geometry` from that window's `object_position.css` and its `cutout` numbers (`sink_px`, `card_clip_top_px`, `head_top_px`, `head_bottom_px`), pasted as returned. A window the measurement reports unusable (`presence.matte_ok` false or `cutout` null) is left out and named in the reply; when no window survives, report instead of placing.
+- **The revision is the one you listed with.** Pass the `project_revision` from the listing that supplied the windows. When the placement is refused for a stale revision, list again, compare the new windows with the ones already cut, re-run `frame_speaker` only for the spans that moved, reuse the files of the spans that did not, and place with the new revision.
+- **A retry places once.** Keep the same `idempotency_key` across a retry of the same placement; take a new key only for a new placement.
+
+## What a restyle keeps
+
+- **The window is the user's time.** It starts at `at_ms`; its length is the beat under it, held to the 4 to 10 s the tool accepts. A window out of bounds is refused unbilled, and a preset from another catalogue is refused unbilled with the slugs this project may use; pick from those.
+- **The cover is mounted where the tree expects it.** On a tree the service scaffolded, the finished task mounts the cover and the timeline shows it; add nothing. On a tree you authored, the verdict reports the cover's path without mounting it: mount it as the index-level `<video id="omni-<cid>" class="clip">` on its own track, where `<cid>` is the identifier the verdict reports for that window, with `src` at the reported path, `data-start` and `data-duration` equal to the window, `muted`, and `data-volume="0"`, then commit that index through `sign_workspace_upload` and `commit_workspace`. Never mount a second cover for a window the service already mounted.
+
+## Talk to the user
+
+Follow the AI Producer skill's language contract. Name the card as the user named it and the time as they see it; keep tool names, revisions, keys, hashes, and paths inside the calls. A question is asked only where a step above says so: missing inputs, the restyle switch, and the price of the paid call. Everything else is a report of what was placed, or of why it could not be, and what happens next.

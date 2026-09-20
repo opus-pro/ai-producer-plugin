@@ -28,7 +28,7 @@ PLUGIN_DIRNAME = "aip"
 MCP_SERVER_NAME = "ai-producer"
 EXPECTED_REPOSITORY = "https://github.com/opus-pro/ai-producer-plugin"
 EXPECTED_ENDPOINT = "https://producer.opus.pro/api/mcp"
-EXPECTED_SKILLS = {"aip", "aip-composition", "aip-dynamic-caption", "aip-framing"}
+EXPECTED_SKILLS = {"aip", "aip-composition", "aip-dynamic-caption", "aip-framing", "aip-handoff"}
 
 
 # The service needs the plugin version on each tool call.
