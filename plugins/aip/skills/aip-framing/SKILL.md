@@ -14,7 +14,7 @@ Framing decides who owns the frame for each beat: the speaker, the footage, or t
 3. **The form, per moment.** Seat, overlay, and full cover each offer a short menu of forms in their chapters below. Name the register and the form in the plan; a different moment may take a different form, and one form held for every beat of its register reads as a template.
 4. **The measurement, before you place.** Call `frame_speaker` with every window you will seat, overlay, cut out, or reframe, in as few calls as the limit allows: each window's `start` and `end` on the cut, a `slug`, `matte` (true only for a cutout), and the `slot` the speaker will occupy (the seat's rect, a circle's side twice, an aperture's hole, or the canvas for an overlay, a full-frame reframe, and a cutout). Read the task with `get_task`. Each window in its `result.windows` carries `presence` (skip a seat or an overlay where `seat_ok` is false and a cutout where `matte_ok` is false), `face` and `head` as source fractions, and for the slot `object_position` (paste its `css` onto the seat's `data-pip-src` view, or onto the root clip for a full-frame reframe), `head_in_slot`, and `fits`. When `fits.height` is false, give the slot at least `fits.min_slot_height`; never deepen the crop instead. For a canvas slot, `head_in_slot` is the head's box on the canvas, the area an overlay keeps clear. A cutout window takes and returns more; the [cutout reference](references/cutout.md) owns those fields. The call is free and takes at most 8 windows, with matte windows totalling at most 60 s a call; when the plan has more, split the windows across calls, keep every `slug` unique across them, and read each call's task.
 5. **The windows.** A register that shows the speaker is legal only over a window where the speaker is on camera. When the source cuts away to something the creator chose to show, let it play raw rather than covering it.
-6. **The caption hide windows.** When a beat's payload fills the caption band, pass those windows as `hide_intervals` to the caption call; the [dynamic caption skill](../aip-dynamic-caption/SKILL.md) owns that call.
+6. **The caption hide windows.** When a beat's payload fills the caption band, or is a `headline` overlay of the spoken phrase, pass those windows as `hide_intervals` to the caption call; the [dynamic caption skill](../aip-dynamic-caption/SKILL.md) owns that call.
 
 ## Registers
 
@@ -104,7 +104,7 @@ The measured head decides where an overlay may sit: the payload stays outside `h
 ### What an overlay keeps
 
 - **The overlay rides sharp footage.** The composition never pauses, scales, or reframes the source under an overlay; ink polarity reads the footage's tone where the text lands, with a plate, stroke, or shadow bed where the ground is mixed.
-- **The head stays clear.** Name the overlay's window in the `frame_speaker` call with the canvas as its `slot`, and keep every text, plate, and image outside the returned `head_in_slot`; a thin connector line may reach past it toward what it points at. On a reframed canvas the box holds while the root clip carries the same result's `object_position`, and under a root zoom the head grows from the zoom's origin, so leave it more room.
+- **The head stays clear.** Name the overlay's window in the `frame_speaker` call with the canvas as its `slot`, and keep every text, plate, and image outside the returned `head_in_slot`; a thin connector line may reach past it toward what it points at. On a reframed canvas the box holds while the root clip carries the same result's `object_position`. The box describes the unzoomed frame: when a root zoom runs during the overlay's window, clear the box as it stands at the zoom's largest scale in that window, each edge pushed away from the zoom's origin by that scale, or end the zoom before the overlay starts.
 - **Payloads take turns.** An overlay holds one payload group at a time; the next arrives only as the previous yields. Competing groups on screen together read as clutter over the footage.
 - **The payload keeps its margins.** Keep text and graphics at least 10% from the canvas edges, and shorten the copy rather than shrinking the type.
 
@@ -112,7 +112,7 @@ The measured head decides where an overlay may sit: the payload stays outside `h
 
 - An overlay is an ordinary visual moment whose composition stays transparent: no `background` on the composition root or on any full-frame wrapper, the payload inside one positioned wrapper, and its entrance and exit on the moment's own paused child timeline. The composition contract's [editable speaker PIP](../aip-composition/references/pip-transition.md) example minus its ground and its speaker view is an overlay.
 - It embeds no video: no `data-pip-src` view and no copy of the source, because the root speaker underneath is the picture. Leave the root speaker's geometry to the root timeline.
-- When the payload lands in the caption band, pass the window as `hide_intervals` to the caption call.
+- Pass the window as `hide_intervals` to the caption call when the payload lands in the caption band, and for every `headline` wherever it sits: the captions would otherwise repeat the phrase the headline draws.
 
 ## Full cover
 
