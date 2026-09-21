@@ -68,7 +68,7 @@ Plan each new talking-head edit from its supplied media and publishing brief. Th
 - Use presenter close-ups and zooms for emphasis.
 - For concrete subjects, prefer relevant real footage, then images, then vectors.
 - Show the specific change described by the speech. Use generic geometric shapes, expanding cards, or checkmarks only when they clarify that change; prefer a direct demonstration when suitable footage or assets are available.
-- Captions are on by default while aip-dynamic-caption is listed.
+- Captions are on by default while aip-dynamic-caption is listed, and they stay on during visual moments; the framing skill places the band for each layout.
 - For sarcasm, self-deprecation, or brief reminders, use a monochrome or desaturated presenter close-up for at most one sentence, then restore color.
 - Use smooth effects and layout transitions; minimize hard cuts.
 - No background music.
