@@ -182,7 +182,7 @@ def accepted_checkpoint(checkpoint, count, wait_seconds, batch_join=False):
 
 
 def prepare(workspace, state_path, files, final=False, draft=None, after_effect=None,
-            wait_seconds=MAX_JOIN_SECONDS, batch_join=False):
+            wait_seconds=MAX_JOIN_SECONDS, batch_join=False, uploads=()):
     root = Path(workspace).resolve(strict=True)
     checkpoint = _state_path(state_path, root)
     if batch_join and (after_effect is None or draft is None):
@@ -193,7 +193,7 @@ def prepare(workspace, state_path, files, final=False, draft=None, after_effect=
         progress = ProgressCheckpoint.resume(root, read_checkpoint(checkpoint))
         if after_effect is not None and progress.publications != after_effect:
             raise RuntimeError("previous_publication_not_accepted")
-        report = progress.prepare(files, final=final, draft=draft,
+        report = progress.prepare(files, final=final, draft=draft, uploads=uploads,
                                   save=lambda state: write_checkpoint(checkpoint, state))
         if draft is None:
             write_checkpoint(checkpoint, progress.checkpoint())
@@ -264,6 +264,8 @@ def _parser():
     step.add_argument("--workspace", required=True)
     step.add_argument("--state", required=True)
     step.add_argument("--file", action="append", required=True)
+    step.add_argument("--upload-file", action="append", default=[],
+                      help="A staged media file of this batch the user supplied, not you")
     step.add_argument("--final", action="store_true")
     step.add_argument("--draft", help="Isolated next-effect files, outside the publication workspace")
     step.add_argument("--after-effect", type=int, help="Join this accepted effect before preparing a draft")
@@ -294,7 +296,7 @@ def main():
             )
         elif args.command == "prepare":
             report = prepare(args.workspace, args.state, args.file, args.final, args.draft,
-                             args.after_effect, args.wait_seconds, args.batch_join)
+                             args.after_effect, args.wait_seconds, args.batch_join, args.upload_file)
         elif args.command == "fail":
             report = fail(args.workspace, args.state, args.effect)
         else:

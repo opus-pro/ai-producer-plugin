@@ -41,13 +41,14 @@ text(await runBatch({
   afterEffect: 1,
   steps: [
     { draft: draft2Path, files: ["index.html", "compositions/effect-2.html"] },
-    { draft: draft3Path, files: ["index.html", "compositions/effect-3.html"] },
+    { draft: draft3Path, files: ["index.html", "compositions/effect-3.html", "public/images/user-photo.jpg"],
+      uploads: ["public/images/user-photo.jpg"] },
   ],
   final: false,
 }));
 ```
 
-Use `afterEffect: 0` and one step for the first batch; the helper omits the previous-effect join automatically. Later batches name the preceding batch's final effect count, including while it is still publishing. Include every new dependency in its step's `files`. Set `final: true` only on the batch containing the last planned effect of a caption-free edit. When captions follow, the default while the dynamic caption skill is listed or whenever the user asked for them, every batch stays `final: false`, so authoring remains open until the caption commit closes it. A single-effect caption-free project uses one final batch.
+Use `afterEffect: 0` and one step for the first batch; the helper omits the previous-effect join automatically. Later batches name the preceding batch's final effect count, including while it is still publishing. Include every new dependency in its step's `files`, and name the ones the user handed over in that step's `uploads` as well, so the commit records those files as theirs and the rest as your own. Set `final: true` only on the batch containing the last planned effect of a caption-free edit. When captions follow, the default while the dynamic caption skill is listed or whenever the user asked for them, every batch stays `final: false`, so authoring remains open until the caption commit closes it. A single-effect caption-free project uses one final batch.
 
 The helper prepares and publishes each step automatically: wait for the preceding accepted checkpoint, validate and install its isolated draft, sign the frozen files, upload, commit, and accept the exact task's successful terminal receipt. Its held waits stop after ten minutes or forty replies. Only one signing/upload/commit sequence is in flight. The first step can join across both effects of the preceding batch; subsequent steps use its accepted digest directly. Only the last step of a final batch closes authoring. Tool descriptions own service limits and refusals; a batch does not bypass commit limits.
 

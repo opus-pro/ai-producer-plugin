@@ -70,11 +70,14 @@ function fixture(config = {}) {
         if (failed) error();
         if (isFailure('prepare', effect)) error();
         const files = options(args, '--file');
+        const supplied = options(args, '--upload-file');
         const final = args.includes('--final');
         const expected_files = files.map(path => ({path: 'render-engine/' + path, sha256: String(effect).padStart(64, '0')}));
         const plan = {status: 'prepared', project_id: 'synthetic-project', base_digest: `digest-${previous}`,
           sign_batches: expected_files.map(row => [{path: row.path, content_type: 'text/html'}]),
-          expected_files, authoring: !final, final, published_effects: effect, duration_seconds: 59.85};
+          expected_files, authoring: !final, final, published_effects: effect, duration_seconds: 59.85,
+          ...(supplied.length ? {asset_origins: supplied.map(path =>
+            ({path: 'render-engine/' + path, origin: 'upload'}))} : {})};
         pending = {effect, plan, waits: 0, uploaded: false};
         events.push(['prepare', effect]);
         return response(isFailure('plan-count', effect) ? {...plan, published_effects: effect + 1} : plan);
@@ -133,6 +136,7 @@ function fixture(config = {}) {
       assert.equal(args.base_digest, `digest-${effect - 1}`);
       assert.equal(args.authoring, pending.plan.authoring);
       assert.deepEqual(args.expected_files, pending.plan.expected_files);
+      assert.deepEqual(args.asset_origins, pending.plan.asset_origins);
       commits.push(args); events.push(['commit', effect]);
       if (isFailure('commit', effect)) error();
       return wrap({task_id: `task-${effect}`, page_url: 'https://secret.invalid/PRIVATE_SENTINEL'});
@@ -214,6 +218,28 @@ for (const count of [8, 9]) {
   assert.equal(JSON.stringify(summaries).includes('PRIVATE_SENTINEL'), false);
   assert.equal(JSON.stringify(summaries).includes('https://'), false);
 }
+''')
+
+    def test_user_supplied_files_are_declared_on_the_commit_that_stages_them(self):
+        self.run_node(r'''
+const harness = fixture();
+const staged = {draft: '/draft-1', uploads: ['public/images/user-photo.jpg'],
+  files: ['index.html', 'compositions/effect-1.html', 'public/images/user-photo.jpg']};
+await harness.runBatch({afterEffect: 0, steps: [staged], final: true});
+const prepared = argv(harness.commands.find(cmd => argv(cmd)[2] === 'prepare'));
+assert.deepEqual(options(prepared, '--upload-file'), ['public/images/user-photo.jpg']);
+assert.deepEqual(harness.commits[0].asset_origins,
+  [{path: 'render-engine/public/images/user-photo.jpg', origin: 'upload'}]);
+await assert.rejects(harness.runBatch({afterEffect: 1, final: true,
+  steps: [{...staged, uploads: ['public/images/never-staged.jpg']}]}), /invalid_publication_batch/);
+assert.equal(harness.commits.length, 1, 'an undeclarable origin stops the batch before any commit');
+''')
+
+    def test_a_batch_without_supplied_files_commits_no_origins(self):
+        self.run_node(r'''
+const harness = fixture();
+await harness.runBatch({afterEffect: 0, steps: [step(1)], final: true});
+assert.equal('asset_origins' in harness.commits[0], false);
 ''')
 
     def test_yield_keeps_publication_awaited_until_its_receipt(self):

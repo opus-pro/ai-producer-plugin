@@ -27,6 +27,13 @@ SERVER_RUNTIME_PATHS = frozenset({
 })
 CHECKPOINT_SCHEMA = 3
 CHECKPOINT_STATUSES = frozenset({"ready", "prepared", "failed", "finished"})
+# The staged types the project's asset library records an origin for.
+MEDIA_SUFFIXES = frozenset({
+    ".png", ".jpg", ".jpeg", ".webp", ".gif",
+    ".woff", ".woff2", ".ttf", ".otf",
+    ".mp4", ".mov", ".webm",
+    ".mp3", ".wav", ".m4a", ".ogg",
+})
 _HASH = re.compile(r"[0-9a-f]{64}")
 _WARNING = re.compile(r"[a-zA-Z0-9_-]{1,100}")
 
@@ -44,6 +51,25 @@ def relative_path(value):
 
 def service_path(value):
     return "render-engine/" + relative_path(value)
+
+
+def asset_origins(manifest, uploads):
+    """Name who supplied each staged media file of one batch.
+
+    The user's own files are the only ones the host knows about, so a path the
+    batch does not stage as media cannot be declared and is refused here rather
+    than silently dropped by the service."""
+    given = {relative_path(path) for path in uploads}
+    rows = []
+    for row in manifest:
+        path = relative_path(row["path"])
+        if Path(path).suffix.lower() not in MEDIA_SUFFIXES:
+            continue
+        rows.append({"path": service_path(path), "origin": "upload" if path in given else "agent"})
+        given.discard(path)
+    if given:
+        raise ValueError("invalid_upload_origin")
+    return rows
 
 
 class ProgressCheckpoint:
@@ -156,7 +182,7 @@ class ProgressCheckpoint:
             if file.is_file() and hashlib.sha256(file.read_bytes()).hexdigest() != expected:
                 raise ValueError("accepted_file_changed")
 
-    def _prepare_draft(self, files, draft, final, save):
+    def _prepare_draft(self, files, draft, final, save, uploads=()):
         """Validate an isolated next-effect draft before touching publication files."""
         source = Path(draft).resolve(strict=True)
         if not source.is_dir() or source.is_relative_to(self.root) or self.root.is_relative_to(source):
@@ -188,7 +214,7 @@ class ProgressCheckpoint:
             candidate = type(self).resume(candidate_root, {
                 **self.checkpoint(), "workspace": str(candidate_root),
             })
-            plan = candidate.prepare(paths, final=final)
+            plan = candidate.prepare(paths, final=final, uploads=uploads)
             installed_paths = [relative_path(row["path"]) for row in plan["expected_files"]]
             def installed():
                 self.pending = candidate.pending
@@ -236,12 +262,12 @@ class ProgressCheckpoint:
                         target.unlink()
                 raise
 
-    def prepare(self, files, *, final=False, draft=None, save=None):
+    def prepare(self, files, *, final=False, draft=None, save=None, uploads=()):
         """Freeze the exact batch the current host must sign, upload, and commit."""
         if self.status != "ready":
             raise RuntimeError("publication_checkpoint_closed")
         if draft is not None:
-            return self._prepare_draft(files, draft, final, save)
+            return self._prepare_draft(files, draft, final, save, uploads)
         paths = [relative_path(path) for path in files]
         if not paths or len(paths) > MAX_FILES or len(set(paths)) != len(paths) or "index.html" not in paths:
             raise ValueError("invalid_publication_files")
@@ -263,6 +289,7 @@ class ProgressCheckpoint:
             manifest = self._snapshot(paths, snapshot)
             if (snapshot / "index.html").read_text(encoding="utf-8") != candidate:
                 raise RuntimeError("workspace_changed_during_snapshot")
+        origins = asset_origins(manifest, uploads)
         self.pending = {
             "duration": state["duration"],
             "effects": state["effects"],
@@ -280,6 +307,7 @@ class ProgressCheckpoint:
                 for batch in (manifest[offset:offset + SIGN_BATCH_SIZE],)
             ],
             "expected_files": [{"path": row["path"], "sha256": row["sha256"]} for row in manifest],
+            **({"asset_origins": origins} if origins else {}),
             "authoring": not final,
             "published_effects": len(state["effects"]),
             "duration_seconds": state["duration"],

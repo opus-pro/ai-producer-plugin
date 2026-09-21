@@ -74,6 +74,35 @@ class ProgressivePublishTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "checkpoint_closed"):
             self.progress.prepare(self.author(6))
 
+    def stage_media(self, files):
+        """Add one user-supplied and one agent-found image to a batch."""
+        for name in ["user-photo.jpg", "found-logo.png"]:
+            image = self.root / "public/images" / name
+            image.parent.mkdir(parents=True, exist_ok=True)
+            image.write_bytes(name.encode("ascii"))
+        return files + ["public/images/user-photo.jpg", "public/images/found-logo.png"]
+
+    def test_staged_media_says_who_supplied_each_file(self):
+        files = self.stage_media(self.author(1))
+        plan = self.progress.prepare(files, uploads=["public/images/user-photo.jpg"])
+        self.assertEqual(plan["asset_origins"], [
+            {"path": "render-engine/public/images/user-photo.jpg", "origin": "upload"},
+            {"path": "render-engine/public/images/found-logo.png", "origin": "agent"},
+        ])
+
+    def test_documents_alone_declare_no_origin(self):
+        plan = self.progress.prepare(self.author(1))
+        self.assertNotIn("asset_origins", plan)
+
+    def test_a_supplied_file_this_batch_does_not_stage_is_refused_before_the_plan(self):
+        files = self.stage_media(self.author(1))
+        for upload in ["public/images/absent.jpg", "index.html"]:
+            with self.assertRaises(ValueError):
+                self.progress.prepare(files, uploads=[upload])
+            self.assertEqual(self.progress.status, "ready")
+        plan = self.progress.prepare(files, uploads=["public/images/user-photo.jpg"])
+        self.assertEqual(self.accept(plan, 1)["published_effects"], 1)
+
     def test_six_effects_resume_from_separate_model_checkpoints(self):
         state = self.progress.checkpoint()
         for count in range(1, 7):

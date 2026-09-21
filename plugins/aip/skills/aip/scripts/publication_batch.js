@@ -49,14 +49,19 @@
         !Array.isArray(steps) || steps.length < 1 || steps.length > (afterEffect === 0 ? 1 : 2) ||
         !Number.isSafeInteger(afterEffect + steps.length)) throw new Error("invalid_publication_batch");
     return { afterEffect, final, steps: steps.map((step) => {
+      const uploads = step?.uploads ?? [];
       if (!object(step) || !absolute(step.draft) || !Array.isArray(step.files) ||
           !step.files.includes("index.html") || new Set(step.files).size !== step.files.length ||
           !step.files.every((path) => typeof path === "string" && path.length > 0 &&
             !path.startsWith("/") && !path.startsWith("-") && !path.includes("\0") &&
-            path.split("/").every((part) => part && part !== "." && part !== ".."))) {
+            path.split("/").every((part) => part && part !== "." && part !== "..")) ||
+          // A user-supplied file is one of this step's own files; anything else
+          // would declare an origin for bytes this commit never stages.
+          !Array.isArray(uploads) || new Set(uploads).size !== uploads.length ||
+          !uploads.every((path) => step.files.includes(path))) {
         throw new Error("invalid_publication_batch");
       }
-      return { draft: step.draft, files: step.files.slice() };
+      return { draft: step.draft, files: step.files.slice(), uploads: uploads.slice() };
     }) };
   }
 
@@ -99,6 +104,7 @@
     const args = [...checkpoint, "prepare", ...scope, "--draft", step.draft];
     if (previous > 0) args.push("--after-effect", previous, ...(joinBatch ? ["--batch-join"] : []));
     for (const file of step.files) args.push("--file", file);
+    for (const file of step.uploads) args.push("--upload-file", file);
     if (final) args.push("--final");
     const plan = await command(shell(args));
     if (plan.status !== "prepared" || plan.published_effects !== previous + 1 ||
@@ -124,6 +130,10 @@
     const committed = unpack(await commitWorkspace({
       project_id: plan.project_id, base_digest: plan.base_digest,
       expected_files: plan.expected_files, authoring: plan.authoring,
+      // A plan from a helper the service predates carries no origins; the
+      // commit then leaves every staged media file at the service default.
+      ...(Array.isArray(plan.asset_origins) && plan.asset_origins.length
+        ? { asset_origins: plan.asset_origins } : {}),
     }));
     if (typeof committed.task_id !== "string" || !committed.task_id) throw new Error("publication_task_missing");
     const task = await waitForReceipt(committed.task_id);
