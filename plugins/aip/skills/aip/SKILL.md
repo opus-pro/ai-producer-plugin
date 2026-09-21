@@ -21,7 +21,7 @@ For footage-only or brief requests, apply the default editorial taste and resear
 
 - For missing material, search the Web and open official or primary source pages to find images or clips. An empty `find_broll` result requires this lookup before falling back to diagrams. Use one batch of up to three targeted queries, plus at most one such follow-up batch for unresolved material.
 - Batch page reads and downloads. Before authoring, inspect a downsized image sheet or representative source frames for subject match, usable detail, and crop suitability. Replace unsuitable candidates within the research limit.
-- Use accepted assets in relevant beats with framing or motion that explains the speech. Unless the user names a trigger or a count, use each supplied asset once, at the single beat it fits best; a stated trigger such as "whenever X is mentioned" applies at every matching beat. Record source URLs locally and label illustrative material where it could be mistaken for the speaker's demonstration. If lookup is unavailable or the limit yields no usable material, use a meaningful diagram and disclose the gap at delivery.
+- Use accepted assets in relevant beats with framing or motion that explains the speech. Unless the user names a trigger or a count, use each supplied asset once, at the single beat it fits best; a stated trigger such as "whenever X is mentioned" applies at every matching beat. Record source URLs locally; apply the [on-screen text rules](#on-screen-text) to visible labels.
 
 ## Delivery boundary
 
@@ -64,23 +64,29 @@ Plan each new talking-head edit from its supplied media and publishing brief. Th
 
 ### Editing
 
-- Honor the requested runtime; preserve the speaker's argument, qualifications, and payoff.
-- Match the canvas to a named platform: 1080x1920 for Instagram Reels, TikTok, and YouTube Shorts; 1080x1080 for square feed posts; otherwise keep the source aspect ratio. Reframe the presenter panel to fill the new canvas instead of letterboxing the source.
-- Open with a large title and zoom to emphasize the core point.
-- Use presenter close-ups for transitions, summaries, conditions, emotion, and closing calls to action. Emphasize rebuttals and qualifications with zooms or visual highlights.
-- For concrete subjects, prefer relevant real footage, then images, then vectors. Overlay quick object explanations around the presenter.
-- Never use a text overlay as a second caption: it does not repeat the sentence being spoken. Draw text over the presenter only as a beat's own payload: the opening hook title, one spoken phrase at display size, or a short label; the framing skill owns its forms and placement. Use transcription for planning and timing.
-- Captions are on by default while `aip-dynamic-caption` is listed.
+- Open with a sharp punch-in and whoosh sound effect to emphasize the presenter.
+- Use presenter close-ups and zooms for emphasis.
+- For concrete subjects, prefer relevant real footage, then images, then vectors.
+- Captions are on by default while aip-dynamic-caption is listed.
 - For sarcasm, self-deprecation, or brief reminders, use a monochrome or desaturated presenter close-up for at most one sentence, then restore color.
 - Use smooth effects and layout transitions; minimize hard cuts.
+- No background music.
 
 ### Visual style
 
-- Use Apple keynote-style graphics; preserve source-media colors unless a specific treatment is intended.
-- Explain abstract relationships, mechanisms, and processes with 3D, SVG, or vector animation; limit text animation.
-- Use large, readable text, only essential words, and at most three font sizes per frame. Shorten copy to keep type large.
-- Center the focal point within each visual area. Keep all text and graphics at least 10% from its edges throughout the animation; simplify content to keep them large.
-- For text-heavy source visuals, prioritize readability over the default split layout. Crop and enlarge the relevant detail, or use full-screen visuals. Omit extra headings, duplicate labels, and nested frames; retain necessary illustrative-source labeling.
+- Use a pure black canvas with near-black foreground surfaces, fills only, no strokes; preserve source-media colors unless a specific treatment is intended.
+- For abstract relationships, mechanisms, and processes, prefer 3D animation, then SVG or vector.
+- Every visual must animate purposefully from entry to exit; each motion reveals a step, relationship, or change; transitions and camera moves don't count.
+- No titles, headings, or decorative copy. If a beat has no meaningful visual without its copy, show the presenter with captions instead.
+- Center the focal point within each visual area. Keep all graphics inset at least 10% from the edges throughout the animation; avoid dense repetition and unnecessary layers so graphics stay large.
+
+### On-screen text
+
+These rules govern extra authored copy; spoken captions remain a separate layer governed by the caption skill.
+
+- Authored vectors, diagrams, and animations default to no secondary text. Keep core values and units attached to the quantities they depict. Add an object, category, or relationship label only when its absence creates a specific ambiguity that the visual and simultaneous speech do not resolve. Omit labels that merely name a recognizable object or restate what the visual and speech already convey.
+- Sourced B-roll or images may carry one short source or example label, only when the material could be mistaken for the speaker's own footage or demonstration. Authored graphics carry no provenance labels, "illustration" disclaimers, or explanatory footnotes.
+- Before publishing each effect, apply a deletion test to its local composition source: if removing an extra label preserves the meaning in the context of the speech, remove it. This is a source-text check before submission, not inspection of the generated preview.
 
 ## Make, submit, stop
 
