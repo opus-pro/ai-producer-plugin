@@ -1,6 +1,6 @@
 ---
 name: aip
-description: "Create an editable AI Producer preview from user footage. Deliver the editable project link by default, export only on explicit request, and stop without inspecting the preview or output video."
+description: "Create an editable AI Producer preview from user footage, or act on a pasted @aip reference line from the Motion library (a motion-asset or omni-preset card) by placing it at its time. Deliver the editable project link by default, export only on explicit request, and stop without inspecting the preview or output video."
 ---
 
 # AI Producer preview
@@ -29,7 +29,7 @@ Deliver the editable project link by default. Treat "finished video" or "final c
 
 Do not inspect the generated preview or MP4, including browser playback, screenshots, contact sheets, frame extraction, audio analysis, or delegated inspection. Do not start a post-delivery review, repair, or aesthetic iteration. This stopping condition applies whether the deliverable is a preview or an explicitly requested export. Input-media analysis, including retrieved source assets, and local static contract checks before submission remain allowed.
 
-Use only this package's [AI Producer composition contract](../aip-composition/SKILL.md) and [workspace reference](references/workspace.md) for integration. Read the workspace reference once before source upload or export, the composition contract once before authoring, and the [framing skill](../aip-framing/SKILL.md) once before deciding the speaker's frame for each beat; load the linked PIP example only when needed, the [dynamic caption skill](../aip-dynamic-caption/SKILL.md) once before the caption layer when it is listed, and the [handoff skill](../aip-handoff/SKILL.md) once when the request carries a pasted `@aip` reference line from the Motion library. Do not search global HyperFrames or media-use skills, backend source, or repository documentation to make this video. Resolve these links relative to the skill actually loaded, never a remembered versioned cache path. If that path is stale, use the host's installed-plugin listing once to find the enabled package and its version.
+Use only this package's [AI Producer composition contract](../aip-composition/SKILL.md) and [workspace reference](references/workspace.md) for integration. Read the workspace reference once before source upload or export, the composition contract once before authoring, and the [framing skill](../aip-framing/SKILL.md) once before deciding the speaker's frame for each beat; load the linked PIP example only when needed, the [dynamic caption skill](../aip-dynamic-caption/SKILL.md) once before the caption layer when it is listed, and the [handoff reference](references/handoff.md) once when the request carries a pasted `@aip` reference line from the Motion library. Do not search global HyperFrames or media-use skills, backend source, or repository documentation to make this video. Resolve these links relative to the skill actually loaded, never a remembered versioned cache path. If that path is stale, use the host's installed-plugin listing once to find the enabled package and its version.
 
 ## Talk to the user
 

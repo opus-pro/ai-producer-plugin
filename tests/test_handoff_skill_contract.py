@@ -1,11 +1,11 @@
-"""Pin the handoff skill's call order for a pasted Motion library reference."""
+"""Pin the handoff reference's call order for a pasted Motion library reference."""
 from pathlib import Path
 import re
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL = ROOT / "plugins/aip/skills/aip-handoff/SKILL.md"
+SKILL = ROOT / "plugins/aip/skills/aip/references/handoff.md"
 ENTRY_SKILL = ROOT / "plugins/aip/skills/aip/SKILL.md"
 
 MOTION_ASSET_LINE = "@aip p=C1EXAMPLE0000 t=6.72 motion-asset id=text-subscribe version=4.0.0"
@@ -23,13 +23,14 @@ class HandoffSkillContractTests(unittest.TestCase):
     def setUp(self) -> None:
         self.skill = SKILL.read_text(encoding="utf-8")
 
-    def test_description_matches_a_pasted_reference_line(self) -> None:
-        description = re.search(r"^description:\s*(.+)$", self.skill, re.MULTILINE).group(1)
+    def test_entry_skill_matches_a_pasted_reference_line_and_loads_the_reference(self) -> None:
+        entry = ENTRY_SKILL.read_text(encoding="utf-8")
+        description = re.search(r"^description:\s*(.+)$", entry, re.MULTILINE).group(1)
         self.assertIn("@aip", description)
         for kind in ("motion-asset", "omni-preset"):
             self.assertIn(kind, description)
-        # The entry skill routes a pasted line here, so the host loads it without a catalogue.
-        self.assertIn("(../aip-handoff/SKILL.md)", ENTRY_SKILL.read_text(encoding="utf-8"))
+        # The entry skill routes a pasted line to the reference, so the host loads it without a catalogue.
+        self.assertIn("(references/handoff.md)", entry)
 
     def test_motion_asset_reference_resolves_lists_then_places_without_a_question(self) -> None:
         kind = re.search(r"(\w[\w-]*) id=", MOTION_ASSET_LINE).group(1)

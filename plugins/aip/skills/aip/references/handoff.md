@@ -1,13 +1,8 @@
----
-name: aip-handoff
-description: "Act on a pasted @aip reference line from the AI Producer Motion library, such as `@aip p=<project> t=<seconds> motion-asset id=<id> version=<version>` or `@aip p=<project> t=<seconds> omni-preset slug=<slug>`: resolve the selection, list what the project can place, follow the listed next step to place the card at that time or to buy the named Scene restyle preset, and ask only where the listing or the user's own words require it."
----
-
 # Acting on a pasted reference
 
 A line that starts with `@aip` is a reference, not an instruction: it names a project, a time, and a card the user picked in the Motion library. The catalogue behind the card lives on the service, never in this package, so nothing here describes what any card does. The default outcome of a paste is the deterministic placement the card offers in the browser; a creative variant is the second path and is taken only when the user asks for one.
 
-Read this once when a request carries such a line. The [AI Producer skill](../aip/SKILL.md) owns the user-facing language and the delivery boundary; the [framing skill](../aip-framing/SKILL.md) and its [cutout reference](../aip-framing/references/cutout.md) own the measurement fields a cutout package reads; the [composition contract](../aip-composition/SKILL.md) owns anything you author yourself.
+Read this once when a request carries such a line; the AI Producer skill loads it for that case. The [AI Producer skill](../SKILL.md) owns the user-facing language and the delivery boundary; the [framing skill](../../aip-framing/SKILL.md) and its [cutout reference](../../aip-framing/references/cutout.md) own the measurement fields a cutout package reads; the [composition contract](../../aip-composition/SKILL.md) owns anything you author yourself.
 
 ## The steps
 
