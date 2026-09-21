@@ -44,7 +44,7 @@ The composition owns the speaker view. Its `data-start` is the host's global sta
       const frame = root.querySelector('.speaker-pip-frame');
       const tl = gsap.timeline({ paused: true });
       const full = { left: 0, top: 0, width: 1080, height: 1920, borderRadius: 0 };
-      const pip = { left: 120, top: 1120, width: 840, height: 680, borderRadius: 32 };
+      const pip = { left: 120, top: 984, width: 840, height: 840, borderRadius: 32 };
       tl.to(frame, { ...pip, duration: 0.6, ease: 'power2.inOut' }, 0);
       tl.to(frame, { ...full, duration: 0.6, ease: 'power2.inOut' }, 5.9);
       window.__timelines['example-pip'] = tl;
@@ -53,6 +53,6 @@ The composition owns the speaker view. Its `data-start` is the host's global sta
 </template>
 ```
 
-The opaque composition ground prevents the unchanged root speaker from showing behind the moment-owned view. Animate the frame, not the timed host or composition root. Keep the root speaker at its ordinary full-frame geometry for the whole window. A root-only camera move that has no editable visual host is a separate treatment and does not use this recipe.
+The seat rect and the `object-position` above are example values: the framing skill owns the shape and position, and `frame_speaker` returns the crop for the slot you place. The opaque composition ground prevents the unchanged root speaker from showing behind the moment-owned view. Animate the frame, not the timed host or composition root. Keep the root speaker at its ordinary full-frame geometry for the whole window. A root-only camera move that has no editable visual host is a separate treatment and does not use this recipe.
 
 The synthetic fixture verifies deterministic entry and exit geometry, then simulates moving and deleting the host to confirm no speaker geometry remains at the old time. It does not prove live AI Producer editor or export compatibility; use a fresh project for that acceptance check and do not claim automatic quality from the fixture alone.
