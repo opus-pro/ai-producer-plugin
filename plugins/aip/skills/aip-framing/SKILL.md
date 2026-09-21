@@ -7,6 +7,8 @@ description: "Frame the speaker for an AI Producer project. Read once before aut
 
 Framing decides who owns the frame for each beat: the speaker, the footage, or the canvas. It is one decision per beat, made from the canvas, the transcript, and the footage, and it is yours. How anything looks (color, corners, shadows, type) is the visual style's; this page owns the choice and the geometry it must keep. The [composition contract](../aip-composition/SKILL.md) owns what the editor and the export read.
 
+Apply the user's brief and the [AI Producer text rules](../aip/SKILL.md#on-screen-text) before choosing a form that contains text. The forms below describe geometry; their label, headline, and statement examples do not authorize extra copy.
+
 ## What you decide
 
 1. **The canvas, first.** Read it from the brief's platform: 1080x1920 for Reels, TikTok, and Shorts; 1080x1080 for square feed posts; otherwise the source aspect, usually 1920x1080. The canvas decides which forms and positions each layout has (tables below); a layout drawn for one canvas is not reused on another. Reframe the speaker to fill the canvas rather than letterboxing the source.
