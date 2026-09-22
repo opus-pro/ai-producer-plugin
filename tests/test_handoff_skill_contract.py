@@ -99,6 +99,9 @@ class HandoffSkillContractTests(unittest.TestCase):
         self.assertIn("reference's compatibility `at_ms` is null", self.skill)
         self.assertIn("that playhead is context, not an instruction", self.skill)
         self.assertIn("`next_data.cutout.frame_speaker_calls`", self.skill)
+        self.assertIn("`media_inputs[input_key]`", self.skill)
+        self.assertIn("`geometry.object_position`", self.skill)
+        self.assertIn("never put `object_position` or a `cutout` object at the segment's top level", self.skill)
         self.assertIn('`storage: "parameter"`', self.skill)
         self.assertIn("unbound or uses overlay storage", self.skill)
 
