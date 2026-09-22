@@ -43,7 +43,9 @@ Each round is one card: call `present_choices` with that round's components, end
 
 The reference image is not on this card, because a card collects one line of text and an image is a file. So the card's note says nothing about a picture, and the ask is a message of its own. Look back over what the user has already sent. When they handed a picture over, put it into the project with `sign_workspace_upload` and write `reference_image=<path>` into the same `record_choices` call as the two answers, and ask them for nothing. When they sent none, record the two answers on their own, and then, before the finishes round goes up, ask them for the picture in plain words - your own sentence, not a card and not a line inside the note: whether they want to send a reference image to set the styling, and that answering "skip", or anything else, carries on without one. End the turn there and wait for the reply. An image comes back: upload it with `sign_workspace_upload` and record `branding` a second time - the two answers you already wrote down and `reference_image=<path>` beside them, because a recording replaces the whole entry for a card and an answer left out of the second call is gone - then raise the finishes round. "skip" or any other reply: raise the finishes round. Ask once for the whole project, and never a second time - not after a skip, and not when a turn picking the conversation back up finds `reference_image` already recorded under `branding` or the fine cut already behind it in `choices`. A user with no image to give is not blocked by the round.
 
-**Finishes.** `caption_style` picks from a closed catalogue of eight patterns and its tokens name themselves, which is why it is written down unprefixed while the two toggles are not: `on` on its own identifies no question. It is the pattern the caption layer is built with, so it is what the caption skill's choice is made from rather than a style you pick again. Recording replaces the whole entry for a card, so write every finishing answer you hold each time you record one, or the ones you leave out are gone.
+**Finishes.** `caption_style` offers `no-caption` ("No captions") and eight caption patterns. Write the chosen token unprefixed, including `no-caption`, while the two toggles carry their component ids: `on` on its own identifies no question. A pattern goes to the caption skill without picking again. An omitted `caption_style` stays Auto: let the caption skill choose the pattern, rather than treating it as `no-caption`. Recording replaces the whole entry for a card, so write every finishing answer you hold each time you record one, or the ones you leave out are gone.
+
+`no-caption` is a card answer, not a caption pattern: skip `build_captions` and omit the `narrator-captions` host from `render-engine/index.html`. For an existing captioned project, remove only that host, preserve transcript and editor artifacts, then upload the changed root and `commit_workspace`. Recording the answer alone does not change the edit. Store `no-caption` unchanged when the user saves it as their default.
 
 `bgm_enabled=on` is the instruction to call `add_music` afterwards, and `off` is the instruction not to. `off` declines a new music run; it does not strip a bed already mixed into the cut, so do not offer to take music away with it. `on` is an answer, not a payload: it is not a value `add_music` takes, and that call's own inputs are stated where it states them. Music spends, and `get_pricing` is what says how much - never quote an amount from memory.
 
@@ -112,7 +114,7 @@ Plan each new talking-head edit from its supplied media and publishing brief. Th
 - Use presenter close-ups and zooms for emphasis.
 - For concrete subjects, prefer relevant real footage, then images, then vectors.
 - Show the specific change described by the speech. Use generic geometric shapes, expanding cards, or checkmarks only when they clarify that change; prefer a direct demonstration when suitable footage or assets are available.
-- Captions are on by default while aip-dynamic-caption is listed, and they stay on during visual moments; the framing skill places the band for each layout. The finishing round's `caption_style` names the pattern they are built with.
+- Captions are on by default while aip-dynamic-caption is listed, and they stay on during visual moments; the framing skill places the band for each layout. Apply the finishing round's choice.
 - For sarcasm, self-deprecation, or brief reminders, use a monochrome or desaturated presenter close-up for at most one sentence, then restore color.
 - Use smooth effects and layout transitions; minimize hard cuts.
 - No background music.
@@ -122,7 +124,7 @@ Plan each new talking-head edit from its supplied media and publishing brief. Th
 - Use a pure black canvas with near-black foreground surfaces, fills only, no strokes; preserve source-media colors unless a specific treatment is intended.
 - For abstract relationships, mechanisms, and processes, prefer 3D animation, then SVG or vector.
 - Every visual must animate purposefully from entry to exit; each motion reveals a step, relationship, or change; transitions and camera moves don't count.
-- No titles, headings, or decorative copy. If a beat has no meaningful visual without its copy, show the presenter with captions instead.
+- No titles, headings, or decorative copy. If a beat has no meaningful visual without its copy, show the presenter, with captions only when enabled.
 - Center the focal point within each visual area. Keep all graphics inset at least 10% from the edges throughout the animation; avoid dense repetition and unnecessary layers so graphics stay large.
 
 ### On-screen text
