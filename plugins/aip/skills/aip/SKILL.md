@@ -64,9 +64,10 @@ Plan each new talking-head edit from its supplied media and publishing brief. Th
 
 ### Editing
 
-- Open with a sharp punch-in and whoosh sound effect to emphasize the presenter.
+- Open with a sharp punch-in and whoosh, then hold the framing. Place massive, extra-bold text behind the presenter, spanning 80-90% of the frame width, partially occluded by the head but still readable. Reveal words individually; split or wrap instead of shrinking. Use high-contrast text, preserve the original background, and animate only the text after the punch-in.
 - Use presenter close-ups and zooms for emphasis.
 - For concrete subjects, prefer relevant real footage, then images, then vectors.
+- Show the specific change described by the speech. Use generic geometric shapes, expanding cards, or checkmarks only when they clarify that change; prefer a direct demonstration when suitable footage or assets are available.
 - Captions are on by default while aip-dynamic-caption is listed.
 - For sarcasm, self-deprecation, or brief reminders, use a monochrome or desaturated presenter close-up for at most one sentence, then restore color.
 - Use smooth effects and layout transitions; minimize hard cuts.
