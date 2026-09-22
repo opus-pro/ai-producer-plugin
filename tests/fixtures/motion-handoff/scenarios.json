@@ -1,0 +1,346 @@
+[
+  {
+    "id": "parameter-adaptation-auto",
+    "baseline_outcome": "Materialize package defaults at the incidental 62 second browsing playhead, retaining the Q1 demo.",
+    "request": "Use AI Producer to adapt the Step Growth template to this video's content and place it where it fits best.\nReference: https://producer.opus.pro/r/aipr_0000000000000001",
+    "resolved": {
+      "schema_version": 2,
+      "project_id": "synthetic-project",
+      "references": [{
+      "project_id": "synthetic-project",
+      "kind": "motion_asset",
+      "address": {"kind": "motion-asset", "id": "step-growth", "version": "1.0.0"},
+      "composition_id": null,
+      "at_ms": null,
+      "region": null,
+      "reference_id": "aipr_0000000000000001",
+      "expires_at": "2099-01-01T00:00:00Z",
+      "intent": "adapt",
+      "placement": {"mode": "auto"},
+      "context": {"playhead_ms": 62000, "project_revision": 14},
+      "availability": {"state": "available"}
+      }]
+    },
+    "context": {
+      "transcript": "At 28 seconds the speaker explains three onboarding stages: invite, activate, and retain.",
+      "template_demo": "Q1 growth: 25 percent",
+      "listing_project_revision": 14,
+      "package": {"action": "add", "duration_ms": 6000, "content_mode": "parameterized", "inputs": [{"key": "stage-1", "binding": {"storage": "parameter", "token": "{{PARAM_STAGE_1}}"}}, {"key": "stage-2", "binding": {"storage": "parameter", "token": "{{PARAM_STAGE_2}}"}}, {"key": "stage-3", "binding": {"storage": "parameter", "token": "{{PARAM_STAGE_3}}"}}]}
+    },
+    "expected": {
+      "route": "materialize",
+      "window": {"at_ms": 28000, "duration_ms": 6000},
+      "context_reads": ["project", "transcript", "timeline", "visuals"],
+      "required_call_order": ["resolve_selection", "list_motion_assets", "materialize_motion_asset"],
+      "forbidden_calls": ["get_motion_asset", "sign_upload", "start_transcribe_project"],
+      "parameter_keys": ["stage-1", "stage-2", "stage-3"],
+      "requires_grounded_values": true,
+      "forbidden_literals": ["Q1", "25 percent"],
+      "max_questions": 0,
+      "refused": false,
+      "requires_page_url": true
+    }
+  },
+  {
+    "id": "explicit-time-overrides-playhead",
+    "baseline_outcome": "Treat the copied 62 second browsing playhead as the target even though the user says 18 seconds.",
+    "request": "Use AI Producer to adapt this template at 00:18.\nReference: https://producer.opus.pro/r/aipr_0000000000000002",
+    "resolved": {
+      "schema_version": 2,
+      "project_id": "synthetic-project",
+      "references": [{
+      "project_id": "synthetic-project",
+      "kind": "motion_asset",
+      "address": {"kind": "motion-asset", "id": "explanation-card", "version": "2.0.0"},
+      "composition_id": null,
+      "at_ms": 18000,
+      "region": null,
+      "reference_id": "aipr_0000000000000002",
+      "expires_at": "2099-01-01T00:00:00Z",
+      "intent": "adapt",
+      "placement": {"mode": "explicit", "at_ms": 18000, "duration_ms": 5000},
+      "context": {"playhead_ms": 62000, "project_revision": 14},
+      "availability": {"state": "available"}
+      }]
+    },
+    "context": {
+      "transcript": "The requested explanation begins at 18 seconds.",
+      "template_demo": "Unrelated launch date",
+      "listing_project_revision": 14,
+      "package": {"action": "add", "duration_ms": 5000, "content_mode": "parameterized", "inputs": [{"key": "body", "binding": {"storage": "parameter", "token": "{{PARAM_BODY}}"}}]}
+    },
+    "expected": {
+      "route": "materialize",
+      "window": {"at_ms": 18000, "duration_ms": 5000},
+      "context_reads": ["project", "transcript", "timeline"],
+      "required_call_order": ["resolve_selection", "list_motion_assets", "materialize_motion_asset"],
+      "forbidden_calls": ["get_motion_asset", "sign_upload", "start_transcribe_project"],
+      "parameter_keys": ["body"],
+      "requires_grounded_values": true,
+      "forbidden_literals": ["Unrelated launch date"],
+      "max_questions": 0,
+      "refused": false,
+      "requires_page_url": true
+    }
+  },
+  {
+    "id": "hardcoded-content-derivation",
+    "baseline_outcome": "Materialize the package defaults and leave the cats-versus-dogs placeholder content unchanged.",
+    "request": "Adapt this comparison card to the two approaches discussed in the video.\nReference: https://producer.opus.pro/r/aipr_0000000000000003",
+    "resolved": {
+      "schema_version": 2,
+      "project_id": "synthetic-project",
+      "references": [{
+      "project_id": "synthetic-project",
+      "kind": "motion_asset",
+      "address": {"kind": "motion-asset", "id": "comparison-card", "version": "1.4.0"},
+      "composition_id": null,
+      "at_ms": null,
+      "region": null,
+      "reference_id": "aipr_0000000000000003",
+      "expires_at": "2099-01-01T00:00:00Z",
+      "intent": "adapt",
+      "placement": {"mode": "auto"},
+      "context": {"project_revision": 8},
+      "availability": {"state": "available"}
+      }]
+    },
+    "context": {
+      "transcript": "The speaker contrasts manual review with automated review from 40 to 47 seconds.",
+      "template_demo": "Cats versus dogs",
+      "listing_project_revision": 8,
+      "package": {"action": "add", "duration_ms": 7000, "content_mode": "hardcoded", "inputs": [{"key": "left_label", "binding": {"storage": "overlay", "element_id": "left", "property": "text"}}, {"key": "right_label"}], "source_available": true}
+    },
+    "expected": {
+      "route": "derive",
+      "window": {"at_ms": 40000, "duration_ms": 7000},
+      "context_reads": ["project", "transcript", "timeline", "visuals"],
+      "required_call_order": ["resolve_selection", "list_motion_assets", "get_motion_asset", "commit_workspace"],
+      "forbidden_calls": ["materialize_motion_asset", "sign_upload", "start_transcribe_project"],
+      "requires_grounded_values": true,
+      "forbidden_literals": ["Cats versus dogs"],
+      "max_questions": 0,
+      "refused": false,
+      "requires_page_url": true
+    }
+  },
+  {
+    "id": "data-template-without-facts",
+    "baseline_outcome": "Materialize the demo's invented 73 percent value without grounding it in the video.",
+    "request": "Adapt this metric card to the claim in my video.\nReference: https://producer.opus.pro/r/aipr_0000000000000004",
+    "resolved": {
+      "schema_version": 2,
+      "project_id": "synthetic-project",
+      "references": [{
+      "project_id": "synthetic-project",
+      "kind": "motion_asset",
+      "address": {"kind": "motion-asset", "id": "metric-card", "version": "3.0.0"},
+      "composition_id": null,
+      "at_ms": null,
+      "region": null,
+      "reference_id": "aipr_0000000000000004",
+      "expires_at": "2099-01-01T00:00:00Z",
+      "intent": "adapt",
+      "placement": {"mode": "auto"},
+      "context": {"project_revision": 5},
+      "availability": {"state": "available"}
+      }]
+    },
+    "context": {
+      "transcript": "The speaker says results improved but gives no amount, baseline, or unit.",
+      "template_demo": "Revenue increased 73 percent",
+      "candidate_beat": {"at_ms": 22000, "duration_ms": 5000},
+      "listing_project_revision": 5,
+      "package": {"action": "chooseInput", "duration_ms": 5000, "content_mode": "parameterized", "inputs": [{"key": "value", "required": true, "binding": {"storage": "parameter", "token": "{{PARAM_VALUE}}"}}, {"key": "unit", "required": true, "binding": {"storage": "parameter", "token": "{{PARAM_UNIT}}"}}]}
+    },
+    "expected": {
+      "route": "needs_input",
+      "window": {"at_ms": 22000, "duration_ms": 5000},
+      "context_reads": ["project", "transcript", "timeline"],
+      "required_call_order": ["resolve_selection", "list_motion_assets", "present_choices"],
+      "forbidden_calls": ["materialize_motion_asset", "get_motion_asset", "commit_workspace"],
+      "requires_grounded_values": false,
+      "forbidden_literals": ["73 percent"],
+      "min_questions": 1,
+      "max_questions": 1,
+      "refused": false,
+      "requires_page_url": false
+    }
+  },
+  {
+    "id": "cutout-across-two-kept-spans",
+    "baseline_outcome": "Use the copied target without first settling semantic fit; kept-span measurement is still required.",
+    "request": "Adapt this speaker cutout layout to the explanation around the edit boundary.\nReference: https://producer.opus.pro/r/aipr_0000000000000005",
+    "resolved": {
+      "schema_version": 2,
+      "project_id": "synthetic-project",
+      "references": [{
+      "project_id": "synthetic-project",
+      "kind": "motion_asset",
+      "address": {"kind": "motion-asset", "id": "speaker-cutout", "version": "1.2.0"},
+      "composition_id": null,
+      "at_ms": 12000,
+      "region": null,
+      "reference_id": "aipr_0000000000000005",
+      "expires_at": "2099-01-01T00:00:00Z",
+      "intent": "adapt",
+      "placement": {"mode": "explicit", "at_ms": 12000, "duration_ms": 6000},
+      "context": {"project_revision": 21},
+      "availability": {"state": "available"}
+      }]
+    },
+    "context": {
+      "transcript": "One thought spans two retained takes between 12 and 18 seconds.",
+      "kept_spans": [[12000, 14500], [14500, 18000]],
+      "listing_project_revision": 21,
+      "listing_entry": {
+        "action": "add",
+        "duration_ms": 6000,
+        "content_mode": "cutout",
+        "next_data": {
+          "cutout": {
+            "input_key": "speaker",
+            "media_input_form": "staged_segments",
+            "frame_speaker_calls": [
+              {
+                "project_id": "synthetic-project",
+                "windows": [
+                  {"start": 12, "end": 14.5, "slug": "speaker-span-1", "matte": true, "slot": {"width": 520, "height": 940}, "headroom_px": 300},
+                  {"start": 14.5, "end": 18, "slug": "speaker-span-2", "matte": true, "slot": {"width": 520, "height": 940}, "headroom_px": 300}
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "frame_speaker_result": {"files": [{"path": "render-engine/public/speaker_speaker-span-1.webm", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}, {"path": "render-engine/public/speaker_speaker-span-2.webm", "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}], "windows": [{"slug": "speaker-span-1", "start": 12, "end": 14.5, "slot": {"width": 520, "height": 940}, "object_position": {"x": 50, "y": 30, "css": "50.00% 30.00%"}, "cutout": {"sink_px": 120, "card_clip_top_px": 300, "head_top_px": 210, "head_bottom_px": 480, "payload": "headroom", "content_bottom_px": 186, "headroom": {"requested_px": 300, "max_px": 340, "fits": true}}, "matte": {"path": "render-engine/public/speaker_speaker-span-1.webm", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "media_start": 0, "width": 1920, "height": 1080, "fps": 30, "frames": 75, "shot_cuts": false}}, {"slug": "speaker-span-2", "start": 14.5, "end": 18, "slot": {"width": 520, "height": 940}, "object_position": {"x": 48, "y": 31, "css": "48.00% 31.00%"}, "cutout": {"sink_px": 118, "card_clip_top_px": 298, "head_top_px": 208, "head_bottom_px": 478, "payload": "headroom", "content_bottom_px": 188, "headroom": {"requested_px": 300, "max_px": 338, "fits": true}}, "matte": {"path": "render-engine/public/speaker_speaker-span-2.webm", "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "media_start": 0, "width": 1920, "height": 1080, "fps": 30, "frames": 105, "shot_cuts": false}}]}
+    },
+    "expected": {
+      "route": "materialize",
+      "window": {"at_ms": 12000, "duration_ms": 6000},
+      "context_reads": ["project", "transcript", "timeline", "visuals"],
+      "required_call_order": ["resolve_selection", "list_motion_assets", "frame_speaker", "materialize_motion_asset"],
+      "forbidden_calls": ["get_motion_asset", "sign_upload", "start_transcribe_project"],
+      "parameter_keys": [],
+      "media_inputs": {"speaker": [{"path": "render-engine/public/speaker_speaker-span-1.webm", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "start_ms": 12000, "end_ms": 14500, "geometry": {"object_position": "50.00% 30.00%", "sink_px": 120, "card_clip_top_px": 300, "head_top_px": 210, "head_bottom_px": 480}}, {"path": "render-engine/public/speaker_speaker-span-2.webm", "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "start_ms": 14500, "end_ms": 18000, "geometry": {"object_position": "48.00% 31.00%", "sink_px": 118, "card_clip_top_px": 298, "head_top_px": 208, "head_bottom_px": 478}}]},
+      "cutout_windows": [[12000, 14500], [14500, 18000]],
+      "requires_grounded_values": false,
+      "forbidden_literals": [],
+      "max_questions": 0,
+      "refused": false,
+      "requires_page_url": true
+    }
+  },
+  {
+    "id": "explicit-unchanged-direct",
+    "baseline_outcome": "Materialize the unchanged package at the requested time; this direct behavior is retained.",
+    "request": "Insert this template unchanged at 00:09.\nReference: https://producer.opus.pro/r/aipr_0000000000000006",
+    "resolved": {
+      "schema_version": 2,
+      "project_id": "synthetic-project",
+      "references": [{
+      "project_id": "synthetic-project",
+      "kind": "motion_asset",
+      "address": {"kind": "motion-asset", "id": "abstract-loop", "version": "2.1.0"},
+      "composition_id": null,
+      "at_ms": 9000,
+      "region": null,
+      "reference_id": "aipr_0000000000000006",
+      "expires_at": "2099-01-01T00:00:00Z",
+      "intent": "direct",
+      "placement": {"mode": "explicit", "at_ms": 9000, "duration_ms": 4000},
+      "context": {"playhead_ms": 47000, "project_revision": 3},
+      "availability": {"state": "available"}
+      }]
+    },
+    "context": {
+      "transcript": "The user explicitly requested the package defaults.",
+      "listing_project_revision": 3,
+      "package": {"action": "add", "duration_ms": 4000, "content_mode": "abstract"}
+    },
+    "expected": {
+      "route": "materialize",
+      "window": {"at_ms": 9000, "duration_ms": 4000},
+      "context_reads": ["project", "timeline"],
+      "required_call_order": ["resolve_selection", "list_motion_assets", "materialize_motion_asset"],
+      "forbidden_calls": ["get_motion_asset", "sign_upload", "start_transcribe_project"],
+      "parameter_keys": [],
+      "requires_grounded_values": false,
+      "forbidden_literals": [],
+      "max_questions": 0,
+      "refused": false,
+      "requires_page_url": true
+    }
+  },
+  {
+    "id": "retired-reference-refusal",
+    "baseline_outcome": "Refuse the unavailable pinned package; this refusal behavior is retained.",
+    "request": "Adapt this saved template to my project.\nReference: https://producer.opus.pro/r/aipr_0000000000000007",
+    "resolved": {
+      "schema_version": 2,
+      "project_id": "synthetic-project",
+      "references": [{
+      "project_id": "synthetic-project",
+      "kind": "motion_asset",
+      "address": {"kind": "motion-asset", "id": "retired-card", "version": "1.0.0"},
+      "composition_id": null,
+      "at_ms": null,
+      "region": null,
+      "reference_id": "aipr_0000000000000007",
+      "expires_at": "2099-01-01T00:00:00Z",
+      "intent": "adapt",
+      "placement": {"mode": "auto"},
+      "context": {},
+      "availability": {"state": "unavailable", "reason": "asset_unavailable"}
+      }]
+    },
+    "context": {
+      "transcript": "The pinned package version is retired."
+    },
+    "expected": {
+      "route": "refuse",
+      "context_reads": [],
+      "required_call_order": ["resolve_selection"],
+      "forbidden_calls": ["list_motion_assets", "materialize_motion_asset", "get_motion_asset", "commit_workspace"],
+      "requires_grounded_values": false,
+      "forbidden_literals": [],
+      "max_questions": 0,
+      "refused": true,
+      "requires_page_url": false
+    }
+  },
+  {
+    "id": "legacy-reference-here",
+    "baseline_outcome": "Materialize the pinned legacy package at its explicit 6.72 second target.",
+    "request": "Add Subscribe here.\n@aip p=C1EXAMPLE0000 t=6.72 motion-asset id=text-subscribe version=4.0.0",
+    "resolved": {
+      "project_id": "C1EXAMPLE0000",
+      "references": [{
+      "project_id": "C1EXAMPLE0000",
+      "kind": "motion-asset",
+      "address": {"kind": "motion-asset", "id": "text-subscribe", "version": "4.0.0"},
+      "composition_id": null,
+      "at_ms": 6720,
+      "region": null
+      }]
+    },
+    "context": {
+      "transcript": "The old reference explicitly says here.",
+      "listing_project_revision": 2,
+      "package": {"action": "add", "duration_ms": 3000, "content_mode": "direct"}
+    },
+    "expected": {
+      "route": "materialize",
+      "window": {"at_ms": 6720, "duration_ms": 3000},
+      "context_reads": ["project", "timeline"],
+      "required_call_order": ["resolve_selection", "list_motion_assets", "materialize_motion_asset"],
+      "forbidden_calls": ["get_motion_asset", "sign_upload", "start_transcribe_project"],
+      "parameter_keys": [],
+      "requires_grounded_values": false,
+      "forbidden_literals": [],
+      "max_questions": 0,
+      "refused": false,
+      "requires_page_url": true
+    }
+  }
+]

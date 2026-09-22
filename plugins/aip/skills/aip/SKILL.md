@@ -1,11 +1,17 @@
 ---
 name: aip
-description: "Create an editable AI Producer preview from user footage, or act on a pasted @aip reference line from the Motion library (a motion-asset or omni-preset card) by placing it at its time. Settle the rough cut, fine cut and finishes rounds first when the request leaves them open. Use whenever a user attaches, names, or links a video and wants it cut, captioned, given motion graphics or music, restyled, or exported, in any language (剪视频 / 剪辑 / 加字幕 / 做动效 / 配乐 / 导出成片), when they hand over extra images or clips to place in the video (素材 / 插入图片 / 插一段视频), and for any follow-up on an existing project. Deliver the editable project link by default, export only on explicit request, and stop without inspecting the preview or output video."
+description: "Create or update an editable AI Producer video. Use when someone provides footage or an existing project and asks AI Producer to cut, caption, add motion graphics or music, restyle, export, or adapt a Motion Library template from a reference link, in any language (剪视频 / 剪辑 / 加字幕 / 做动效 / 配乐 / 导出成片 / 素材 / 插入图片 / 插一段视频). Settle the rough cut, fine cut and finishes rounds for a new project when the request leaves them open. Deliver the editable project link by default, export only on explicit request, and stop without inspecting the preview or output video."
 ---
 
 # AI Producer preview
 
 Create one editable AI Producer preview from the user's footage and creative brief. Shape the edit around the user's intent, the footage, and its audience.
+
+## Targeted changes to an existing project
+
+When the request targets an existing AI Producer project, begin from its current saved edit and make only the requested change. Do not upload the source again, restart project preparation, or reopen the rough cut, fine cut and finishes rounds unless the user asks to revisit one of them.
+
+A natural request to use or adapt a Motion Library template, together with its AI Producer reference link, is an existing-project change. Read the [Motion Library handoff](references/handoff.md) once and follow it before the new-project flow below. Legacy Motion Library references remain supported through that handoff, but they are not required in a new request.
 
 ## What to settle before you cut
 
@@ -68,7 +74,7 @@ Deliver the editable project link by default. Treat "finished video" or "final c
 
 Do not inspect the generated preview or MP4, including browser playback, screenshots, contact sheets, frame extraction, audio analysis, or delegated inspection. Do not start a post-delivery review, repair, or aesthetic iteration. This stopping condition applies whether the deliverable is a preview or an explicitly requested export. Input-media analysis, including retrieved source assets, and local static contract checks before submission remain allowed.
 
-Use only this package's [AI Producer composition contract](../aip-composition/SKILL.md) and [workspace reference](references/workspace.md) for integration. Read the workspace reference once before source upload or export, the composition contract once before authoring, and the [framing skill](../aip-framing/SKILL.md) once before deciding the speaker's frame for each beat; load the linked PIP example only when needed, the [dynamic caption skill](../aip-dynamic-caption/SKILL.md) once before the caption layer when it is listed, and the [handoff reference](references/handoff.md) once when the request carries a pasted `@aip` reference line from the Motion library. Do not search global HyperFrames or media-use skills, backend source, or repository documentation to make this video. Resolve these links relative to the skill actually loaded, never a remembered versioned cache path. If that path is stale, use the host's installed-plugin listing once to find the enabled package and its version.
+Use only this package's [AI Producer composition contract](../aip-composition/SKILL.md) and [workspace reference](references/workspace.md) for integration. Read the workspace reference once before source upload or export, the composition contract once before authoring, and the [framing skill](../aip-framing/SKILL.md) once before deciding the speaker's frame for each beat; load the linked PIP example only when needed, and read the [dynamic caption skill](../aip-dynamic-caption/SKILL.md) once before the caption layer when it is listed. Do not search global HyperFrames or media-use skills, backend source, or repository documentation to make this video. Resolve these links relative to the skill actually loaded, never a remembered versioned cache path. If that path is stale, use the host's installed-plugin listing once to find the enabled package and its version.
 
 ## Talk to the user
 
