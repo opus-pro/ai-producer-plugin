@@ -10,6 +10,11 @@ from typing import Any
 
 
 SCENARIOS = Path(__file__).with_name("scenarios.json")
+PRIMARY_CONTEXT = re.compile(
+    r"(?:Project|项目)\s*[：:]\s*`?([A-Za-z0-9_-]+)`?\s*(?:\||·)\s*"
+    r"(?:Template|模板)\s*[：:]\s*`?([A-Za-z0-9._-]+)@([0-9A-Za-z.+-]+)`?"
+)
+ROUTES = {"materialize", "derive", "needs_input", "refuse", "needs_context", "ordinary_project"}
 
 
 def load_scenarios(path: Path = SCENARIOS) -> dict[str, dict[str, Any]]:
@@ -18,43 +23,43 @@ def load_scenarios(path: Path = SCENARIOS) -> dict[str, dict[str, Any]]:
     if len(scenarios) != len(records):
         raise ValueError("scenario ids must be unique")
     for record in records:
-        if record["id"] == "legacy-reference-here":
-            continue
-        match = re.search(r"https://producer\.opus\.pro/r/(aipr_[A-Za-z0-9_-]{16})", record["request"])
-        if not match:
-            raise ValueError(f"{record['id']}: invalid synthetic reference URL")
-        resolved = record["resolved"]
-        if set(resolved) != {"schema_version", "project_id", "references"} or resolved["schema_version"] != 2:
-            raise ValueError(f"{record['id']}: resolver envelope does not match v2")
-        if len(resolved["references"]) != 1:
-            raise ValueError(f"{record['id']}: fixture must resolve exactly one reference")
-        reference = resolved["references"][0]
-        required = {
-            "project_id", "kind", "address", "composition_id", "at_ms", "region",
-            "reference_id", "expires_at", "intent", "placement", "context", "availability",
-        }
-        if set(reference) != required:
-            raise ValueError(f"{record['id']}: resolver fixture fields do not match v2")
-        if reference["reference_id"] != match.group(1):
-            raise ValueError(f"{record['id']}: reference id does not match URL")
-        if reference["placement"]["mode"] == "auto" and reference["at_ms"] is not None:
-            raise ValueError(f"{record['id']}: auto placement must have null compatibility at_ms")
-        if reference["placement"]["mode"] == "explicit" and reference["at_ms"] != reference["placement"]["at_ms"]:
-            raise ValueError(f"{record['id']}: explicit compatibility at_ms must match placement")
+        source = record["source"]
+        expected = record["expected"]
+        if expected["route"] not in ROUTES:
+            raise ValueError(f"{record['id']}: unknown route")
+        matches = PRIMARY_CONTEXT.findall(record["request"])
+        if source == "primary" and "handoff" in record:
+            if len(matches) != 1:
+                raise ValueError(f"{record['id']}: primary fixture must have one context line")
+            project_id, motion_asset_id, version = matches[0]
+            if record["handoff"] != {
+                "project_id": project_id,
+                "motion_asset_id": motion_asset_id,
+                "version": version,
+            }:
+                raise ValueError(f"{record['id']}: parsed context does not match handoff")
+            if "@aip" in record["request"] or "/r/" in record["request"]:
+                raise ValueError(f"{record['id']}: primary handoff uses a legacy marker")
+        if source == "legacy" and "@aip" not in record["request"]:
+            raise ValueError(f"{record['id']}: legacy fixture lacks marker")
+        if source == "ordinary" and matches:
+            raise ValueError(f"{record['id']}: ordinary request parsed as a handoff")
     return scenarios
 
 
 def model_cases(scenarios: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    """Return model inputs without baseline or candidate answer fields."""
-    return [
-        {
+    """Return model inputs without contract intent, parsed answer or rubric fields."""
+    cases = []
+    for scenario in scenarios.values():
+        case = {
             "scenario_id": scenario["id"],
             "request": scenario["request"],
-            "resolved": scenario["resolved"],
             "context": scenario["context"],
         }
-        for scenario in scenarios.values()
-    ]
+        if "resolved" in scenario:
+            case["resolved"] = scenario["resolved"]
+        cases.append(case)
+    return cases
 
 
 def trace_set_failures(scenarios: dict[str, Any], traces: list[dict[str, Any]]) -> list[str]:
@@ -84,14 +89,31 @@ def evaluate(scenario: dict[str, Any], trace: dict[str, Any]) -> list[str]:
 
     if trace.get("route") != expected["route"]:
         failures.append("route")
-    if not calls or call_names[0] != "resolve_selection":
-        failures.append("resolve_first")
-    elif calls[0].get("arguments", {}).get("selection") != scenario["request"]:
-        failures.append("resolve_whole_request")
     if not _ordered(call_names, expected["required_call_order"]):
         failures.append("required_call_order")
     if set(call_names).intersection(expected["forbidden_calls"]):
         failures.append("forbidden_call")
+
+    source = scenario["source"]
+    if source == "primary" and "handoff" in scenario:
+        listings = [call for call in calls if call.get("name") == "list_motion_assets"]
+        if not listings or listings[0].get("arguments") != {"project_id": scenario["handoff"]["project_id"]}:
+            failures.append("discovery_listing")
+        gets = [call for call in calls if call.get("name") == "get_motion_asset"]
+        if "get_motion_asset" in expected["required_call_order"]:
+            wanted = {
+                "motion_asset_id": scenario["handoff"]["motion_asset_id"],
+                "version": scenario["handoff"]["version"],
+            }
+            if len(gets) != 1 or gets[0].get("arguments") != wanted:
+                failures.append("get_exact_pin")
+        if "resolve_selection" in call_names:
+            failures.append("primary_used_resolver")
+    elif source == "legacy":
+        if not calls or call_names[0] != "resolve_selection":
+            failures.append("legacy_resolve_first")
+        elif calls[0].get("arguments", {}).get("selection") != scenario["request"]:
+            failures.append("resolve_whole_request")
 
     missing_reads = set(expected.get("context_reads", [])) - set(trace.get("context_reads", []))
     if missing_reads:
@@ -102,12 +124,15 @@ def evaluate(scenario: dict[str, Any], trace: dict[str, Any]) -> list[str]:
         if trace.get("window") != window:
             failures.append("window")
         listings = [call for call in calls if call.get("name") == "list_motion_assets"]
-        if not listings or any(
-            listing.get("arguments", {}).get("at_ms") != window["at_ms"]
-            or listing.get("arguments", {}).get("duration_ms") != window["duration_ms"]
-            for listing in listings
-        ):
+        final_listings = [
+            call for call in listings
+            if call.get("arguments", {}).get("at_ms") == window["at_ms"]
+            and call.get("arguments", {}).get("duration_ms") == window["duration_ms"]
+        ]
+        if expected["route"] != "refuse" and not final_listings:
             failures.append("list_final_window")
+        if source == "primary" and expected["route"] != "refuse" and len(listings) < 2:
+            failures.append("missing_refresh_listing")
 
     materializations = [call for call in calls if call.get("name") == "materialize_motion_asset"]
     if expected["route"] == "materialize":
@@ -122,7 +147,7 @@ def evaluate(scenario: dict[str, Any], trace: dict[str, Any]) -> list[str]:
                 failures.append("materialize_window")
             if arguments.get("expected_project_revision") != scenario["context"]["listing_project_revision"]:
                 failures.append("materialize_revision")
-            if set(arguments.get("parameters", {})) != set(expected["parameter_keys"]):
+            if set(arguments.get("parameters", {})) != set(expected.get("parameter_keys", [])):
                 failures.append("materialize_parameter_keys")
             if "media_inputs" in expected and arguments.get("media_inputs") != expected["media_inputs"]:
                 failures.append("materialize_media_inputs")
@@ -148,15 +173,13 @@ def evaluate(scenario: dict[str, Any], trace: dict[str, Any]) -> list[str]:
     if expected["requires_grounded_values"] and not trace.get("grounded_values"):
         failures.append("grounded_values")
 
-    serialized = json.dumps(trace, sort_keys=True)
+    serialized = json.dumps(trace, sort_keys=True, ensure_ascii=False)
     if any(term in serialized for term in expected["forbidden_literals"]):
         failures.append("demo_leakage")
-    if expected.get("cutout_windows") != trace.get("cutout_windows"):
-        if "cutout_windows" in expected:
-            failures.append("cutout_windows")
-    if expected["requires_page_url"]:
-        if not trace.get("page_url") or trace.get("agent_page_url"):
-            failures.append("durable_page_url")
+    if "cutout_windows" in expected and expected["cutout_windows"] != trace.get("cutout_windows"):
+        failures.append("cutout_windows")
+    if expected["requires_page_url"] and (not trace.get("page_url") or trace.get("agent_page_url")):
+        failures.append("durable_page_url")
     return failures
 
 
@@ -168,7 +191,7 @@ def main() -> int:
     args = parser.parse_args()
     scenarios = load_scenarios(args.scenarios)
     if args.emit_model_cases:
-        print(json.dumps(model_cases(scenarios), indent=2))
+        print(json.dumps(model_cases(scenarios), indent=2, ensure_ascii=False))
         return 0
     if args.candidate is None:
         parser.error("candidate is required unless --emit-model-cases is used")

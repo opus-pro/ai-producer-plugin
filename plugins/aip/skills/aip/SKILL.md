@@ -1,6 +1,6 @@
 ---
 name: aip
-description: "Create or update an editable AI Producer video. Use when someone provides footage or an existing project and asks AI Producer to cut, caption, add motion graphics or music, restyle, export, or adapt a Motion Library template from a reference link, in any language (剪视频 / 剪辑 / 加字幕 / 做动效 / 配乐 / 导出成片 / 素材 / 插入图片 / 插一段视频). Settle the rough cut, fine cut and finishes rounds for a new project when the request leaves them open. Deliver the editable project link by default, export only on explicit request, and stop without inspecting the preview or output video."
+description: "Create or update an editable AI Producer video. Use when someone provides footage or an existing project and asks AI Producer to cut, caption, add motion graphics or music, restyle, export, or adapt a named Motion Library template, in any language (剪视频 / 剪辑 / 加字幕 / 做动效 / 配乐 / 导出成片 / 素材 / 插入图片 / 插一段视频). Settle the rough cut, fine cut and finishes rounds for a new project when the request leaves them open. Deliver the editable project link by default, export only on explicit request, and stop without inspecting the preview or output video."
 ---
 
 # AI Producer preview
@@ -11,7 +11,7 @@ Create one editable AI Producer preview from the user's footage and creative bri
 
 When the request targets an existing AI Producer project, begin from its current saved edit and make only the requested change. Do not upload the source again, restart project preparation, or reopen the rough cut, fine cut and finishes rounds unless the user asks to revisit one of them.
 
-A natural request to use or adapt a Motion Library template, together with its AI Producer reference link, is an existing-project change. Read the [Motion Library handoff](references/handoff.md) once and follow it before the new-project flow below. Legacy Motion Library references remain supported through that handoff, but they are not required in a new request.
+A natural request to use or adapt a Motion Library template, together with its `Project` and `Template` context line, is an existing-project change. Read the [Motion Library handoff](references/handoff.md) once and follow it before the new-project flow below. The handoff also owns compatibility with legacy Motion Library references.
 
 ## What to settle before you cut
 
