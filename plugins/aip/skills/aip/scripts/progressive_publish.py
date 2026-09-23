@@ -18,6 +18,19 @@ from editing_script_sync import EDITING_SCRIPT, sync_workspace, validate_workspa
 
 MAX_FILES = 200
 SIGN_BATCH_SIZE = 50
+# Extensions commit_workspace accepts as inline UTF-8 text. A heavier or binary file
+# keeps the signed upload, and a batch that would pass the budget spills into it rather
+# than being refused whole.
+INLINE_SUFFIXES = frozenset({".html", ".htm", ".css", ".json"})
+# How much text one prepare receipt carries inline. This is OUR transport's budget, not
+# the service's: the receipt reaches the publication helper as this process's stdout,
+# through the host's own exec output, and a truncated receipt fails to parse after the
+# checkpoint is already prepared - the batch then closes as failed having committed
+# nothing. Deliberately well under the service's own 256 KiB inline cap, and wide enough
+# for what an effect really publishes (an index, a composition or two, and the initial
+# editing script); anything above it takes the signed upload, which streams from disk
+# and returns only a short result.
+MAX_INLINE_RECEIPT_BYTES = 64 * 1024
 # The service includes its own runtime files in a host-authored commit receipt.
 SERVER_RUNTIME_PATHS = frozenset({
     "render-engine/package.json",
@@ -28,6 +41,36 @@ SERVER_RUNTIME_PATHS = frozenset({
 CHECKPOINT_SCHEMA = 3
 CHECKPOINT_STATUSES = frozenset({"ready", "prepared", "failed", "finished"})
 _HASH = re.compile(r"[0-9a-f]{64}")
+
+
+def _inline_text(file, data, already):
+    """The file's UTF-8 text when this commit may carry it in the call, else None.
+
+    Text only, and only while the batch stays inside the service's inline budget: a
+    file past it goes back to the signed upload, so a heavy batch still publishes
+    instead of being refused.
+    """
+    if file.suffix.lower() not in INLINE_SUFFIXES or already + len(data) > MAX_INLINE_RECEIPT_BYTES:
+        return None
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+
+
+def _expected_entry(row):
+    """One commit_workspace batch entry: the text itself, or the digest of an upload."""
+    if "content" in row:
+        return {"path": row["path"], "content": row["content"]}
+    return {"path": row["path"], "sha256": row["sha256"]}
+
+
+def _sign_batches(rows):
+    """The upload batches left once every inline file is carried by the commit."""
+    return [
+        [{"path": row["path"], "content_type": row["content_type"]} for row in rows[offset:offset + SIGN_BATCH_SIZE]]
+        for offset in range(0, len(rows), SIGN_BATCH_SIZE)
+    ]
 _WARNING = re.compile(r"[a-zA-Z0-9_-]{1,100}")
 
 
@@ -123,13 +166,20 @@ class ProgressCheckpoint:
             if (Path(relative).suffix.lower() in {".html", ".css"} or relative == EDITING_SCRIPT) and (self.root / relative).is_file():
                 self._copy(relative, target)
         manifest = []
+        inline_bytes = 0
         for relative in paths:
             file = self._copy(relative, target)
-            manifest.append({
+            data = file.read_bytes()
+            row = {
                 "path": service_path(relative),
-                "sha256": hashlib.sha256(file.read_bytes()).hexdigest(),
+                "sha256": hashlib.sha256(data).hexdigest(),
                 "content_type": mimetypes.guess_type(relative)[0] or "application/octet-stream",
-            })
+            }
+            inline = _inline_text(file, data, inline_bytes)
+            if inline is not None:
+                row["content"] = inline
+                inline_bytes += len(data)
+            manifest.append(row)
         result = check(target, self.remote)
         if not result["ok"]:
             codes = sorted({item["code"] for item in result["errors"]})
@@ -266,7 +316,9 @@ class ProgressCheckpoint:
         self.pending = {
             "duration": state["duration"],
             "effects": state["effects"],
-            "files": manifest,
+            # Without the inline text: the checkpoint is a small atomic receipt file,
+            # and the bytes it would carry are already on disk under their own paths.
+            "files": [{key: value for key, value in row.items() if key != "content"} for row in manifest],
             "final": bool(final),
         }
         self.status = "prepared"
@@ -274,12 +326,8 @@ class ProgressCheckpoint:
             "status": "prepared",
             "project_id": self.project_id,
             "base_digest": self.digest,
-            "sign_batches": [
-                [{"path": row["path"], "content_type": row["content_type"]} for row in batch]
-                for offset in range(0, len(manifest), SIGN_BATCH_SIZE)
-                for batch in (manifest[offset:offset + SIGN_BATCH_SIZE],)
-            ],
-            "expected_files": [{"path": row["path"], "sha256": row["sha256"]} for row in manifest],
+            "sign_batches": _sign_batches([row for row in manifest if "content" not in row]),
+            "expected_files": [_expected_entry(row) for row in manifest],
             "authoring": not final,
             "published_effects": len(state["effects"]),
             "duration_seconds": state["duration"],

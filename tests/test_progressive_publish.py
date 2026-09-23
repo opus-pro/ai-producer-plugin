@@ -11,7 +11,12 @@ from editing_script_fixtures import write_editing_script
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "plugins/aip/skills/aip/scripts"
 sys.path.insert(0, str(SCRIPTS))
-from progressive_publish import ProgressCheckpoint, SERVER_RUNTIME_PATHS, SIGN_BATCH_SIZE
+from progressive_publish import (
+    MAX_INLINE_RECEIPT_BYTES,
+    ProgressCheckpoint,
+    SERVER_RUNTIME_PATHS,
+    SIGN_BATCH_SIZE,
+)
 
 
 def index(count=0, duration=59.85):
@@ -100,22 +105,73 @@ class ProgressivePublishTests(unittest.TestCase):
         self.assertIn("public/vendor/fit-engine.js", self.progress.remote)
 
     def test_signing_plan_obeys_the_service_batch_limit(self):
+        # Images are the only half of a batch that still needs signing: the documents and
+        # stylesheets beside them ride on the commit, so only these reach sign_batches.
         files = self.author(1)
         composition = self.root / "compositions/beat0.html"
         dependencies = []
-        for number in range(SIGN_BATCH_SIZE):
-            relative = f"styles/dependency-{number}.css"
+        for number in range(SIGN_BATCH_SIZE + 3):
+            relative = f"public/dependency-{number}.png"
             dependency = self.root / relative
             dependency.parent.mkdir(exist_ok=True)
-            dependency.write_text(f".dependency-{number} {{ color: black; }}", encoding="utf-8")
+            dependency.write_bytes(b"\x89PNG\r\n\x1a\n" + bytes([number]))
             dependencies.append(relative)
         composition.write_text(
-            "<template><div data-composition-id=\"beat0\"></div></template>"
-            + "".join(f'<link rel="stylesheet" href="{path}">' for path in dependencies),
+            "<template><div data-composition-id=\"beat0\">"
+            + "".join(f'<img src="{path}">' for path in dependencies)
+            + "</div></template>",
             encoding="utf-8",
         )
         plan = self.progress.prepare(files + dependencies)
         self.assertEqual([len(batch) for batch in plan["sign_batches"]], [SIGN_BATCH_SIZE, 3])
+        self.assertTrue(all("content" not in row for batch in plan["sign_batches"] for row in batch))
+
+    def test_text_rides_on_the_commit_and_heavier_bytes_keep_the_signed_path(self):
+        files = self.author(1)
+        image = self.root / "public/hero.png"
+        image.parent.mkdir(exist_ok=True)
+        image.write_bytes(b"\x89PNG\r\n\x1a\n")
+        composition = self.root / "compositions/beat0.html"
+        composition.write_text(
+            '<template><div data-composition-id="beat0"><img src="public/hero.png"></div></template>',
+            encoding="utf-8",
+        )
+        plan = self.progress.prepare(files + ["public/hero.png"])
+        entries = {row["path"]: row for row in plan["expected_files"]}
+
+        self.assertEqual(
+            entries["render-engine/index.html"]["content"],
+            (self.root / "index.html").read_text(encoding="utf-8"),
+        )
+        self.assertNotIn("sha256", entries["render-engine/index.html"])
+        self.assertNotIn("content", entries["render-engine/public/hero.png"])
+        self.assertEqual(
+            [row["path"] for batch in plan["sign_batches"] for row in batch],
+            ["render-engine/public/hero.png"],
+        )
+
+    def test_a_batch_past_the_inline_budget_spills_back_onto_the_signed_path(self):
+        files = self.author(1)
+        composition = self.root / "compositions/beat0.html"
+        dependencies = []
+        for number in range(3):
+            relative = f"styles/heavy-{number}.css"
+            heavy = self.root / relative
+            heavy.parent.mkdir(exist_ok=True)
+            heavy.write_text(f"/* {'x' * (MAX_INLINE_RECEIPT_BYTES // 2)} */", encoding="utf-8")
+            dependencies.append(relative)
+        composition.write_text(
+            '<template><div data-composition-id="beat0"></div></template>'
+            + "".join(f'<link rel="stylesheet" href="{path}">' for path in dependencies),
+            encoding="utf-8",
+        )
+        plan = self.progress.prepare(files + dependencies)
+        signed = [row["path"] for batch in plan["sign_batches"] for row in batch]
+
+        # Only the first heavy stylesheet fits; the rest keep the signed path rather than
+        # taking the whole commit over the service's inline budget.
+        self.assertEqual(len(signed), 2)
+        self.assertTrue(all(path.endswith(".css") for path in signed))
 
     def test_unexpected_document_in_receipt_stops_acceptance(self):
         plan = self.progress.prepare(self.author(1))
@@ -178,7 +234,7 @@ class ProgressivePublishTests(unittest.TestCase):
         alias.symlink_to(physical, target_is_directory=True)
         with patch("progressive_publish.tempfile.TemporaryDirectory", return_value=nullcontext(str(alias))):
             plan = self.progress.prepare(files, final=True)
-        self.assertEqual(sum(len(batch) for batch in plan["sign_batches"]), 3)
+        self.assertEqual(len(plan["expected_files"]), 3)
 
 
 if __name__ == "__main__":

@@ -51,7 +51,10 @@ function fixture(config = {}) {
       const args = argv(cmd);
       if (args[1].endsWith('/upload_batch.py')) {
         const targets = JSON.parse(cmd.split(" <<'AIP_UPLOAD_JSON'\n")[1].split('\nAIP_UPLOAD_JSON')[0]);
-        assert.deepEqual(targets.map(row => row.path), pending.plan.expected_files.map(row => row.path));
+        // Exactly the signed subset: a batch that also carries text inline uploads the
+        // rest and nothing more.
+        assert.deepEqual(targets.map(row => row.path),
+          pending.plan.sign_batches.flat().map(row => row.path));
         events.push(['upload', pending.effect]);
         if (isFailure('upload', pending.effect)) error();
         pending.uploaded = true;
@@ -73,7 +76,10 @@ function fixture(config = {}) {
         const final = args.includes('--final');
         const expected_files = files.map(path => ({path: 'render-engine/' + path, sha256: String(effect).padStart(64, '0')}));
         const plan = {status: 'prepared', project_id: 'synthetic-project', base_digest: `digest-${previous}`,
-          sign_batches: expected_files.map(row => [{path: row.path, content_type: 'text/html'}]),
+          sign_batches: config.inlineOnly ? []
+            : (config.mixed ? [expected_files.slice(1)] : expected_files)
+                .map(row => Array.isArray(row) ? row.map(entry => ({path: entry.path, content_type: 'image/png'}))
+                  : [{path: row.path, content_type: 'text/html'}]),
           expected_files, authoring: !final, final, published_effects: effect, duration_seconds: 59.85};
         pending = {effect, plan, waits: 0, uploaded: false};
         events.push(['prepare', effect]);
@@ -129,7 +135,7 @@ function fixture(config = {}) {
     },
     commitWorkspace: async args => {
       const effect = pending.effect;
-      assert.equal(pending.uploaded, true);
+      assert.equal(pending.uploaded, !config.inlineOnly);
       assert.equal(args.base_digest, `digest-${effect - 1}`);
       assert.equal(args.authoring, pending.plan.authoring);
       assert.deepEqual(args.expected_files, pending.plan.expected_files);
@@ -365,6 +371,28 @@ for (const spec of cases) {
   assert.deepEqual(harness.commands, []); assert.deepEqual(harness.events, []);
 }
 ''')
+
+    def test_a_text_only_batch_commits_without_signing_uploading_or_polling(self):
+        harness = json.loads(self.run_node(r'''
+const harness = fixture({inlineOnly: true});
+await harness.runBatch({afterEffect: 0, steps: [step(1)], final: true});
+console.log(JSON.stringify({events: harness.events, commands: harness.commands, polls: harness.polls}));
+'''))
+        self.assertEqual([name for name, *_ in harness["events"]], ["prepare", "commit", "wait", "wait", "accept"])
+        self.assertTrue(all("upload_batch.py" not in command for command in harness["commands"]))
+        self.assertEqual(harness["polls"], 0)
+
+    def test_a_mixed_batch_uploads_only_the_files_the_commit_cannot_carry(self):
+        harness = json.loads(self.run_node(r'''
+const harness = fixture({mixed: true});
+await harness.runBatch({afterEffect: 0, steps: [step(1)], final: true});
+console.log(JSON.stringify({events: harness.events, commits: harness.commits}));
+'''))
+        self.assertEqual([name for name, *_ in harness["events"]],
+                         ["prepare", "sign", "upload", "commit", "wait", "wait", "accept"])
+        # The commit still names every file in the batch, inline and uploaded alike; the
+        # uploader saw only the signed subset (asserted inside the stub).
+        self.assertEqual(len(harness["commits"][0]["expected_files"]), 2)
 
     def test_shell_quoting_preserves_paths_and_signed_stdin_without_execution(self):
         with tempfile.TemporaryDirectory() as directory:
