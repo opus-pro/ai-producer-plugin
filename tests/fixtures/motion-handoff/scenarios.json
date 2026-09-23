@@ -1,0 +1,353 @@
+[
+  {
+    "id": "english-primary-auto",
+    "source": "primary",
+    "contract_intent": "Adapt the exact pinned package with grounded copy at the strongest matching retained beat.",
+    "request": "Use AI Producer to adapt the \"Hero Statement\" template to this video's content and place it where it fits best.\nProject: DEMO_PROJECT | Template: text-hero-statement@4.0.0",
+    "handoff": {"project_id": "DEMO_PROJECT", "motion_asset_id": "text-hero-statement", "version": "4.0.0"},
+    "context": {
+      "project": {"project_id": "DEMO_PROJECT", "page_url": "https://example.invalid/projects/DEMO_PROJECT", "duration_ms": 42000, "orientation": "landscape", "current_revision": 14},
+      "accepted_media": [{"kind": "video", "path": "render-engine/public/source.mp4", "duration_ms": 42000}],
+      "edit": {"project_revision": 14, "speaker_clips": [{"output_start_ms": 0, "output_end_ms": 42000, "source_start_ms": 0, "source_end_ms": 42000}]},
+      "transcript": {"segments": [
+        {"output_start_ms": 0, "output_end_ms": 7000, "text": "We tried several review processes and learned where the delays begin."},
+        {"output_start_ms": 12000, "output_end_ms": 18000, "text": "First we removed duplicate handoffs from the review queue."},
+        {"output_start_ms": 24000, "output_end_ms": 29000, "text": "Shipping one focused workflow made review faster for the whole team."},
+        {"output_start_ms": 33000, "output_end_ms": 40000, "text": "The remaining details are implementation notes."}
+      ]},
+      "timeline": {"duration_ms": 42000, "kept_spans": [[0, 42000]], "visual_moments": [
+        {"start_ms": 10000, "end_ms": 19000, "purpose": "workflow demonstration"},
+        {"start_ms": 33000, "end_ms": 40000, "purpose": "implementation diagram"}
+      ]},
+      "discovery_listing": {"project_revision": 14, "entries": [{
+        "motion_asset_id": "text-hero-statement", "version": "4.0.0", "action": "add",
+        "purpose": "Emphasize one concise, self-contained central claim in large type.",
+        "duration": {"default_ms": 5000, "min_ms": 4000, "max_ms": 6000},
+        "inputs": [{"key": "headline", "binding": {"storage": "parameter", "token": "{{PARAM_HEADLINE}}"}}]
+      }]},
+      "pinned_asset": {"manifest": {"id": "text-hero-statement", "version": "4.0.0", "inputs": [{"key": "headline", "binding": {"storage": "parameter", "token": "{{PARAM_HEADLINE}}"}}]}, "source_summary": "A bold centered headline enters word by word; demo headline is YOUR BIG IDEA."},
+      "listing_project_revision": 14,
+      "listing_entry": {"motion_asset_id": "text-hero-statement", "version": "4.0.0", "action": "add", "duration_ms": 5000, "inputs": [{"key": "headline", "binding": {"storage": "parameter", "token": "{{PARAM_HEADLINE}}"}}]}
+    },
+    "expected": {
+      "route": "materialize", "window": {"at_ms": 24000, "duration_ms": 5000},
+      "context_reads": ["project", "video", "transcript", "edit", "timeline", "visuals"],
+      "required_call_order": ["list_motion_assets", "get_motion_asset", "list_motion_assets", "materialize_motion_asset"],
+      "forbidden_calls": ["resolve_selection", "sign_upload", "start_transcribe_project"],
+      "parameter_keys": ["headline"], "requires_grounded_values": true, "forbidden_literals": ["YOUR BIG IDEA"],
+      "max_questions": 0, "refused": false, "requires_page_url": true
+    }
+  },
+  {
+    "id": "chinese-primary-backticks-derived",
+    "source": "primary",
+    "contract_intent": "Accept Chinese labels and optional backticks, then derive only the overlay-bound content from the pinned source.",
+    "request": "请用 AI Producer 把“Hero Statement”模板改成视频里的核心观点，放在最合适的位置。\n项目：`DEMO_PROJECT` · 模板：`text-hero-statement@4.0.0`",
+    "handoff": {"project_id": "DEMO_PROJECT", "motion_asset_id": "text-hero-statement", "version": "4.0.0"},
+    "context": {
+      "project": {"project_id": "DEMO_PROJECT", "page_url": "https://example.invalid/projects/DEMO_PROJECT", "duration_ms": 48000, "orientation": "portrait", "current_revision": 8},
+      "accepted_media": [{"kind": "video", "path": "render-engine/public/source.mp4", "duration_ms": 48000}],
+      "edit": {"project_revision": 8, "speaker_clips": [{"output_start_ms": 0, "output_end_ms": 48000, "source_start_ms": 0, "source_end_ms": 48000}]},
+      "transcript": {"segments": [
+        {"output_start_ms": 0, "output_end_ms": 8000, "text": "我们先看人工整理为什么会拖慢进度。"},
+        {"output_start_ms": 18000, "output_end_ms": 25000, "text": "自动归类解决了重复搬运的问题。"},
+        {"output_start_ms": 31000, "output_end_ms": 37000, "text": "核心观点是，把整理交给系统，把判断留给人。"},
+        {"output_start_ms": 40000, "output_end_ms": 47000, "text": "最后是三个具体设置。"}
+      ]},
+      "timeline": {"duration_ms": 48000, "kept_spans": [[0, 48000]], "visual_moments": [
+        {"start_ms": 16000, "end_ms": 26000, "purpose": "before and after comparison"},
+        {"start_ms": 40000, "end_ms": 47000, "purpose": "settings walkthrough"}
+      ]},
+      "discovery_listing": {"project_revision": 8, "entries": [{
+        "motion_asset_id": "text-hero-statement", "version": "4.0.0", "action": "add",
+        "purpose": "Emphasize one concise central claim in large type.",
+        "duration": {"default_ms": 6000, "min_ms": 4000, "max_ms": 7000},
+        "inputs": [{"key": "headline", "binding": {"storage": "overlay", "element_id": "headline", "property": "text"}}]
+      }]},
+      "pinned_asset": {"manifest": {"id": "text-hero-statement", "version": "4.0.0", "inputs": [{"key": "headline", "binding": {"storage": "overlay", "element_id": "headline", "property": "text"}}]}, "source_summary": "A bold centered headline enters word by word; the headline text is authored in the source as YOUR BIG IDEA."},
+      "listing_project_revision": 8,
+      "listing_entry": {"motion_asset_id": "text-hero-statement", "version": "4.0.0", "action": "add", "duration_ms": 6000, "inputs": [{"key": "headline", "binding": {"storage": "overlay", "element_id": "headline", "property": "text"}}]}
+    },
+    "expected": {
+      "route": "derive", "window": {"at_ms": 31000, "duration_ms": 6000},
+      "context_reads": ["project", "video", "transcript", "edit", "timeline", "visuals"],
+      "required_call_order": ["list_motion_assets", "get_motion_asset", "list_motion_assets", "commit_workspace"],
+      "forbidden_calls": ["resolve_selection", "materialize_motion_asset", "sign_upload", "start_transcribe_project"],
+      "requires_grounded_values": true, "forbidden_literals": ["YOUR BIG IDEA"],
+      "max_questions": 0, "refused": false, "requires_page_url": true
+    }
+  },
+  {
+    "id": "explicit-time-and-scope",
+    "source": "primary",
+    "contract_intent": "The user's explicit time and one-occurrence scope override automatic placement.",
+    "request": "Use AI Producer to adapt the \"Key Takeaway\" template to this video's content once at 00:18.\nProject: DEMO_TIME | Template: text-key-takeaway@1.5.0",
+    "handoff": {"project_id": "DEMO_TIME", "motion_asset_id": "text-key-takeaway", "version": "1.5.0"},
+    "context": {
+      "project": {"project_id": "DEMO_TIME", "page_url": "https://example.invalid/projects/DEMO_TIME", "duration_ms": 36000, "orientation": "landscape", "current_revision": 5},
+      "accepted_media": [{"kind": "video", "path": "render-engine/public/source.mp4", "duration_ms": 36000}],
+      "edit": {"project_revision": 5, "speaker_clips": [{"output_start_ms": 0, "output_end_ms": 36000, "source_start_ms": 0, "source_end_ms": 36000}]},
+      "transcript": {"segments": [
+        {"output_start_ms": 12000, "output_end_ms": 18000, "text": "The setup explains why the old workflow stalled."},
+        {"output_start_ms": 18000, "output_end_ms": 22000, "text": "The takeaway is to validate the smallest useful change first."},
+        {"output_start_ms": 26000, "output_end_ms": 34000, "text": "The speaker then gives supporting details."}
+      ]},
+      "timeline": {"duration_ms": 36000, "kept_spans": [[0, 36000]], "visual_moments": [{"start_ms": 26000, "end_ms": 34000, "purpose": "supporting detail cards"}]},
+      "discovery_listing": {"project_revision": 5, "entries": [{
+        "motion_asset_id": "text-key-takeaway", "version": "1.5.0", "action": "add",
+        "purpose": "Show one concise conclusion at an explicitly chosen beat.",
+        "duration": {"default_ms": 4000, "min_ms": 3000, "max_ms": 6000},
+        "inputs": [{"key": "takeaway", "binding": {"storage": "parameter", "token": "{{PARAM_TAKEAWAY}}"}}]
+      }]},
+      "pinned_asset": {"manifest": {"id": "text-key-takeaway", "version": "1.5.0", "inputs": [{"key": "takeaway", "binding": {"storage": "parameter", "token": "{{PARAM_TAKEAWAY}}"}}]}, "source_summary": "A compact takeaway card reveals one sentence; demo text is REPLACE THIS TAKEAWAY."},
+      "listing_project_revision": 5,
+      "listing_entry": {"motion_asset_id": "text-key-takeaway", "version": "1.5.0", "action": "add", "duration_ms": 4000, "inputs": [{"key": "takeaway", "binding": {"storage": "parameter", "token": "{{PARAM_TAKEAWAY}}"}}]}
+    },
+    "expected": {
+      "route": "materialize", "window": {"at_ms": 18000, "duration_ms": 4000},
+      "context_reads": ["project", "video", "transcript", "edit", "timeline", "visuals"],
+      "required_call_order": ["list_motion_assets", "get_motion_asset", "list_motion_assets", "materialize_motion_asset"],
+      "forbidden_calls": ["resolve_selection", "sign_upload", "start_transcribe_project"],
+      "parameter_keys": ["takeaway"], "requires_grounded_values": true, "forbidden_literals": ["REPLACE THIS TAKEAWAY"],
+      "max_questions": 0, "refused": false, "requires_page_url": true
+    }
+  },
+  {
+    "id": "ambiguous-primary-context",
+    "source": "primary",
+    "contract_intent": "Ask for one exact context line before calling AI Producer.",
+    "request": "Adapt the Hero Statement template to this video.\nProject: DEMO_A | Template: text-hero-statement@4.0.0\nProject: DEMO_B | Template: text-hero-statement@4.0.0",
+    "context": {"active_project": {"project_id": "DEMO_ACTIVE", "page_url": "https://example.invalid/projects/DEMO_ACTIVE"}},
+    "expected": {
+      "route": "needs_context", "context_reads": [], "required_call_order": [],
+      "forbidden_calls": ["resolve_selection", "list_motion_assets", "get_motion_asset", "materialize_motion_asset", "commit_workspace"],
+      "requires_grounded_values": false, "forbidden_literals": [], "min_questions": 1, "max_questions": 1,
+      "refused": false, "requires_page_url": false
+    }
+  },
+  {
+    "id": "exact-version-unavailable",
+    "source": "primary",
+    "contract_intent": "Stop when the live authorized list offers a different version instead of silently using latest.",
+    "request": "Use AI Producer to adapt the \"Metric Focus\" template to this video's claim.\nProject: DEMO_VERSION | Template: metric-focus@1.2.0",
+    "handoff": {"project_id": "DEMO_VERSION", "motion_asset_id": "metric-focus", "version": "1.2.0"},
+    "context": {
+      "project": {"project_id": "DEMO_VERSION", "page_url": "https://example.invalid/projects/DEMO_VERSION", "duration_ms": 30000, "current_revision": 9},
+      "discovery_listing": {"project_revision": 9, "entries": [{
+        "motion_asset_id": "metric-focus", "version": "1.3.0", "action": "add",
+        "purpose": "Show one sourced metric.", "duration": {"default_ms": 5000, "min_ms": 4000, "max_ms": 7000}
+      }]},
+      "listing_project_revision": 9,
+      "listing_entry": {"motion_asset_id": "metric-focus", "version": "1.3.0", "action": "add", "duration_ms": 5000}
+    },
+    "expected": {
+      "route": "refuse", "context_reads": [], "required_call_order": ["list_motion_assets"],
+      "forbidden_calls": ["resolve_selection", "get_motion_asset", "materialize_motion_asset", "commit_workspace"],
+      "requires_grounded_values": false, "forbidden_literals": [], "max_questions": 0,
+      "refused": true, "requires_page_url": false
+    }
+  },
+  {
+    "id": "missing-grounded-fact",
+    "source": "primary",
+    "contract_intent": "Ask once for the missing metric rather than retaining demo data or inventing a value.",
+    "request": "Use AI Producer to adapt the \"Metric Focus\" template to the result discussed here.\nProject: DEMO_FACT | Template: metric-focus@1.1.0",
+    "handoff": {"project_id": "DEMO_FACT", "motion_asset_id": "metric-focus", "version": "1.1.0"},
+    "context": {
+      "project": {"project_id": "DEMO_FACT", "page_url": "https://example.invalid/projects/DEMO_FACT", "duration_ms": 32000, "orientation": "landscape", "current_revision": 4},
+      "accepted_media": [{"kind": "video", "path": "render-engine/public/source.mp4", "duration_ms": 32000}],
+      "edit": {"project_revision": 4, "speaker_clips": [{"output_start_ms": 0, "output_end_ms": 32000, "source_start_ms": 0, "source_end_ms": 32000}]},
+      "transcript": {"segments": [
+        {"output_start_ms": 0, "output_end_ms": 9000, "text": "The speaker explains the original process."},
+        {"output_start_ms": 15000, "output_end_ms": 20000, "text": "The result improved, but the speaker gives no value or unit."},
+        {"output_start_ms": 24000, "output_end_ms": 31000, "text": "The speaker describes what the team will test next."}
+      ]},
+      "timeline": {"duration_ms": 32000, "kept_spans": [[0, 32000]], "visual_moments": [{"start_ms": 23000, "end_ms": 31000, "purpose": "next steps"}]},
+      "discovery_listing": {"project_revision": 4, "entries": [{
+        "motion_asset_id": "metric-focus", "version": "1.1.0", "action": "chooseInput",
+        "purpose": "Show one metric with its unit at the beat that states the result.",
+        "duration": {"default_ms": 5000, "min_ms": 4000, "max_ms": 7000},
+        "inputs": [{"key": "metric", "binding": {"storage": "parameter", "token": "{{PARAM_METRIC}}"}}]
+      }]},
+      "pinned_asset": {"manifest": {"id": "metric-focus", "version": "1.1.0", "inputs": [{"key": "metric", "required": true, "binding": {"storage": "parameter", "token": "{{PARAM_METRIC}}"}}]}, "source_summary": "A numeric result card; demo metric is 73%."},
+      "listing_project_revision": 4,
+      "listing_entry": {"motion_asset_id": "metric-focus", "version": "1.1.0", "action": "chooseInput", "duration_ms": 5000, "inputs": [{"key": "metric", "binding": {"storage": "parameter", "token": "{{PARAM_METRIC}}"}}]}
+    },
+    "expected": {
+      "route": "needs_input",
+      "context_reads": ["project", "video", "transcript", "edit", "timeline", "visuals"],
+      "required_call_order": ["list_motion_assets", "get_motion_asset"],
+      "forbidden_calls": ["resolve_selection", "materialize_motion_asset", "commit_workspace"],
+      "requires_grounded_values": false, "forbidden_literals": ["73%", "73 percent"],
+      "min_questions": 1, "max_questions": 1, "refused": false, "requires_page_url": false
+    }
+  },
+  {
+    "id": "cutout-split-spans",
+    "source": "primary",
+    "contract_intent": "Keep the service's two measured cutout spans and their geometry as separate media segments.",
+    "request": "Use AI Producer to adapt the \"Speaker Proof\" template to the explanation around the edit.\nProject: DEMO_CUTOUT | Template: speaker-proof@1.0.0",
+    "handoff": {"project_id": "DEMO_CUTOUT", "motion_asset_id": "speaker-proof", "version": "1.0.0"},
+    "context": {
+      "project": {"project_id": "DEMO_CUTOUT", "page_url": "https://example.invalid/projects/DEMO_CUTOUT", "duration_ms": 30000, "orientation": "portrait", "current_revision": 21},
+      "accepted_media": [{"kind": "video", "path": "render-engine/public/source.mp4", "duration_ms": 44000}],
+      "edit": {"project_revision": 21, "speaker_clips": [
+        {"output_start_ms": 0, "output_end_ms": 14500, "source_start_ms": 0, "source_end_ms": 14500},
+        {"output_start_ms": 14500, "output_end_ms": 30000, "source_start_ms": 19000, "source_end_ms": 34500}
+      ]},
+      "transcript": {"segments": [
+        {"output_start_ms": 0, "output_end_ms": 8000, "text": "The speaker introduces the proof."},
+        {"output_start_ms": 12000, "output_end_ms": 18000, "text": "This single explanation spans two retained takes at the edit boundary."},
+        {"output_start_ms": 22000, "output_end_ms": 29000, "text": "The speaker closes with a separate recommendation."}
+      ]},
+      "timeline": {"duration_ms": 30000, "speaker_clips": [
+        {"output_start_ms": 0, "output_end_ms": 14500, "source_start_ms": 0, "source_end_ms": 14500},
+        {"output_start_ms": 14500, "output_end_ms": 30000, "source_start_ms": 19000, "source_end_ms": 34500}
+      ], "cut_boundaries_ms": [14500], "visual_moments": [{"start_ms": 22000, "end_ms": 29000, "purpose": "closing recommendation"}]},
+      "discovery_listing": {"project_revision": 21, "entries": [{
+        "motion_asset_id": "speaker-proof", "version": "1.0.0", "action": "add",
+        "purpose": "Place a measured speaker cutout over one proof statement.",
+        "duration": {"default_ms": 6000, "min_ms": 5000, "max_ms": 8000},
+        "inputs": [{"key": "speaker", "kind": "cutout"}]
+      }]},
+      "pinned_asset": {"manifest": {"id": "speaker-proof", "version": "1.0.0", "inputs": [{"key": "speaker", "kind": "cutout"}]}, "source_summary": "A speaker cutout rises over a full-width proof card while preserving two edit-safe media segments."},
+      "listing_project_revision": 21,
+      "listing_entry": {
+        "motion_asset_id": "speaker-proof", "version": "1.0.0", "action": "add", "duration_ms": 6000,
+        "next_data": {"cutout": {"input_key": "speaker", "frame_speaker_calls": [{
+          "project_id": "DEMO_CUTOUT", "windows": [
+            {"start": 12, "end": 14.5, "slug": "span-1", "matte": true, "slot": {"width": 520, "height": 940}, "headroom_px": 300},
+            {"start": 14.5, "end": 18, "slug": "span-2", "matte": true, "slot": {"width": 520, "height": 940}, "headroom_px": 300}
+          ]
+        }]}}
+      },
+      "frame_speaker_results": [{
+        "files": [
+          {"path": "render-engine/public/span-1.webm", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+          {"path": "render-engine/public/span-2.webm", "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}
+        ],
+        "windows": [
+          {"slug": "span-1", "start": 12, "end": 14.5, "presence": {"matte_ok": true}, "object_position": {"css": "50.00% 30.00%"}, "cutout": {"sink_px": 120, "card_clip_top_px": 300, "head_top_px": 210, "head_bottom_px": 480}, "matte": {"path": "render-engine/public/span-1.webm", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}},
+          {"slug": "span-2", "start": 14.5, "end": 18, "presence": {"matte_ok": true}, "object_position": {"css": "48.00% 31.00%"}, "cutout": {"sink_px": 118, "card_clip_top_px": 298, "head_top_px": 208, "head_bottom_px": 478}, "matte": {"path": "render-engine/public/span-2.webm", "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}}
+        ]
+      }]
+    },
+    "expected": {
+      "route": "materialize", "window": {"at_ms": 12000, "duration_ms": 6000},
+      "context_reads": ["project", "video", "transcript", "edit", "timeline", "visuals"],
+      "required_call_order": ["list_motion_assets", "get_motion_asset", "list_motion_assets", "frame_speaker", "materialize_motion_asset"],
+      "forbidden_calls": ["resolve_selection", "sign_upload", "start_transcribe_project"],
+      "parameter_keys": [],
+      "media_inputs": {"speaker": [
+        {"path": "render-engine/public/span-1.webm", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "start_ms": 12000, "end_ms": 14500, "geometry": {"object_position": "50.00% 30.00%", "sink_px": 120, "card_clip_top_px": 300, "head_top_px": 210, "head_bottom_px": 480}},
+        {"path": "render-engine/public/span-2.webm", "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "start_ms": 14500, "end_ms": 18000, "geometry": {"object_position": "48.00% 31.00%", "sink_px": 118, "card_clip_top_px": 298, "head_top_px": 208, "head_bottom_px": 478}}
+      ]},
+      "cutout_windows": [[12000, 14500], [14500, 18000]],
+      "requires_grounded_values": false, "forbidden_literals": [], "max_questions": 0,
+      "refused": false, "requires_page_url": true
+    }
+  },
+  {
+    "id": "cutout-failed-span-refusal",
+    "source": "primary",
+    "contract_intent": "Refuse the explicit cutout placement when one planned span cannot produce a matte; never materialize a partial tiling.",
+    "request": "Use AI Producer to adapt the \"Speaker Proof\" template once at 00:12.\nProject: DEMO_CUTOUT_FAIL | Template: speaker-proof@1.0.0",
+    "handoff": {"project_id": "DEMO_CUTOUT_FAIL", "motion_asset_id": "speaker-proof", "version": "1.0.0"},
+    "context": {
+      "project": {"project_id": "DEMO_CUTOUT_FAIL", "page_url": "https://example.invalid/projects/DEMO_CUTOUT_FAIL", "duration_ms": 30000, "orientation": "portrait", "current_revision": 22},
+      "accepted_media": [{"kind": "video", "path": "render-engine/public/source.mp4", "duration_ms": 44000}],
+      "edit": {"project_revision": 22, "speaker_clips": [
+        {"output_start_ms": 0, "output_end_ms": 14500, "source_start_ms": 0, "source_end_ms": 14500},
+        {"output_start_ms": 14500, "output_end_ms": 30000, "source_start_ms": 19000, "source_end_ms": 34500}
+      ]},
+      "transcript": {"segments": [
+        {"output_start_ms": 12000, "output_end_ms": 18000, "text": "This explicit proof statement spans two retained takes at the edit boundary."}
+      ]},
+      "timeline": {"duration_ms": 30000, "speaker_clips": [
+        {"output_start_ms": 0, "output_end_ms": 14500, "source_start_ms": 0, "source_end_ms": 14500},
+        {"output_start_ms": 14500, "output_end_ms": 30000, "source_start_ms": 19000, "source_end_ms": 34500}
+      ], "cut_boundaries_ms": [14500], "visual_moments": []},
+      "discovery_listing": {"project_revision": 22, "entries": [{
+        "motion_asset_id": "speaker-proof", "version": "1.0.0", "action": "add",
+        "purpose": "Place a measured speaker cutout over one proof statement.",
+        "duration": {"default_ms": 6000, "min_ms": 5000, "max_ms": 8000},
+        "inputs": [{"key": "speaker", "kind": "cutout"}]
+      }]},
+      "pinned_asset": {"manifest": {"id": "speaker-proof", "version": "1.0.0", "inputs": [{"key": "speaker", "kind": "cutout"}]}, "source_summary": "A speaker cutout rises over a full-width proof card and requires every planned span."},
+      "listing_project_revision": 22,
+      "listing_entry": {
+        "motion_asset_id": "speaker-proof", "version": "1.0.0", "action": "add", "duration_ms": 6000,
+        "next_data": {"cutout": {"input_key": "speaker", "frame_speaker_calls": [{
+          "project_id": "DEMO_CUTOUT_FAIL", "windows": [
+            {"start": 12, "end": 14.5, "slug": "span-1", "matte": true, "slot": {"width": 520, "height": 940}, "headroom_px": 300},
+            {"start": 14.5, "end": 18, "slug": "span-2", "matte": true, "slot": {"width": 520, "height": 940}, "headroom_px": 300}
+          ]
+        }]}}
+      },
+      "frame_speaker_results": [{
+        "files": [{"path": "render-engine/public/span-1.webm", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}],
+        "windows": [
+          {"slug": "span-1", "start": 12, "end": 14.5, "presence": {"matte_ok": true}, "object_position": {"css": "50.00% 30.00%"}, "cutout": {"sink_px": 120, "card_clip_top_px": 300, "head_top_px": 210, "head_bottom_px": 480}, "matte": {"path": "render-engine/public/span-1.webm", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}},
+          {"slug": "span-2", "start": 14.5, "end": 18, "presence": {"matte_ok": false}, "object_position": {"css": "48.00% 31.00%"}, "cutout": null, "matte": null}
+        ]
+      }]
+    },
+    "expected": {
+      "route": "refuse", "window": {"at_ms": 12000, "duration_ms": 6000},
+      "context_reads": ["project", "video", "transcript", "edit", "timeline", "visuals"],
+      "required_call_order": ["list_motion_assets", "get_motion_asset", "list_motion_assets", "frame_speaker"],
+      "forbidden_calls": ["resolve_selection", "materialize_motion_asset", "commit_workspace", "sign_upload", "start_transcribe_project"],
+      "cutout_windows": [[12000, 14500], [14500, 18000]],
+      "requires_grounded_values": false, "forbidden_literals": [], "max_questions": 0,
+      "refused": true, "requires_page_url": false
+    }
+  },
+  {
+    "id": "legacy-reference-here",
+    "source": "legacy",
+    "contract_intent": "Resolve the legacy line and retain its explicit 6.72 second target.",
+    "request": "Add Subscribe here.\n@aip p=DEMO_LEGACY t=6.72 motion-asset id=text-subscribe version=4.0.0",
+    "legacy_selection": "@aip p=DEMO_LEGACY t=6.72 motion-asset id=text-subscribe version=4.0.0",
+    "resolved": {"project_id": "DEMO_LEGACY", "references": [{"project_id": "DEMO_LEGACY", "kind": "motion-asset", "address": {"kind": "motion-asset", "id": "text-subscribe", "version": "4.0.0"}, "at_ms": 6720}]},
+    "handoff": {"project_id": "DEMO_LEGACY", "motion_asset_id": "text-subscribe", "version": "4.0.0"},
+    "context": {
+      "project": {"project_id": "DEMO_LEGACY", "page_url": "https://example.invalid/projects/DEMO_LEGACY", "duration_ms": 22000, "current_revision": 2},
+      "timeline": {"duration_ms": 22000, "kept_spans": [[0, 22000]], "visual_moments": []},
+      "discovery_listing": {"project_revision": 2, "entries": [{
+        "motion_asset_id": "text-subscribe", "version": "4.0.0", "action": "add",
+        "purpose": "Insert the unchanged legacy call-to-action package.",
+        "duration": {"default_ms": 3000, "min_ms": 2000, "max_ms": 5000}, "inputs": []
+      }]},
+      "listing_project_revision": 2,
+      "listing_entry": {"motion_asset_id": "text-subscribe", "version": "4.0.0", "action": "add", "duration_ms": 3000, "inputs": []}
+    },
+    "expected": {
+      "route": "materialize", "window": {"at_ms": 6720, "duration_ms": 3000},
+      "context_reads": ["project", "timeline"],
+      "required_call_order": ["resolve_selection", "list_motion_assets", "materialize_motion_asset"],
+      "forbidden_calls": ["get_motion_asset", "sign_upload", "start_transcribe_project"],
+      "parameter_keys": [], "requires_grounded_values": false, "forbidden_literals": [],
+      "max_questions": 0, "refused": false, "requires_page_url": true
+    }
+  },
+  {
+    "id": "generic-project-request",
+    "source": "ordinary",
+    "contract_intent": "Treat an ordinary project request as an ordinary targeted edit without triggering Motion Library handoff calls.",
+    "request": "Open project DEMO_GENERIC and tighten the pause before the final sentence.",
+    "context": {
+      "project": {"project_id": "DEMO_GENERIC", "page_url": "https://example.invalid/projects/DEMO_GENERIC", "duration_ms": 52000, "current_revision": 12},
+      "transcript": {"segments": [
+        {"output_start_ms": 38000, "output_end_ms": 42000, "text": "That is the complete workflow."},
+        {"output_start_ms": 44000, "output_end_ms": 50000, "text": "Start with the smallest useful change."}
+      ]},
+      "timeline": {"duration_ms": 52000, "speaker_spans": [[38000, 42000], [44000, 50000]], "pause_ms": {"start": 42000, "end": 44000}}
+    },
+    "expected": {
+      "route": "ordinary_project", "context_reads": [], "required_call_order": [],
+      "forbidden_calls": ["resolve_selection", "list_motion_assets", "get_motion_asset", "materialize_motion_asset"],
+      "requires_grounded_values": false, "forbidden_literals": [], "max_questions": 0,
+      "refused": false, "requires_page_url": false
+    }
+  }
+]
