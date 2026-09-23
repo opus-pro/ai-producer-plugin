@@ -73,7 +73,7 @@ Look at the seat the speaker actually occupies, not the source frame: measure th
 | canvas | the band | the payload | the seat |
 | --- | --- | --- | --- |
 | portrait 9:16 | between the payload and the seat, about y 920 to 1110: `data-caption-position` 53, or 50 | above the band, about y 265 to 770 | below the band, from about y 1240 (a `card` about 780x460) |
-| landscape 16:9 | the bottom band, about y 760 to 920: `data-caption-position` 78, or 67 | beside the seat, ending above y 700 | a side column ending above y 700 |
+| landscape 16:9 | the bottom band, about y 800 to 890: `data-caption-position` 78 (the service renders a single-row pattern on this canvas, so the band is one row) | beside the seat, ending above y 700 | a side column ending above y 700 |
 
 ### What a seat keeps
 
@@ -120,7 +120,7 @@ The head, the payload, and the band avoid one another. The footage stays full-bl
 | canvas | the band | the payload |
 | --- | --- | --- |
 | portrait 9:16 | the lower third, about y 1400 to 1600: `data-caption-position` 78, or 72 for a growing pattern | below the head, about y 860 to 1250 |
-| landscape 16:9 | the bottom band, about y 760 to 920: `data-caption-position` 78, or 67 | the open flank, ending above y 620 |
+| landscape 16:9 | the bottom band, about y 800 to 890: `data-caption-position` 78 (the service renders a single-row pattern on this canvas, so the band is one row) | the open flank, ending above y 620 |
 
 ### What an overlay keeps
 
@@ -167,7 +167,7 @@ Settle the band first, then compose the payload in the space it leaves: the anim
 | canvas | the band | the payload |
 | --- | --- | --- |
 | portrait 9:16 | about y 1390 to 1590: `data-caption-position` 78, or 72 for a growing pattern | recentred above the band, about y 360 to 1060 |
-| landscape 16:9 | the bottom band, about y 760 to 920: `data-caption-position` 78, or 67 | above the band, about y 160 to 630 |
+| landscape 16:9 | the bottom band, about y 800 to 890: `data-caption-position` 78 (the service renders a single-row pattern on this canvas, so the band is one row) | above the band, about y 160 to 630 |
 
 ### What a full cover keeps
 
