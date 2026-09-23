@@ -6,12 +6,22 @@
 
 <h1 align="center">AI Producer Plugin</h1>
 
-<p align="center">The official OpusClip plugin for editing videos in Codex and Claude Code.</p>
+<p align="center">The official OpusClip plugin for editing videos in Codex, Claude Code and ChatGPT Work.</p>
 
 <p align="center">
   <a href="https://producer.opus.pro/plugin"><strong>Get started</strong></a> &nbsp; | &nbsp;
   <a href="https://producer.opus.pro/docs">Documentation</a>
 </p>
+
+## Where it runs
+
+AI Producer needs a computer behind the conversation: a shell to send your footage from and a place to write the edit before it is published. These hosts have one:
+
+- Codex, in the CLI and in the Codex tab of the ChatGPT desktop app.
+- Claude Code.
+- ChatGPT Work, on the web and in the desktop app.
+
+A ChatGPT Chat conversation has no computer of its own, so a video attached there never reaches AI Producer, and the failure is reported as if the plugin or the video were at fault. Switch to Work with the tab at the top of ChatGPT, or open a Codex task, mention AI Producer, and attach the video again there.
 
 ## MCP server update
 
