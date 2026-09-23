@@ -17,6 +17,9 @@ RELEASE_TEMPLATE = "releases/template.md"
 LOG_SECTIONS = ("Changes", "Compatibility", "Validation")
 REPOSITORY_URL = "https://github.com/opus-pro/ai-producer-plugin"
 PR_LINK = re.compile(r"\[#([1-9][0-9]*)\]\(" + re.escape(REPOSITORY_URL) + r"/pull/\1\)")
+# GitHub permanently reserves a tag name after its immutable Release is deleted.
+# v1.2.8 cannot be recreated, so v1.2.9 compares from the last published tag.
+COMPARISON_BASE_OVERRIDES = {("1.2.8", "1.2.9"): "1.2.7"}
 VERSION_FIELDS = {
     LATEST_VERSION_FILE: (("version",),),
     "plugins/aip/.codex-plugin/plugin.json": (("version",),),
@@ -141,6 +144,11 @@ def release_log_path(version: str) -> str:
     return f"releases/v{version}.md"
 
 
+def comparison_base_version(base_version: str, target_version: str) -> str:
+    """Use the declared base except for an unavailable immutable Release tag."""
+    return COMPARISON_BASE_OVERRIDES.get((base_version, target_version), base_version)
+
+
 def validate_changes(contents: str) -> None:
     categories = re.split(r"^### (.+)$", contents, flags=re.MULTILINE)
     if len(categories) < 3 or categories[0].strip():
@@ -171,7 +179,7 @@ def validate_release_log(contents: str, version: str, *, previous_version: str |
     if precedence(previous) >= precedence(version):
         raise ValueError("Full Changelog must compare an earlier version to this release")
     if previous_version is not None and previous != previous_version:
-        raise ValueError(f"Full Changelog must start from base version {previous_version}")
+        raise ValueError(f"Full Changelog must start from comparison version {previous_version}")
 
     sections = re.split(r"^## (.+)$", body, flags=re.MULTILINE)
     headings = sections[1::2]
@@ -251,7 +259,8 @@ def check_release_pr(repo: Path, base: str, head: str, title: str) -> str:
         raise ValueError(f"Release version must be newer than both {old_version} and base version {base_version}")
     if log_path not in changed or git(repo, "ls-tree", ancestor, "--", log_path) or git(repo, "ls-tree", base, "--", log_path):
         raise ValueError(f"Release PR must add a new release log: {log_path}")
-    validate_release_log(regular_blob(repo, head, log_path).decode("utf-8"), new_version, previous_version=base_version)
+    comparison_base = comparison_base_version(base_version, new_version)
+    validate_release_log(regular_blob(repo, head, log_path).decode("utf-8"), new_version, previous_version=comparison_base)
     return f"OK: release {old_version} -> {new_version}; title, file scope, all six version fields, and release log match"
 
 

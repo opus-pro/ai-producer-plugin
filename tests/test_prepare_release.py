@@ -57,6 +57,20 @@ class PrepareReleaseTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "template placeholders"):
             validate_release_log(log.read_text(), self.target)
 
+    def test_reserved_immutable_tag_uses_last_published_comparison_base(self) -> None:
+        for path in VERSION_FIELDS:
+            document = json.loads((self.root / path).read_text())
+            for field in version_fields_for(path, document):
+                parent = document
+                for key in field[:-1]:
+                    parent = parent[key]
+                parent[field[-1]] = "1.2.8"
+            (self.root / path).write_text(json.dumps(document, indent=2) + "\n")
+        log = prepare_release.prepare_release(self.root, "1.2.9")
+        self.assertEqual(version_from_documents(self.documents()), "1.2.9")
+        self.assertIn("[v1.2.7...v1.2.9]", log.read_text())
+        self.assertNotIn("[v1.2.8...v1.2.9]", log.read_text())
+
     def test_preserves_either_mcp_identity(self) -> None:
         path = self.root / "plugins/aip/.mcp.json"
         original = path.read_text()

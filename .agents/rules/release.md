@@ -63,7 +63,7 @@ Confirm `gh pr view <pr-number> --repo opus-pro/ai-producer-plugin --json state,
 - Start with `# vX.Y.Z`. Changes, Compatibility, and Validation are optional; retain that order when present. Omit sections without noteworthy content, including routine "no migration needed" or "all checks passed" statements.
 - Under Changes, group short, user-visible summaries under categories such as `### Added`, `### Changed`, and `### Fixed`. Combine related PRs into one change rather than repeating their titles. Omit empty categories.
 - End each change with its actual PR numbers and links, for example `- Clarify the intake workflow. ([#11](https://github.com/opus-pro/ai-producer-plugin/pull/11), [#13](https://github.com/opus-pro/ai-producer-plugin/pull/13))`. Verify the linked PRs belong to the release range. One change may reference multiple PRs.
-- End the log with `**Full Changelog**: [vPREVIOUS...vX.Y.Z](https://github.com/opus-pro/ai-producer-plugin/compare/vPREVIOUS...vX.Y.Z)`. The preparation script fills both versions using the current declared version and the requested version. Check the comparison range before submitting; it must start at the current PR base version.
+- End the log with `**Full Changelog**: [vPREVIOUS...vX.Y.Z](https://github.com/opus-pro/ai-producer-plugin/compare/vPREVIOUS...vX.Y.Z)`. The preparation script normally compares from the current declared version. For v1.2.9, it compares from the last published v1.2.7 because GitHub permanently reserves the deleted immutable v1.2.8 tag. Check that the comparison base is the current PR base version or this explicit exception.
 
 See the [release directory guide](../../releases/README.md) for legacy notes. Published `v1.0.0` through `v1.1.2` bodies retain their original format and are exempt from the new template; `v1.1.3.md` already follows the new format. Do not rewrite legacy notes or apply their exemption to new releases. Verify imported content against GitHub Releases without inventing PR associations or validation results.
 
@@ -97,6 +97,8 @@ For a SemVer prerelease, add `--prerelease --latest=false` to the Release comman
 Resolve an existing tag to its commit, dereferencing an annotated tag if needed. If it differs from the selected merged commit, stop and report the mismatch without modifying it. If a matching published Release also exists, verify its body and metadata and report its URL without editing it. An existing draft or mismatched Release needs user direction rather than being overwritten.
 
 If the tag matches but the Release is absent, including after tag creation succeeded and Release creation failed, complete the already-authorized publication using the same `gh release create ... --verify-tag` command and validated log. Confirm absence with the Releases API; only HTTP 404 means absent. Preserve the tag throughout recovery, and inspect remote state after an uncertain write before retrying. If access remains blocked, report the preserved tag and missing Release so the task can resume under the user's account.
+
+If GitHub returns 422 because a tag name belonged to a deleted immutable Release, do not retry with that name or move another tag into its place. The name remains reserved even after the tag is deleted; select a new version under the version-selection procedure.
 
 ## CI enforcement
 

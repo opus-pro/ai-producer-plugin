@@ -88,6 +88,21 @@ class ReleasePRTest(unittest.TestCase):
         self.set_version("0.8.34")
         self.assertIn("release 0.8.33 -> 0.8.34", self.check())
 
+    def test_reserved_immutable_tag_uses_last_published_comparison_base(self) -> None:
+        self.set_version("1.2.8")
+        self.base = self.commit()
+        self.set_version("1.2.9")
+        log = self.root / policy.release_log_path("1.2.9")
+        log.write_text(log.read_text().replace("v1.2.8...v1.2.9", "v1.2.7...v1.2.9"))
+        self.assertIn("release 1.2.8 -> 1.2.9", self.check("chore: release v1.2.9"))
+
+    def test_reserved_immutable_tag_rejects_unavailable_comparison_base(self) -> None:
+        self.set_version("1.2.8")
+        self.base = self.commit()
+        self.set_version("1.2.9")
+        with self.assertRaisesRegex(ValueError, "comparison version 1.2.7"):
+            self.check("chore: release v1.2.9")
+
     def test_ordinary_pr_can_change_content_without_bumping(self) -> None:
         (self.root / "README.md").write_text("Updated fixture.\n", encoding="utf-8")
         path = "plugins/aip/.codex-plugin/plugin.json"
@@ -465,7 +480,7 @@ class ReleaseLogTest(unittest.TestCase):
                 policy.validate_release_log(self.log().replace(self.footer, footer), "0.8.34")
 
     def test_comparison_must_start_at_pr_base_version(self) -> None:
-        with self.assertRaisesRegex(ValueError, "start from base version"):
+        with self.assertRaisesRegex(ValueError, "start from comparison version"):
             policy.validate_release_log(self.log(), "0.8.34", previous_version="0.8.32")
 
 

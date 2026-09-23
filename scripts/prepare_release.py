@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 from check_release_pr import (
-    RELEASE_TEMPLATE, VERSION_FIELDS, precedence, reject_constant,
+    RELEASE_TEMPLATE, VERSION_FIELDS, comparison_base_version, precedence, reject_constant,
     release_log_path, unique_object, validate_release_log, version_fields_for, version_from_documents,
 )
 
@@ -28,6 +28,7 @@ def prepare_release(root: Path, version: str) -> Path:
     current = version_from_documents(documents)
     if precedence(version) <= precedence(current):
         raise ValueError(f"New version must be newer than {current}")
+    comparison_base = comparison_base_version(current, version)
     log = root / release_log_path(version)
     if log.exists() or log.is_symlink():
         raise ValueError(f"Release log already exists: {log.name}")
@@ -35,10 +36,10 @@ def prepare_release(root: Path, version: str) -> Path:
     for field in ("version", "previous_version"):
         if "{{" + field + "}}" not in template:
             raise ValueError(f"Release template is missing the {field} placeholder")
-    draft = template.replace("{{version}}", version).replace("{{previous_version}}", current)
+    draft = template.replace("{{version}}", version).replace("{{previous_version}}", comparison_base)
     preview = draft.replace("{{pr_number}}", "1").replace("{{related_pr_number}}", "2")
     preview = re.sub(r"\{\{[^{}]+\}\}", "Draft", preview)
-    validate_release_log(preview, version, previous_version=current)
+    validate_release_log(preview, version, previous_version=comparison_base)
 
     # Validate every input before modifying any file.
     for relative in VERSION_FIELDS:
