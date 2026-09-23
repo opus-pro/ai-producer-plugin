@@ -49,7 +49,7 @@ The speaker moves into a declared shape at a declared position on an opaque grou
 Every seat is one of these shapes at one of the positions its canvas allows. Name the shape and the position in the plan; the numbers follow.
 
 | shape | what it is |
-| --- | --- | --- |
+| --- | --- |
 | `card` | a rounded window clear of the frame's edges, an object resting on the ground |
 | `stratum` | the speaker flush to one or more frame edges, a layer of the page rather than an object on it |
 | `circle` | an equal-sided window with `border-radius: 50%`, the head centered in it |
@@ -99,7 +99,7 @@ The footage owns the frame and one payload rides it. The root speaker keeps play
 Every overlay is one of these forms. Name the form and where it sits in the plan.
 
 | form | what it is |
-| --- | --- | --- |
+| --- | --- |
 | `annotation` | drawn graphics, a short label, or an image placed in the area clear of the head |
 | `headline` | the phrase just spoken, drawn big as the beat's whole payload; its window goes to `hide_intervals`, because the captions would otherwise repeat the line |
 
@@ -143,7 +143,7 @@ The canvas owns the frame. The moment paints one opaque ground across the whole 
 Every full cover is one of these forms. Name the form in the plan.
 
 | form | what it is |
-| --- | --- | --- |
+| --- | --- |
 | `figure` | a drawn diagram, chart, or mechanism at full scale |
 | `photo` | a real image staged on the ground as content; a video asset is seated as `Video assets` above says, not covered |
 | `statement` | one oversized line, a few words at the largest size the page allows |
