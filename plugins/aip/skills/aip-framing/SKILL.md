@@ -29,19 +29,12 @@ Apply the user's brief and the [AI Producer text rules](../aip/SKILL.md#on-scree
 
 ## Video asset defaults
 
-Choose the first-draft layout from the output canvas and the asset's displayed dimensions after rotation metadata is applied. These defaults take precedence over register and form variety, general seat placement, and generic caption zoning; user choices and content readability come first.
+For a portrait canvas, choose the first-draft layout from the video's displayed aspect ratio. These defaults take precedence over register variety and general seat placement; user choices and content readability come first.
 
-| output canvas | video asset | default layout |
-| --- | --- | --- |
-| landscape | landscape or portrait | PIP |
-| portrait | portrait | PIP |
-| portrait | landscape | top/bottom split: asset above, speaker below |
-
-- **PIP.** The asset is the main picture, with a small speaker window floating over a corner. Do not reserve a separate speaker column or turn this into side-by-side panels. On a landscape canvas, start the inset at about 15-22% of the canvas width and adjust for measured head fit and readability; size a portrait inset from its available space rather than reusing that range. Keep the inset clear of important subjects, actions, interface text, and captions. This is a `seat` built with the moment-owned speaker view below, not the `overlay` register.
-- **Top/bottom split.** Put the asset above a low-centered speaker `card`. Choose panel proportions for the demonstration's readability and the measured head, not a fixed half each. The asset may run the full width; the speaker card keeps its side margins so a close-up head fits.
-- **Continuity.** Hold the inset's position, size, and shape through a continuous demonstration. Carry the framing across adjacent related B-roll without repeated entrances or brief returns to the full-frame presenter. Change it at a semantic boundary when content requires it, not to satisfy layout variety.
-- **Asset fit.** Preserve the asset's aspect ratio and important content. Fit portrait footage within a landscape canvas without stretching it or cropping away its subject or interface to fill the width. Adjust panel proportions or inset placement for readability; avoid redundant titles, frames, and unnecessary margins.
-- **Captions.** In a top/bottom split, the caption band sits between the asset and speaker panel, which starts below the band. In PIP, choose the band from the actual asset and inset geometry, clear of key interface details, actions, and the speaker window; do not apply a split's middle band or reserve a side column. Keep captions at the whole-video scale and declare their position on the moment host as above.
+- Portrait video: use PIP, with the asset as the main picture and the speaker in a small inset that avoids important subjects, action, and text.
+- Landscape video: use a top/bottom split, with the asset above and the speaker in a low-centered `card` below it, starting at half the canvas each. The asset may run the full width; the card keeps its side margins, because with portrait footage a full-width speaker panel draws the head at full source scale and crops a close-up.
+- Preserve the asset's aspect ratio and important content; adjust panel proportions or inset placement as needed. Avoid redundant titles, frames, and empty margins around the asset.
+- The caption band sits between the asset and the speaker panel, as under any portrait seat (`Where the caption sits under a seat`); the panel starts below the band.
 
 ## The three layouts
 
@@ -49,7 +42,7 @@ Seat, overlay, and full cover are written the same way below: what it is, its fo
 
 ## Seat
 
-The speaker moves into a declared shape at a declared position on an opaque ground, and the payload is drawn in the band the seat leaves, or behind the inset for video-asset PIP. Each seated framing declares its shape, position, and resting rect once. Beats that share that framing keep it, and a different moment may take a different framing; outside video-asset PIP, two or three seat framings across a video is normal, and one seat held for every seated beat reads as a template. What never happens is re-deriving a rect inside a run to fit a long line or a wider figure: a payload that does not fit the band needs a different framing, not a nudged seat.
+The speaker moves into a declared shape at a declared position on an opaque ground, and the payload is drawn in the band the seat leaves. Each seated framing declares its shape, position, and resting rect once. Beats that share that framing keep it, and a different moment may take a different framing; two or three seat framings across a video is normal, and one seat held for every seated beat reads as a template. What never happens is re-deriving a rect inside a run to fit a long line or a wider figure: a payload that does not fit the band needs a different framing, not a nudged seat.
 
 ### Seat forms
 
@@ -65,7 +58,7 @@ Every seat is one of these shapes at one of the positions its canvas allows. Nam
 
 ### Seat positions by canvas
 
-Video-asset PIP uses the corner inset geometry above instead of this table's columns, centered positions, and size ranges. For other seats, the canvas decides where they may sit. A left or right column is a landscape layout; a portrait seat stays horizontally centered and clear of both side edges, with its payload above it, except for the cutout, whose full-width card is measured by `frame_speaker` and owned by its reference.
+The canvas decides where a seat may sit. A left or right column is a landscape layout; a portrait seat stays horizontally centered and clear of both side edges, with its payload above it, except for video-asset PIP and the cutout, whose full-width card is measured by `frame_speaker` and owned by its reference.
 
 | canvas | seats that fit | do not use |
 | --- | --- | --- |
@@ -75,7 +68,7 @@ Video-asset PIP uses the corner inset geometry above instead of this table's col
 
 ### Where the caption sits under a seat
 
-Video-asset PIP uses the caption placement in Video asset defaults; the separate regions and zoning below apply to other seats. Look at the seat the speaker actually occupies, not the source frame: measure the head in the seat, then give the band its own region outside the seat and outside the payload. The whole-video caption never shrinks into the seat, and a seat that cannot leave the band its head intact takes another framing (narrow it, or change register). The pixel rows below are the 1080x1920 and 1920x1080 zoning the design settled on; `data-caption-position` takes the first value for a pattern that centres on its anchor and the second for one that grows downward (`lead-in-flare`, `blur-ladder`, `editorial-stack`).
+Look at the seat the speaker actually occupies, not the source frame: measure the head in the seat, then give the band its own region outside the seat and outside the payload. The whole-video caption never shrinks into the seat, and a seat that cannot leave the band its head intact takes another framing (narrow it, or change register). The pixel rows below are the 1080x1920 and 1920x1080 zoning the design settled on; `data-caption-position` takes the first value for a pattern that centres on its anchor and the second for one that grows downward (`lead-in-flare`, `blur-ladder`, `editorial-stack`).
 
 | canvas | the band | the payload | the seat |
 | --- | --- | --- | --- |
@@ -87,7 +80,7 @@ Video-asset PIP uses the caption placement in Video asset defaults; the separate
 - **One audible speaker.** The root track-0 video and its paired audio remain the canonical speaker. An editable seated moment uses one muted `data-pip-src` view inside its composition while an opaque ground hides the root picture; it never adds audio or a second independently playing source. This ownership view moves and disappears with the moment, and the editor maps it through the cut.
 - **The head stays whole.** Crown to jaw with room to breathe: a seat that cuts the forehead or shaves the chin has failed at its one job. When the head cannot fit, narrow the seat or deepen it; never choose which edge to sever. The view fills its seat at cover scale and no further: a scale on the view draws the head larger than the measurement saw.
 - **Center the head, measured, not guessed.** `object-position` is the `frame_speaker` result's `object_position` for that window and slot, pasted as returned onto the view that shows the speaker: it centers the measured face and holds the crown, jaw and cheeks inside the slot. `50% 50%` is a guess that crops a high-framed head at the crown; a narrow column crops harder, so every shape gets its own slot in the call, and on cut media every speaker clip its own window.
-- **The seat is an object on a ground.** For video-asset PIP, the asset is the main picture on an opaque ground behind the speaker inset, fitted at its own aspect ratio with important content visible. Other seated beats paint an opaque ground across the frame and place the moment-owned speaker view in its seat; an aperture clips that view to the measured hole. In those layouts, nothing tucks under, overlaps into, or straddles the seat to buy room; content low in the band clears the seat's width as well as its top edge.
+- **The seat is an object on a ground.** For video-asset PIP, the asset fills the ground behind the speaker inset while its important content stays visible. Other seated beats paint an opaque ground across the frame and place the moment-owned speaker view in its seat; an aperture clips that view to the measured hole. In those layouts, nothing tucks under, overlaps into, or straddles the seat to buy room; content low in the band clears the seat's width as well as its top edge.
 - **A separate payload lives in the band the seat leaves.** When the layout reserves a payload band, judge fullness and dead space against that band, not the whole frame. Keep text and graphics at least 10% from the band's edges.
 - **A seat arrives once per run of beats.** Adjacent beats that share a framing keep the seat where it is: it does not re-enter, re-settle, or re-announce itself; only the payload turns over. A new framing arrives at a beat boundary, either from the full frame or as a morph from the previous seat. An entry shorter than 0.35 s lands the speaker before the eye can follow; a monotonic ease (no back, elastic, or bounce) keeps the crop from overshooting the frame.
 
