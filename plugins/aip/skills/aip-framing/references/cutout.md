@@ -1,12 +1,12 @@
 # The cutout pop
 
-The cutout is the one seat form that carries its own footage. Read this once before choosing it; the [framing skill](../SKILL.md) owns when a beat takes a seat at all.
+The cutout is the one seat form that carries its own footage. Read this once before choosing it; the [framing skill](../SKILL.md) owns the other seat forms and the geometry every seat keeps.
 
 ## What it is
 
 The pop: the room recedes into a full-width card and the speaker, cut free of it, stands proud of the card with the head crossing its top edge between the eye line and the neck; the headroom above the head hosts the payload.
 
-Choose it for one beat a video at most, on the strongest line, where the silhouette itself is the design. It needs `matte: true` in the `frame_speaker` call, a window the speaker is on camera for, and at least 3 s for the recede and the payload to read; not a window whose `shot_cuts` is true.
+Choose it for the strongest line, where the silhouette itself is the design. It needs `matte: true` in the `frame_speaker` call, a window the speaker is on camera for, and at least 3 s for the recede and the payload to read; not a window whose `shot_cuts` is true.
 
 A cutout is the one shape that carries two layers of footage inside the moment: the alpha webm `frame_speaker` staged, over a `public/source.mp4` view of the same window, wired as the last section says. The pop is the cutout's one form: a silhouette parked in front of a headline with nothing receding is an overlay wearing a matte, not a cutout.
 

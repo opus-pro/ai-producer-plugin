@@ -5,31 +5,31 @@ description: "Frame the speaker for an AI Producer project. Read once before aut
 
 # Framing for an AI Producer project
 
-Framing decides who owns the frame for each beat: the speaker, the footage, or the canvas. It is one decision per beat, made from the canvas, the transcript, and the footage, and it is yours. How anything looks (color, corners, shadows, type) is the visual style's; this page owns the choice and the geometry it must keep. The [composition contract](../aip-composition/SKILL.md) owns what the editor and the export read.
+Framing decides who owns the frame for each beat: the speaker, the footage, or the canvas. It is one decision per beat, made from the canvas, the transcript, and the footage, and it is yours. How anything looks (color, corners, shadows, type) is the visual style's; this page owns each layout's forms and the geometry it must keep. The [composition contract](../aip-composition/SKILL.md) owns what the editor and the export read.
 
 Apply the user's brief and the [AI Producer text rules](../aip/SKILL.md#on-screen-text) before choosing a form that contains text. The forms below describe geometry; their label, headline, and statement examples do not authorize extra copy.
 
 ## What you decide
 
 1. **The canvas, first.** Read it from the brief's platform: 1080x1920 for Reels, TikTok, and Shorts; 1080x1080 for square feed posts; otherwise the source aspect, usually 1920x1080. The canvas decides which forms and positions each layout has (tables below); a layout drawn for one canvas is not reused on another. Reframe the speaker to fill the canvas rather than letterboxing the source.
-2. **The register, per beat.** One of the four in the first table. No register is home base: across a video, seat, overlay, and full cover should appear with roughly even odds, and a plan that leans on one throughout reads as a tic. Content fit outranks balance; a run whose beats all need the speaker keeps them, but each pick is a fresh decision, never a default inherited from the previous beat.
-3. **The form, per moment.** Seat, overlay, and full cover each offer a short menu of forms in their chapters below. Name the register and the form in the plan; a different moment may take a different form, and one form held for every beat of its register reads as a template.
+2. **The register, per beat.** One of the four in the table below; its chapter owns the forms, the positions its canvas allows, what it keeps, and how it is built.
+3. **The form, per moment.** Seat, overlay, and full cover each offer a short menu of forms in their chapters below. Name the register and the form in the plan.
 4. **The measurement, before you place.** Call `frame_speaker` with every window you will seat, overlay, cut out, or reframe, in as few calls as the limit allows: each window's `start` and `end` on the cut, a `slug`, `matte` (true only for a cutout), and the `slot` the speaker will occupy (the seat's rect, a circle's side twice, an aperture's hole, or the canvas for an overlay, a full-frame reframe, and a cutout). Read the task with `get_task`. Each window in its `result.windows` carries `presence` (skip a seat or an overlay where `seat_ok` is false and a cutout where `matte_ok` is false), `face` and `head` as source fractions, and for the slot `object_position` (paste its `css` onto the seat's `data-pip-src` view, or onto the root clip for a full-frame reframe), `head_in_slot`, and `fits`. When `fits.height` is false the slot is wider than the source's aspect allows at that height, so `object-fit: cover` is scaling the source to the slot's width and the head is drawn at that width: narrow the slot at the same height and the head shrinks with it, or give it at least `fits.min_slot_height`. Measure the revised slot before placing it: if `min_slot_height` did not fall, the slot is height-bound and only deepening helps, and a slot narrowed until `fits.width` turns false has gone too far. Never deepen the crop instead. For a canvas slot, `head_in_slot` is the head's box on the canvas, the area an overlay keeps clear. A cutout window takes and returns more; the [cutout reference](references/cutout.md) owns those fields. The call is free and takes at most 8 windows, with matte windows totalling at most 60 s a call; when the plan has more, split the windows across calls, keep every `slug` unique across them, and read each call's task.
 5. **The windows.** A register that shows the speaker is legal only over a window where the speaker is on camera. When the source cuts away to something the creator chose to show, let it play raw rather than covering it.
 6. **The caption band, per moment.** Captions stay on during a visual moment: the moment gives way to the band, not the reverse. Decide where the band sits for each moment from its layout chapter below (`Where the caption sits`), declare it on the moment host (`data-hide-captions="false"` with `data-caption-position`, and `data-caption-plate="dark"` only where the composited ground under the band is light), and pass the same windows to the caption call, which the [dynamic caption skill](../aip-dynamic-caption/SKILL.md) owns. Hide the band under a moment only for a `headline` overlay or a `statement` full cover (the spoken phrase drawn big), a `source-text` or `photo` full cover whose relevant detail must occupy the band and cannot move, or a stretch the brief wants silent; those windows go to `hide_intervals`. One whole-video `position` cannot serve a PIP and a full cover at once, so the per-moment anchor is what lets one video hold both.
 
 ## Registers
 
-| Choose when the beat | register | Rotate away when |
-| --- | --- | --- |
-| The speaker carries the argument live: transitions, summaries, conditions, emotion, rebuttals, the closing call to action; removing them would read as a cut away | `speaker` (full frame, optionally with a zoom) | a graphic, an interface, or source text needs to be read |
-| An example, comparison, process, or object explanation where the speaker should stay present while the payload is drawn around them | `seat` (the speaker moved into a declared shape at a declared position; forms and positions in its chapter) | the speaker is off camera in this window; the payload needs the whole canvas |
-| The footage carries the beat and a short note sharpens it: a term labelled as it is spoken, a figure drawn beside the speaker, the opening hook title | `overlay` (footage stays full-bleed and sharp; one payload group at a time) | the text runs past one line, would cross the face, or needs a dimmed backdrop |
-| The payload is self-standing and deserves the whole page: a full-scale figure, a photo moment, dense source text, one oversized statement | `full-cover` (the canvas owns the frame; the speaker is covered) | it would hold longer than the sentence it illustrates; return to the speaker after it |
+| register | what it is |
+| --- | --- |
+| `speaker` | the root speaker at full frame, optionally with a zoom that stays on the root timeline |
+| `seat` | the speaker moved into a declared shape at a declared position on an opaque ground, with the payload drawn in the band the seat leaves; forms and positions in its chapter |
+| `overlay` | the footage stays full-bleed and sharp, and one payload group at a time rides it in the area the measured head leaves clear |
+| `full-cover` | the canvas owns the frame: one opaque ground across the whole page carries the payload, and the speaker is covered but still heard |
 
 ## Video asset defaults
 
-For a portrait canvas, choose the first-draft layout from the video's displayed aspect ratio. These defaults take precedence over register variety and general seat placement; user choices and content readability come first.
+For a portrait canvas, choose the first-draft layout from the video's displayed aspect ratio. These defaults take precedence over general seat placement; user choices and content readability come first.
 
 - Portrait video: use PIP, with the asset as the main picture and the speaker in a small inset that avoids important subjects, action, and text.
 - Landscape video: use a top/bottom split, with the asset above and the speaker in a low-centered `card` below it, starting at half the canvas each. The asset may run the full width; the card keeps its side margins, because with portrait footage a full-width speaker panel draws the head at full source scale and crops a close-up.
@@ -42,7 +42,7 @@ Seat, overlay, and full cover are written the same way below: what it is, its fo
 
 ## Seat
 
-The speaker moves into a declared shape at a declared position on an opaque ground, and the payload is drawn in the band the seat leaves. Each seated framing declares its shape, position, and resting rect once. Beats that share that framing keep it, and a different moment may take a different framing; two or three seat framings across a video is normal, and one seat held for every seated beat reads as a template. What never happens is re-deriving a rect inside a run to fit a long line or a wider figure: a payload that does not fit the band needs a different framing, not a nudged seat.
+The speaker moves into a declared shape at a declared position on an opaque ground, and the payload is drawn in the band the seat leaves. Each seated framing declares its shape, position, and resting rect once. Beats that share that framing keep it, and a different moment may declare a different framing. What never happens is re-deriving a rect inside a run to fit a long line or a wider figure: a payload that does not fit the band needs a different framing, not a nudged seat.
 
 ### Seat forms
 
@@ -50,11 +50,11 @@ Every seat is one of these shapes at one of the positions its canvas allows. Nam
 
 | shape | what it is | choose when |
 | --- | --- | --- |
-| `card` | a rounded window clear of the frame's edges, an object resting on the ground | the default; examples, comparisons, processes; a payload that reads as a card next to a card |
+| `card` | a rounded window clear of the frame's edges, an object resting on the ground | examples, comparisons, processes; a payload that reads as a card next to a card |
 | `stratum` | the speaker flush to one or more frame edges, a layer of the page rather than an object on it | the payload wants the full width or height above or beside a grounded speaker |
 | `circle` | an equal-sided window with `border-radius: 50%`, the head centered in it | a light or personal register; the payload owns the page and the speaker is a presence, not a picture |
 | `aperture` | an opaque ground with a hole cut in it; the live speaker shows through the hole | the ground is the design and the speaker is a detail in it; the hole sits on the head, so its position comes from the measured face, never from the layout grid |
-| `cutout` | the pop: the room recedes into a full-width card and the speaker, cut free of it, stands proud of the card; the headroom above the head hosts the payload | one beat a video at most, on the strongest line, where the silhouette itself is the design; read the [cutout reference](references/cutout.md) before choosing it |
+| `cutout` | the pop: the room recedes into a full-width card and the speaker, cut free of it, stands proud of the card; the headroom above the head hosts the payload | the strongest line, where the silhouette itself is the design; read the [cutout reference](references/cutout.md) before choosing it |
 
 ### Seat positions by canvas
 
