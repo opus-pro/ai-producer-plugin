@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "AI Producer",
     "shortDescription": "Cut, caption and animate a talking-head video",
-    "longDescription": "Cut an attached talking-head video, prepare captions and motion graphics in an AI Producer-compatible workspace, and deliver an editable preview. Export on explicit request; playback review and follow-up edits stay with the user.",
+    "longDescription": "Cut an attached talking-head video, prepare captions and motion graphics in an AI Producer-compatible workspace, and deliver an editable preview. Export on explicit request; playback review and follow-up edits stay with the user. Runs in Codex and in ChatGPT Work; a ChatGPT Chat conversation has no computer to send footage from, so start a Work chat or a Codex task.",
     "developerName": "OpusClip",
     "category": "Productivity",
     "capabilities": [
@@ -31,7 +31,7 @@
     "composerIcon": "./assets/icon.png",
     "logo": "./assets/icon.png",
     "defaultPrompt": [
-      "I'd like to create a project with the AI Producer plugin, briefly explain how you can help. Then ask me questions to get me started. First, ask me to upload my video and mention the video length limit. Next, ask if I have any images to use as style references. Finally, ask if I have any other requirements."
+      "I'd like to create a project with the AI Producer plugin, briefly explain how you can help. Then ask me questions to get me started. First, ask me to upload my video and mention the video length limit. Next, ask if I have any images to use as style references. Finally, ask if I have any other requirements. If this conversation cannot run commands or write files, tell me to start a Work chat or a Codex task instead and stop there."
     ]
   },
   "mcpServers": "./.mcp.json"
