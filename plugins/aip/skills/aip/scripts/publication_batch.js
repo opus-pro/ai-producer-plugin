@@ -103,10 +103,12 @@
     const plan = await command(shell(args));
     if (plan.status !== "prepared" || plan.published_effects !== previous + 1 ||
         plan.final !== final || plan.authoring !== !final || !Array.isArray(plan.sign_batches) ||
-        !plan.sign_batches.length || !Array.isArray(plan.expected_files) || !plan.expected_files.length) {
+        !Array.isArray(plan.expected_files) || !plan.expected_files.length) {
       throw new Error("publication_plan_mismatch");
     }
     if (prepared) prepared();
+    // Text rides on the commit itself, so a batch of compositions signs nothing, uploads
+    // nothing and polls nothing; only bytes the commit cannot carry take the signed path.
     const targets = [];
     for (const files of plan.sign_batches) {
       const signed = unpack(await signUpload({ project_id: plan.project_id, authoring: true, files }));
@@ -117,10 +119,12 @@
       }
       targets.push(...signed.uploads);
     }
-    // A quoted heredoc supplies signed targets only to the uploader's stdin.
-    const upload = await command(shell(["python3", skill + "/scripts/upload_batch.py", workspace]) +
-      " <<'AIP_UPLOAD_JSON'\n" + JSON.stringify(targets) + "\nAIP_UPLOAD_JSON");
-    if (upload.ok !== true) throw new Error("publication_upload_failed");
+    if (targets.length) {
+      // A quoted heredoc supplies signed targets only to the uploader's stdin.
+      const upload = await command(shell(["python3", skill + "/scripts/upload_batch.py", workspace]) +
+        " <<'AIP_UPLOAD_JSON'\n" + JSON.stringify(targets) + "\nAIP_UPLOAD_JSON");
+      if (upload.ok !== true) throw new Error("publication_upload_failed");
+    }
     const committed = unpack(await commitWorkspace({
       project_id: plan.project_id, base_digest: plan.base_digest,
       expected_files: plan.expected_files, authoring: plan.authoring,

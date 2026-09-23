@@ -76,7 +76,7 @@ class EditingScriptPublicationTests(unittest.TestCase):
         rows = {row["path"]: row for row in plan["expected_files"]}
         script_key = "render-engine/" + EDITING_SCRIPT
         self.assertEqual(set(rows), {"render-engine/" + item for item in files} | {script_key})
-        self.assertEqual(rows[script_key]["sha256"], hashlib.sha256(self.script.read_bytes()).hexdigest())
+        self.assertEqual(rows[script_key]["content"], self.script.read_text(encoding="utf-8"))
         self.assertFalse((first / EDITING_SCRIPT).exists())
         accept(self.root, self.state, "task-1", "rev-1", list(rows))
         saved = self.script.read_bytes()

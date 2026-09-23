@@ -140,7 +140,11 @@ class ProgressiveDraftTests(unittest.TestCase):
         self.assertEqual(read_checkpoint(self.state_path), prepared)
         for row in first["expected_files"]:
             relative = row["path"].removeprefix("render-engine/")
-            self.assertEqual(hashlib.sha256(published[relative]).hexdigest(), row["sha256"])
+            # Text is carried by the commit itself; anything else is still named by digest.
+            if "content" in row:
+                self.assertEqual(published[relative].decode("utf-8"), row["content"])
+            else:
+                self.assertEqual(hashlib.sha256(published[relative]).hexdigest(), row["sha256"])
         report = self.accept_first(first)
         self.assertEqual(report["published_effects"], 1)
         self.assertEqual(read_checkpoint(self.state_path)["digest"], "revision-1")
