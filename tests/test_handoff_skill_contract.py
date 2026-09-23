@@ -32,7 +32,7 @@ def passing_trace(scenario: dict) -> dict:
     for name in expected["required_call_order"]:
         arguments = {}
         if name == "resolve_selection":
-            arguments["selection"] = scenario["request"]
+            arguments["selection"] = scenario["legacy_selection"]
         elif name == "list_motion_assets":
             list_count += 1
             arguments["project_id"] = handoff["project_id"]
@@ -57,14 +57,16 @@ def passing_trace(scenario: dict) -> dict:
             if "media_inputs" in expected:
                 arguments["media_inputs"] = expected["media_inputs"]
         calls.append({"name": name, "arguments": arguments})
+    question = "What exact result value and unit should Metric Focus show?"
+    if scenario["id"] == "ambiguous-primary-context":
+        question = "Which exact project and template context should I use?"
     return {
         "scenario_id": scenario["id"],
         "route": expected["route"],
         "context_reads": expected.get("context_reads", []),
         "window": expected.get("window"),
         "calls": calls,
-        "questions": ["Which exact project and template context should I use?"]
-        * expected.get("min_questions", 0),
+        "questions": [question] * expected.get("min_questions", 0),
         "grounded_values": {"headline": "A focused workflow speeds review"}
         if expected["requires_grounded_values"]
         else {},
@@ -134,12 +136,17 @@ class HandoffSkillContractTests(unittest.TestCase):
         self.assertIn("`media_inputs[input_key]`", cutout)
         self.assertIn("`geometry.object_position`", cutout)
         self.assertIn("never put `object_position` or a `cutout` object at the segment's top level", cutout)
+        self.assertIn("tile the final effect window without a gap or overlap", cutout)
+        self.assertIn("do not materialize a partial set", cutout)
+        self.assertIn("Never silently move an explicit user-selected window", cutout)
         self.assertIn("re-run `frame_speaker` only for spans that moved", cutout)
 
     def test_only_legacy_marker_uses_resolver(self) -> None:
         legacy = self.skill.split("## Legacy `@aip` compatibility", 1)[1].split("## ", 1)[0]
         self.assertIn("Only a legacy line that starts with `@aip` goes to `resolve_selection`", legacy)
-        self.assertIn("preserve its explicit \"here\" time", legacy)
+        self.assertIn("`selection` set to that line verbatim", legacy)
+        self.assertIn("never under a `request` argument", legacy)
+        self.assertIn("Preserve its explicit \"here\" time", legacy)
         self.assertIn("Do not require `get_motion_asset` for an explicit unchanged legacy placement", legacy)
 
     def test_scenario_bank_covers_required_primary_and_compatibility_cases(self) -> None:
@@ -151,6 +158,7 @@ class HandoffSkillContractTests(unittest.TestCase):
             "exact-version-unavailable",
             "missing-grounded-fact",
             "cutout-split-spans",
+            "cutout-failed-span-refusal",
             "legacy-reference-here",
             "generic-project-request",
         }
@@ -224,6 +232,26 @@ class HandoffSkillContractTests(unittest.TestCase):
         trace["grounded_values"] = {"metric": "73%"}
         self.assertIn("demo_leakage", motion_eval.evaluate(missing_fact, trace))
 
+    def test_missing_fact_accepts_one_plain_question_without_mutation(self) -> None:
+        scenario = self.scenarios["missing-grounded-fact"]
+        trace = passing_trace(scenario)
+        self.assertEqual([], motion_eval.evaluate(scenario, trace))
+        self.assertNotIn("materialize_motion_asset", [call["name"] for call in trace["calls"]])
+        self.assertNotIn("commit_workspace", [call["name"] for call in trace["calls"]])
+
+    def test_unavailable_pin_stops_without_a_substitution_question(self) -> None:
+        scenario = self.scenarios["exact-version-unavailable"]
+        trace = passing_trace(scenario)
+        trace["questions"] = ["Would you like to use version 1.3.0 instead?"]
+        self.assertIn("too_many_questions", motion_eval.evaluate(scenario, trace))
+
+    def test_legacy_resolver_uses_selection_with_only_the_marker_line(self) -> None:
+        scenario = self.scenarios["legacy-reference-here"]
+        trace = passing_trace(scenario)
+        resolve = trace["calls"][0]
+        resolve["arguments"] = {"request": scenario["legacy_selection"]}
+        self.assertIn("resolve_marker_line", motion_eval.evaluate(scenario, trace))
+
     def test_evaluator_rejects_one_cutout_window_bridging_two_takes(self) -> None:
         scenario = self.scenarios["cutout-split-spans"]
         trace = passing_trace(scenario)
@@ -236,6 +264,32 @@ class HandoffSkillContractTests(unittest.TestCase):
         self.assertIn("cutout_windows", failures)
         self.assertIn("frame_speaker_calls", failures)
         self.assertIn("materialize_media_inputs", failures)
+
+    def test_evaluator_refuses_partial_cutout_after_one_failed_span(self) -> None:
+        scenario = self.scenarios["cutout-failed-span-refusal"]
+        trace = passing_trace(scenario)
+        self.assertEqual([], motion_eval.evaluate(scenario, trace))
+        trace["calls"].append(
+            {
+                "name": "materialize_motion_asset",
+                "arguments": {
+                    "timeline_in_ms": 12000,
+                    "duration_ms": 6000,
+                    "expected_project_revision": 22,
+                    "parameters": {},
+                    "media_inputs": {
+                        "speaker": [
+                            {
+                                "path": "render-engine/public/span-1.webm",
+                                "start_ms": 12000,
+                                "end_ms": 14500,
+                            }
+                        ]
+                    },
+                },
+            }
+        )
+        self.assertIn("forbidden_call", motion_eval.evaluate(scenario, trace))
 
 
 if __name__ == "__main__":

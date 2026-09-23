@@ -42,6 +42,11 @@ def load_scenarios(path: Path = SCENARIOS) -> dict[str, dict[str, Any]]:
                 raise ValueError(f"{record['id']}: primary handoff uses a legacy marker")
         if source == "legacy" and "@aip" not in record["request"]:
             raise ValueError(f"{record['id']}: legacy fixture lacks marker")
+        if source == "legacy" and (
+            not record.get("legacy_selection", "").startswith("@aip ")
+            or record["legacy_selection"] not in record["request"]
+        ):
+            raise ValueError(f"{record['id']}: legacy selection must be the verbatim marker line")
         if source == "ordinary" and matches:
             raise ValueError(f"{record['id']}: ordinary request parsed as a handoff")
     return scenarios
@@ -112,8 +117,8 @@ def evaluate(scenario: dict[str, Any], trace: dict[str, Any]) -> list[str]:
     elif source == "legacy":
         if not calls or call_names[0] != "resolve_selection":
             failures.append("legacy_resolve_first")
-        elif calls[0].get("arguments", {}).get("selection") != scenario["request"]:
-            failures.append("resolve_whole_request")
+        elif calls[0].get("arguments", {}).get("selection") != scenario["legacy_selection"]:
+            failures.append("resolve_marker_line")
 
     missing_reads = set(expected.get("context_reads", [])) - set(trace.get("context_reads", []))
     if missing_reads:

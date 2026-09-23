@@ -176,7 +176,7 @@
     "expected": {
       "route": "needs_input",
       "context_reads": ["project", "video", "transcript", "edit", "timeline", "visuals"],
-      "required_call_order": ["list_motion_assets", "get_motion_asset", "present_choices"],
+      "required_call_order": ["list_motion_assets", "get_motion_asset"],
       "forbidden_calls": ["resolve_selection", "materialize_motion_asset", "commit_workspace"],
       "requires_grounded_values": false, "forbidden_literals": ["73%", "73 percent"],
       "min_questions": 1, "max_questions": 1, "refused": false, "requires_page_url": false
@@ -248,10 +248,66 @@
     }
   },
   {
+    "id": "cutout-failed-span-refusal",
+    "source": "primary",
+    "contract_intent": "Refuse the explicit cutout placement when one planned span cannot produce a matte; never materialize a partial tiling.",
+    "request": "Use AI Producer to adapt the \"Speaker Proof\" template once at 00:12.\nProject: DEMO_CUTOUT_FAIL | Template: speaker-proof@1.0.0",
+    "handoff": {"project_id": "DEMO_CUTOUT_FAIL", "motion_asset_id": "speaker-proof", "version": "1.0.0"},
+    "context": {
+      "project": {"project_id": "DEMO_CUTOUT_FAIL", "page_url": "https://example.invalid/projects/DEMO_CUTOUT_FAIL", "duration_ms": 30000, "orientation": "portrait", "current_revision": 22},
+      "accepted_media": [{"kind": "video", "path": "render-engine/public/source.mp4", "duration_ms": 44000}],
+      "edit": {"project_revision": 22, "speaker_clips": [
+        {"output_start_ms": 0, "output_end_ms": 14500, "source_start_ms": 0, "source_end_ms": 14500},
+        {"output_start_ms": 14500, "output_end_ms": 30000, "source_start_ms": 19000, "source_end_ms": 34500}
+      ]},
+      "transcript": {"segments": [
+        {"output_start_ms": 12000, "output_end_ms": 18000, "text": "This explicit proof statement spans two retained takes at the edit boundary."}
+      ]},
+      "timeline": {"duration_ms": 30000, "speaker_clips": [
+        {"output_start_ms": 0, "output_end_ms": 14500, "source_start_ms": 0, "source_end_ms": 14500},
+        {"output_start_ms": 14500, "output_end_ms": 30000, "source_start_ms": 19000, "source_end_ms": 34500}
+      ], "cut_boundaries_ms": [14500], "visual_moments": []},
+      "discovery_listing": {"project_revision": 22, "entries": [{
+        "motion_asset_id": "speaker-proof", "version": "1.0.0", "action": "add",
+        "purpose": "Place a measured speaker cutout over one proof statement.",
+        "duration": {"default_ms": 6000, "min_ms": 5000, "max_ms": 8000},
+        "inputs": [{"key": "speaker", "kind": "cutout"}]
+      }]},
+      "pinned_asset": {"manifest": {"id": "speaker-proof", "version": "1.0.0", "inputs": [{"key": "speaker", "kind": "cutout"}]}, "source_summary": "A speaker cutout rises over a full-width proof card and requires every planned span."},
+      "listing_project_revision": 22,
+      "listing_entry": {
+        "motion_asset_id": "speaker-proof", "version": "1.0.0", "action": "add", "duration_ms": 6000,
+        "next_data": {"cutout": {"input_key": "speaker", "frame_speaker_calls": [{
+          "project_id": "DEMO_CUTOUT_FAIL", "windows": [
+            {"start": 12, "end": 14.5, "slug": "span-1", "matte": true, "slot": {"width": 520, "height": 940}, "headroom_px": 300},
+            {"start": 14.5, "end": 18, "slug": "span-2", "matte": true, "slot": {"width": 520, "height": 940}, "headroom_px": 300}
+          ]
+        }]}}
+      },
+      "frame_speaker_results": [{
+        "files": [{"path": "render-engine/public/span-1.webm", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}],
+        "windows": [
+          {"slug": "span-1", "start": 12, "end": 14.5, "presence": {"matte_ok": true}, "object_position": {"css": "50.00% 30.00%"}, "cutout": {"sink_px": 120, "card_clip_top_px": 300, "head_top_px": 210, "head_bottom_px": 480}, "matte": {"path": "render-engine/public/span-1.webm", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}},
+          {"slug": "span-2", "start": 14.5, "end": 18, "presence": {"matte_ok": false}, "object_position": {"css": "48.00% 31.00%"}, "cutout": null, "matte": null}
+        ]
+      }]
+    },
+    "expected": {
+      "route": "refuse", "window": {"at_ms": 12000, "duration_ms": 6000},
+      "context_reads": ["project", "video", "transcript", "edit", "timeline", "visuals"],
+      "required_call_order": ["list_motion_assets", "get_motion_asset", "list_motion_assets", "frame_speaker"],
+      "forbidden_calls": ["resolve_selection", "materialize_motion_asset", "commit_workspace", "sign_upload", "start_transcribe_project"],
+      "cutout_windows": [[12000, 14500], [14500, 18000]],
+      "requires_grounded_values": false, "forbidden_literals": [], "max_questions": 0,
+      "refused": true, "requires_page_url": false
+    }
+  },
+  {
     "id": "legacy-reference-here",
     "source": "legacy",
     "contract_intent": "Resolve the legacy line and retain its explicit 6.72 second target.",
     "request": "Add Subscribe here.\n@aip p=DEMO_LEGACY t=6.72 motion-asset id=text-subscribe version=4.0.0",
+    "legacy_selection": "@aip p=DEMO_LEGACY t=6.72 motion-asset id=text-subscribe version=4.0.0",
     "resolved": {"project_id": "DEMO_LEGACY", "references": [{"project_id": "DEMO_LEGACY", "kind": "motion-asset", "address": {"kind": "motion-asset", "id": "text-subscribe", "version": "4.0.0"}, "at_ms": 6720}]},
     "handoff": {"project_id": "DEMO_LEGACY", "motion_asset_id": "text-subscribe", "version": "4.0.0"},
     "context": {
