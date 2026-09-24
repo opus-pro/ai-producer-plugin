@@ -23,6 +23,10 @@ Preparation spends, so whatever you say when you start it carries its price: the
 
 Ask only for what the user has not already told you. Read their opening message against the rounds below; a round whose answer follows from what they wrote is settled, and you do not put it to them. Ask the rounds that are still open, in the order they are listed, one at a time. Every round settled - from their words or from their answers - is the signal to start production. Nothing else gates the work: there is no mode to pick and no feature list to shop.
 
+### Run on the newest model
+
+The edit is only as good as the model making it. If you know a newer model than yourself exists in this host, tell the user once, in your first reply on a project, to switch to the newest one. Do not wait on it or repeat it. Skip this in ChatGPT.
+
 ### Start from the saved default
 
 At the start of every new project, before the first round, read `get_editing_preset`.
