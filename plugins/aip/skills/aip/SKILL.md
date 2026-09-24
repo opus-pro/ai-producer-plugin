@@ -126,22 +126,28 @@ Plan each new talking-head edit from its supplied media and publishing brief. Th
 
 ### Editing
 
-- Open with a sharp punch-in, then hold the framing; when sound effects are on for this project, a whoosh placed with `add_sound_effects` lands on the punch-in. Place massive, extra-bold text behind the presenter, spanning 80-90% of the frame width, partially occluded by the head but still readable. Reveal words individually; split or wrap instead of shrinking. Use high-contrast text, preserve the original background, and animate only the text after the punch-in.
-- Use presenter close-ups and zooms for emphasis.
-- For concrete subjects, prefer relevant real footage, then images, then vectors.
-- Show the specific change described by the speech. Use generic geometric shapes, expanding cards, or checkmarks only when they clarify that change; prefer a direct demonstration when suitable footage or assets are available.
-- Captions are on by default while aip-dynamic-caption is listed, and they stay on during visual moments; the framing skill places the band for each layout. Apply the finishing round's choice.
-- For sarcasm, self-deprecation, or brief reminders, use a monochrome or desaturated presenter close-up for at most one sentence, then restore color.
-- Use smooth effects and layout transitions; minimize hard cuts.
+- Open on massive extra-bold text behind the presenter, 80-90% of frame width, **partially occluded** but readable. Never shrink, shift, or split-screen the presenter to fit the text.
+- Presenter close-ups and punch-ins for emphasis. Minimum zoom 1.3x.
+- Sarcasm, self-deprecation, or a quick aside: monochrome presenter close-up for at most one sentence, then restore color.
+- Show the specific change the speaker describes; demonstrate with real footage or assets when available.
+- Design supporting visuals as **Overlay** first, around the measured head and caption band.
+- Simplify, remove secondary elements, or reveal steps sequentially before changing layout. Never choose a larger layout just to fit an oversized first design.
+- Template selection, workflows, comparisons, icons, and numeric callouts normally stay overlays.
+- Layout preference: **Overlay**, then **Seat** (only when essential detail still cannot read clearly), then **Full cover** (only when understanding the content requires the whole frame).
+- For every seat or full cover, identify the essential detail an overlay cannot communicate. Without a specific reason, use overlay.
+- Return to the full-frame speaker as soon as that need ends.
+- Captions on by default when `aip-dynamic-caption` is enabled, visible through every visual moment. The finishing round's caption choice overrides.
+- Smooth effects and layout transitions. Hard cuts are a last resort.
 - No background music.
 
-### Visual style
+### Visuals
 
-- Use a pure black canvas with near-black foreground surfaces, fills only, no strokes; preserve source-media colors unless a specific treatment is intended.
-- For abstract relationships, mechanisms, and processes, prefer 3D animation, then SVG or vector.
-- Every visual must animate purposefully from entry to exit; each motion reveals a step, relationship, or change; transitions and camera moves don't count.
-- No titles, headings, or decorative copy. If a beat has no meaningful visual without its copy, show the presenter, with captions only when enabled.
-- Center the focal point within each visual area. Keep all graphics inset at least 10% from the edges throughout the animation; avoid dense repetition and unnecessary layers so graphics stay large.
+- Pure black canvas, near-black fills and strokes. Keep source-media colors unless a rule above calls for a treatment.
+- Concrete subjects: real footage, then images, then vector. Abstract subjects (relationships, mechanisms, processes): prefer 3D when spatial depth or motion clarifies the concept; otherwise, use vector diagrams.
+- Every visual animates with purpose from entry to exit; each motion reveals a step, relationship, or change. Transitions and camera moves don't count.
+- No titles, headings, or decorative copy. Labels inside a diagram are fine. If a beat has no visual without its copy, show the presenter.
+- Center the focal point. Keep text and graphics inset at least 10% from every edge throughout the animation.
+- Keep graphics large: one idea each, no repetition, no extra layers.
 
 ### On-screen text
 
