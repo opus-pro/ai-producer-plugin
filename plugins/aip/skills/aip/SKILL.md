@@ -25,7 +25,7 @@ Ask only for what the user has not already told you. Read their opening message 
 
 ### Run on the newest model
 
-The edit is only as good as the model making it. If you know a newer model than yourself exists in this host, tell the user once, in your first reply on a project, to switch to the newest one: `/model` in Claude Code and the Codex CLI, or the model picker in the Codex app. Do not wait on it or repeat it. Skip this in ChatGPT.
+The edit is only as good as the model making it. If you know a newer model than yourself exists in this host, tell the user once, in your first reply on a project, to switch to the newest one. Do not wait on it or repeat it. Skip this in ChatGPT.
 
 ### Start from the saved default
 
