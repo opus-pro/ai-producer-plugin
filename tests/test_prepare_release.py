@@ -141,6 +141,13 @@ class PrepareReleaseTest(unittest.TestCase):
         self.assertIn(f"chore: release v{self.target}", result.stdout)
         self.assertEqual(version_from_documents(self.documents()), self.target)
 
+    def test_next_release_compares_from_reissue_tag(self) -> None:
+        shutil.copyfile(REPO / "releases/v1.2.8.md", self.root / "releases/v1.2.8.md")
+        shutil.copyfile(REPO / "releases/reissues.json", self.root / "releases/reissues.json")
+        shutil.copyfile(REPO / "releases/reissue-v1.2.8.md", self.root / "releases/reissue-v1.2.8.md")
+        log = prepare_release.prepare_release(self.root, "1.2.9")
+        self.assertIn("[v1.2.8+reissue.1...v1.2.9]", log.read_text())
+
 
 if __name__ == "__main__":
     unittest.main()

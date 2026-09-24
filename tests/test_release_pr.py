@@ -96,6 +96,52 @@ class ReleasePRTest(unittest.TestCase):
         self.write_document(path, document)
         self.assertIn("ordinary PR", self.check("fix: clarify the plugin"))
 
+    def add_reissue_record(self) -> None:
+        self.set_version("1.2.8")
+        shutil.copyfile(REPO / "releases/v1.2.8.md", self.root / "releases/v1.2.8.md")
+        source_commit = self.commit()
+        self.base = source_commit
+        record_path = self.root / policy.REISSUES_FILE
+        record = json.loads((REPO / policy.REISSUES_FILE).read_text())
+        record["reissues"]["1.2.8"]["source_commit"] = source_commit
+        record_path.write_text(json.dumps(record) + "\n")
+        shutil.copyfile(REPO / "releases/reissue-v1.2.8.md", self.root / "releases/reissue-v1.2.8.md")
+
+    def test_ordinary_pr_can_record_reissue_without_version_change(self) -> None:
+        self.add_reissue_record()
+        self.assertIn("ordinary PR", self.check("chore: document reissue"))
+
+    def test_invalid_reissue_record_fails_ordinary_pr(self) -> None:
+        self.add_reissue_record()
+        path = self.root / policy.REISSUES_FILE
+        record = json.loads(path.read_text())
+        record["reissues"]["1.2.8"]["tag"] = "v1.2.8-reissue.1"
+        path.write_text(json.dumps(record))
+        with self.assertRaisesRegex(ValueError, "Invalid reissue tag"):
+            self.check("chore: document reissue")
+
+    def test_reissue_notes_cannot_change_original_release_details(self) -> None:
+        self.add_reissue_record()
+        path = self.root / "releases/reissue-v1.2.8.md"
+        path.write_text(path.read_text().replace("Adapt plain-text", "Replace plain-text"))
+        with self.assertRaisesRegex(ValueError, "preserve the original release details"):
+            self.check("chore: document reissue")
+
+    def test_next_release_uses_reissue_tag_as_comparison_base(self) -> None:
+        self.add_reissue_record()
+        self.base = self.commit()
+        self.set_version("1.2.9")
+        path = self.root / policy.release_log_path("1.2.9")
+        path.write_text(path.read_text().replace("v1.2.8...v1.2.9", "v1.2.8+reissue.1...v1.2.9"))
+        self.assertIn("release 1.2.8 -> 1.2.9", self.check("chore: release v1.2.9"))
+
+    def test_next_release_rejects_deleted_tag_comparison(self) -> None:
+        self.add_reissue_record()
+        self.base = self.commit()
+        self.set_version("1.2.9")
+        with self.assertRaisesRegex(ValueError, "base version 1.2.8\\+reissue.1"):
+            self.check("chore: release v1.2.9")
+
     def use_mcp_identity(self, name: str) -> None:
         path = "plugins/aip/.mcp.json"
         document = self.document(path)

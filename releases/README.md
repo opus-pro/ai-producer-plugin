@@ -22,6 +22,10 @@ Changes, Compatibility, and Validation are optional and appear in that order whe
 
 Keep each version update in its own PR titled `chore: release vX.Y.Z`. Follow the shared [release rule](../.agents/rules/release.md) and [contributing guide](../CONTRIBUTING.md) for the allowed files and checks. Changes to this README, the template, or release tooling belong in ordinary PRs.
 
+## Metadata-only reissues
+
+`reissues.json` records deleted immutable GitHub Releases that are republished under a distinct `+reissue.N` tag. Each entry identifies the original release commit and PR, preceding published version, reason, and reviewed notes file. A reissue tag points to that original commit; its Release body comes from `reissue-vX.Y.Z.md`. The declared plugin version and original `vX.Y.Z.md` log remain unchanged. The reissue tag is the comparison start for the next normal release, while its SemVer precedence remains equal to `X.Y.Z`. Follow the [reissue procedure](../.agents/rules/release.md#reissue-a-deleted-immutable-release).
+
 ## Publication with a user account
 
 Codex and Claude Code use the shared [release rule](../.agents/rules/release.md#request-scope-and-progress) to complete a full release request in one session with the user's authenticated GitHub CLI session: fetch the published version, announce the target and inspection links, prepare the PR, wait for checks and required reviews, merge, publish, and verify. Default patch releases continue without another version or merge confirmation; minor and major increases require the user's separate second confirmation before version edits. A preparation-only request stops at the PR. CI continues to validate the package and release PR policy; it does not create tags or Releases.
