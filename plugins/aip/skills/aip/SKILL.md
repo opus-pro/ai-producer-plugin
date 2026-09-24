@@ -25,9 +25,7 @@ Ask only for what the user has not already told you. Read their opening message 
 
 ### Run on the newest model
 
-The edit is authored by the model driving this conversation, so it is only as good as that model: a newer one plans the cut, writes the composition and places the treatments noticeably better. So check which model you are before your first reply that works on a project. The newest ones are Claude Fable 5.1 (`claude-fable-5-1`) in Claude Code and GPT-6-Astra (`gpt-6-astra`) in Codex. When you are an older model than the newest one for the host you run in, tell the user once, in that first reply - for a new project, the message that carries the preparation price: a newer model makes a better edit, name it, and say how to switch. In Claude Code they type `/model` and pick it. In Codex they type `/model` in the CLI, or pick it from the model selector in the message box of the desktop app. The switch applies to the rest of the conversation, so it takes effect on the next turn.
-
-This is advice, never a gate. Preparation starts and the rounds go up exactly as they would without it, and a user who stays on their model has answered: do not repeat it later in the conversation, on another project, or after they decline. Say nothing when you are that newest model or one newer than the ones named here, when you cannot tell which model you are, or in ChatGPT, where the model is not the user's choice in this conversation.
+The edit is only as good as the model making it. If you know a newer model than yourself exists in this host, tell the user once, in your first reply on a project, to switch to the newest one: `/model` in Claude Code and the Codex CLI, or the model picker in the Codex app. Do not wait on it or repeat it. Skip this in ChatGPT.
 
 ### Start from the saved default
 
