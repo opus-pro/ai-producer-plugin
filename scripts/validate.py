@@ -20,7 +20,7 @@ from pathlib import Path
 
 from check_release_pr import (
     VERSION_FIELDS, reject_constant, release_log_path, unique_object,
-    validate_release_log, version_from_documents,
+    reissues_on_disk, validate_release_log, version_from_documents,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -145,6 +145,7 @@ def validate_releases(root: Path, version: str) -> None:
     log = root / release_log_path(version)
     assert log.is_file() and not log.is_symlink(), "the current version must have a release log"
     validate_release_log(log.read_text(encoding="utf-8"), version)
+    reissues_on_disk(root)
 
 
 def validate_skill_structure(root: Path) -> None:

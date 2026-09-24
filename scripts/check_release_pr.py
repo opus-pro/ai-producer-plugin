@@ -14,6 +14,7 @@ from pathlib import Path
 
 LATEST_VERSION_FILE = "releases/latest_version.json"
 RELEASE_TEMPLATE = "releases/template.md"
+REISSUES_FILE = "releases/reissues.json"
 LOG_SECTIONS = ("Changes", "Compatibility", "Validation")
 REPOSITORY_URL = "https://github.com/opus-pro/ai-producer-plugin"
 PR_LINK = re.compile(r"\[#([1-9][0-9]*)\]\(" + re.escape(REPOSITORY_URL) + r"/pull/\1\)")
@@ -141,6 +142,94 @@ def release_log_path(version: str) -> str:
     return f"releases/v{version}.md"
 
 
+def parse_reissues(contents: bytes) -> dict:
+    try:
+        document = json.loads(contents, object_pairs_hook=unique_object, parse_constant=reject_constant)
+    except (ValueError, UnicodeError) as error:
+        raise ValueError(f"Invalid reissue record: {error}") from error
+    if not isinstance(document, dict) or set(document) != {"reissues"} or not isinstance(document["reissues"], dict):
+        raise ValueError("Reissue record must contain only a reissues object")
+    for version, record in document["reissues"].items():
+        precedence(version)
+        if not isinstance(record, dict) or set(record) != {
+            "tag", "previous_release", "source_commit", "release_pr", "reason", "notes",
+        }:
+            raise ValueError(f"Invalid reissue entry: {version}")
+        tag = record["tag"]
+        if not isinstance(tag, str) or not re.fullmatch(rf"v{re.escape(version)}\+reissue\.[1-9][0-9]*", tag):
+            raise ValueError(f"Invalid reissue tag: {version}")
+        previous = record["previous_release"]
+        if not isinstance(previous, str) or precedence(previous) >= precedence(version):
+            raise ValueError(f"Invalid previous release: {version}")
+        if not isinstance(record["source_commit"], str) or not re.fullmatch(r"[0-9a-f]{40}", record["source_commit"]):
+            raise ValueError(f"Invalid reissue commit: {version}")
+        if type(record["release_pr"]) is not int or record["release_pr"] <= 0:
+            raise ValueError(f"Invalid reissue PR: {version}")
+        if record["reason"] != "deleted_immutable_release":
+            raise ValueError(f"Invalid reissue reason: {version}")
+        if record["notes"] != f"releases/reissue-v{version}.md":
+            raise ValueError(f"Invalid reissue notes path: {version}")
+    return document["reissues"]
+
+
+def validate_reissue_notes(contents: str, version: str, record: dict, original: str) -> None:
+    if not contents.startswith(f"# {record['tag']}\n"):
+        raise ValueError(f"Reissue notes must start with # {record['tag']}")
+    previous = record["previous_release"]
+    tag = record["tag"]
+    footer = (
+        f"**Full Changelog**: [v{previous}...{tag}]"
+        f"({REPOSITORY_URL}/compare/v{previous}...{tag.replace('+', '%2B')})"
+    )
+    if not contents.rstrip().endswith(footer):
+        raise ValueError(f"Reissue notes must compare v{previous} to {tag}")
+    if "deleted" not in contents.lower() or "unchanged" not in contents.lower():
+        raise ValueError("Reissue notes must explain the deletion and unchanged plugin")
+    original_details = original.split("\n## Changes\n", 1)
+    reissue_details = contents.split("\n## Changes\n", 1)
+    if len(original_details) != 2 or len(reissue_details) != 2:
+        raise ValueError("Reissue notes must retain the original Changes section")
+    if original_details[1].rsplit("\n**Full Changelog**:", 1)[0] != reissue_details[1].rsplit("\n**Full Changelog**:", 1)[0]:
+        raise ValueError("Reissue notes must preserve the original release details")
+
+
+def reissues_on_disk(root: Path) -> dict:
+    path = root / REISSUES_FILE
+    if path.is_symlink():
+        raise ValueError("Reissue record must be a regular, non-executable file")
+    if not path.exists():
+        return {}
+    if not path.is_file() or path.stat().st_mode & 0o111:
+        raise ValueError("Reissue record must be a regular, non-executable file")
+    records = parse_reissues(path.read_bytes())
+    for version, record in records.items():
+        notes = root / record["notes"]
+        if notes.is_symlink() or not notes.is_file() or notes.stat().st_mode & 0o111:
+            raise ValueError(f"Reissue notes must be a regular, non-executable file: {record['notes']}")
+        original = (root / release_log_path(version)).read_text(encoding="utf-8")
+        validate_reissue_notes(notes.read_text(encoding="utf-8"), version, record, original)
+    return records
+
+
+def reissues_at_ref(repo: Path, ref: str) -> dict:
+    if not git(repo, "ls-tree", ref, "--", REISSUES_FILE):
+        return {}
+    records = parse_reissues(regular_blob(repo, ref, REISSUES_FILE))
+    for version, record in records.items():
+        original = regular_blob(repo, record["source_commit"], release_log_path(version)).decode("utf-8")
+        validate_reissue_notes(regular_blob(repo, ref, record["notes"]).decode("utf-8"), version, record, original)
+        git(repo, "merge-base", "--is-ancestor", record["source_commit"], ref)
+        _, source_version = snapshot(repo, record["source_commit"])
+        if source_version != version:
+            raise ValueError(f"Reissue source commit does not declare {version}")
+    return records
+
+
+def comparison_base_version(declared: str, reissues: dict) -> str:
+    record = reissues.get(declared)
+    return record["tag"][1:] if record else declared
+
+
 def validate_changes(contents: str) -> None:
     categories = re.split(r"^### (.+)$", contents, flags=re.MULTILINE)
     if len(categories) < 3 or categories[0].strip():
@@ -202,6 +291,7 @@ def check_release_pr(repo: Path, base: str, head: str, title: str) -> str:
     before, old_version = snapshot(repo, ancestor, allow_legacy=True)
     after, new_version = snapshot(repo, head)
     base_documents, base_version = snapshot(repo, base, allow_legacy=True)
+    reissues_at_ref(repo, head)
     version_changed = old_version != new_version
     release_title = TITLE.fullmatch(title)
     log_path = release_log_path(new_version)
@@ -251,7 +341,8 @@ def check_release_pr(repo: Path, base: str, head: str, title: str) -> str:
         raise ValueError(f"Release version must be newer than both {old_version} and base version {base_version}")
     if log_path not in changed or git(repo, "ls-tree", ancestor, "--", log_path) or git(repo, "ls-tree", base, "--", log_path):
         raise ValueError(f"Release PR must add a new release log: {log_path}")
-    validate_release_log(regular_blob(repo, head, log_path).decode("utf-8"), new_version, previous_version=base_version)
+    comparison_base = comparison_base_version(base_version, reissues_at_ref(repo, base))
+    validate_release_log(regular_blob(repo, head, log_path).decode("utf-8"), new_version, previous_version=comparison_base)
     return f"OK: release {old_version} -> {new_version}; title, file scope, all six version fields, and release log match"
 
 

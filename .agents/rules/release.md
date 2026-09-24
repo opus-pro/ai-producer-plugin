@@ -12,7 +12,7 @@ Keep working in the same session while checks or a merge queue progress. If requ
 
 ## Version source
 
-`releases/latest_version.json` is the canonical declared plugin version. Its complete shape is `{"version": "X.Y.Z"}`. It records the version in the repository, not confirmation of publication on GitHub. The helper files `latest_version.json` and `template.md` sort before the `vX.Y.Z.md` release logs by name.
+`releases/latest_version.json` is the canonical declared plugin version. Its complete shape is `{"version": "X.Y.Z"}`. It records the version in the repository, not confirmation of publication on GitHub. The helper files `latest_version.json`, `reissues.json`, and `template.md` sort before the `vX.Y.Z.md` release logs by name.
 
 Keep these six values identical:
 
@@ -41,6 +41,14 @@ Any minor or major increase requires a separate second confirmation from the use
 
 This version-selection step applies to preparing a new version. When completing publication of an already merged release, use that release's recorded version and existing confirmations; do not calculate another patch bump.
 
+## Reissue a deleted immutable Release
+
+Use this exception only when the user explicitly requests a metadata-only reissue of a deleted immutable GitHub Release. GitHub reserves the original tag name after deletion. A distinct `vX.Y.Z+reissue.N` tag may identify the same original release commit, but SemVer gives it the same precedence as `X.Y.Z`; it is not a plugin upgrade. Do not change the six plugin version fields, the original `releases/vX.Y.Z.md`, plugin files, or the production MCP deployment.
+
+First verify the original release PR's merged commit and declared version, its ancestry on fresh upstream `main`, the latest published stable Release, and the original and proposed tag and Release states. Only HTTP 404 establishes absence; do not overwrite or move any existing tag or Release. Prepare a separate ordinary PR with `releases/reissues.json`, a `releases/reissue-vX.Y.Z.md` body explaining the deleted original and unchanged plugin, and any needed release-tooling guidance. The record names the original commit, original release PR, previous published version, notes file, and `vX.Y.Z+reissue.N` tag. Preserve the original release log. Run `python3 scripts/test.py`, inspect the full public diff and metadata, and wait for all required checks and human review before merging.
+
+After that PR is merged, read its approved notes from fresh upstream `main`. Validate the original release commit in a clean worktree with `python3 scripts/test.py`, verify its version fields and original log, and reconfirm both proposed remote tag and Release are absent. Create the new tag at the original release commit with the user's authenticated GitHub identity, then publish a stable GitHub Release using the approved reissue notes and `--verify-tag`. Verify the tag SHA, Release URL, title, exact body, and draft and prerelease flags. A created tag without a matching published Release is partial publication; follow the existing-tag recovery procedure without changing the tag. The next normal release compares from the reissue tag recorded in `releases/reissues.json`.
+
 ## Prepare a release PR
 
 1. Read `AGENTS.md`, `CONTRIBUTING.md`, the latest-version file, and the latest release log. Check the working tree and the current base branch. Follow the version-selection step above to verify GitHub Releases, choose the default patch target, and obtain any required minor or major confirmation before editing. Keep unrelated user changes intact and use a dedicated release branch or isolated worktree if needed. Functional changes must already be in the base branch.
@@ -63,7 +71,7 @@ Confirm `gh pr view <pr-number> --repo opus-pro/ai-producer-plugin --json state,
 - Start with `# vX.Y.Z`. Changes, Compatibility, and Validation are optional; retain that order when present. Omit sections without noteworthy content, including routine "no migration needed" or "all checks passed" statements.
 - Under Changes, group short, user-visible summaries under categories such as `### Added`, `### Changed`, and `### Fixed`. Combine related PRs into one change rather than repeating their titles. Omit empty categories.
 - End each change with its actual PR numbers and links, for example `- Clarify the intake workflow. ([#11](https://github.com/opus-pro/ai-producer-plugin/pull/11), [#13](https://github.com/opus-pro/ai-producer-plugin/pull/13))`. Verify the linked PRs belong to the release range. One change may reference multiple PRs.
-- End the log with `**Full Changelog**: [vPREVIOUS...vX.Y.Z](https://github.com/opus-pro/ai-producer-plugin/compare/vPREVIOUS...vX.Y.Z)`. The preparation script fills both versions using the current declared version and the requested version. Check the comparison range before submitting; it must start at the current PR base version.
+- End the log with `**Full Changelog**: [vPREVIOUS...vX.Y.Z](https://github.com/opus-pro/ai-producer-plugin/compare/vPREVIOUS...vX.Y.Z)`. The preparation script fills both versions using the current declared version and the requested version. Check the comparison range before submitting; it starts at the current PR base version or its recorded reissue tag.
 
 See the [release directory guide](../../releases/README.md) for legacy notes. Published `v1.0.0` through `v1.1.2` bodies retain their original format and are exempt from the new template; `v1.1.3.md` already follows the new format. Do not rewrite legacy notes or apply their exemption to new releases. Verify imported content against GitHub Releases without inventing PR associations or validation results.
 
