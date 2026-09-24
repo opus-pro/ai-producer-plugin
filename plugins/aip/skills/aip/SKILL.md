@@ -130,7 +130,12 @@ Plan each new talking-head edit from its supplied media and publishing brief. Th
 - Presenter close-ups and punch-ins for emphasis. Minimum zoom 1.3x.
 - Sarcasm, self-deprecation, or a quick aside: monochrome presenter close-up for at most one sentence, then restore color.
 - Show the specific change the speaker describes; demonstrate with real footage or assets when available.
-- Layout preference: **Overlay** (default; simplify the graphic to fit around speaker and captions), then **Seat** (only when the overlay cannot be legible), then **Full cover** (only when the content needs the whole frame).
+- Design supporting visuals as **Overlay** first, around the measured head and caption band.
+- Simplify, remove secondary elements, or reveal steps sequentially before changing layout. Never choose a larger layout just to fit an oversized first design.
+- Template selection, workflows, comparisons, icons, and numeric callouts normally stay overlays.
+- Layout preference: **Overlay**, then **Seat** (only when essential detail still cannot read clearly), then **Full cover** (only when understanding the content requires the whole frame).
+- For every seat or full cover, identify the essential detail an overlay cannot communicate. Without a specific reason, use overlay.
+- Return to the full-frame speaker as soon as that need ends.
 - Captions on by default when `aip-dynamic-caption` is enabled, visible through every visual moment. The finishing round's caption choice overrides.
 - Smooth effects and layout transitions. Hard cuts are a last resort.
 - No background music.
