@@ -20,7 +20,7 @@ from pathlib import Path
 
 from check_release_pr import (
     VERSION_FIELDS, reject_constant, release_log_path, unique_object,
-    validate_release_log, version_from_documents,
+    validate_release_log, version_from_documents, withdrawn_versions_on_disk,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -133,6 +133,7 @@ def validate_mcp(root: Path, version: str) -> None:
 
 
 def validate_releases(root: Path, version: str) -> None:
+    withdrawn_versions_on_disk(root)
     documents = {}
     for relative in VERSION_FIELDS:
         path = root / relative

@@ -14,6 +14,7 @@ from pathlib import Path
 
 LATEST_VERSION_FILE = "releases/latest_version.json"
 RELEASE_TEMPLATE = "releases/template.md"
+WITHDRAWN_VERSIONS_FILE = "releases/withdrawn_versions.json"
 LOG_SECTIONS = ("Changes", "Compatibility", "Validation")
 REPOSITORY_URL = "https://github.com/opus-pro/ai-producer-plugin"
 PR_LINK = re.compile(r"\[#([1-9][0-9]*)\]\(" + re.escape(REPOSITORY_URL) + r"/pull/\1\)")
@@ -141,6 +142,63 @@ def release_log_path(version: str) -> str:
     return f"releases/v{version}.md"
 
 
+def parse_withdrawn_versions(contents: bytes) -> dict:
+    """Validate reviewed exceptions for declared versions that cannot be published."""
+    try:
+        document = json.loads(contents, object_pairs_hook=unique_object, parse_constant=reject_constant)
+    except (ValueError, UnicodeError) as error:
+        raise ValueError(f"Invalid withdrawn-version record: {error}") from error
+    if not isinstance(document, dict) or set(document) != {"withdrawn_versions"}:
+        raise ValueError("Withdrawn-version record must contain only withdrawn_versions")
+    records = document["withdrawn_versions"]
+    if not isinstance(records, dict):
+        raise ValueError("withdrawn_versions must be an object")
+    for version, record in records.items():
+        precedence(version)
+        if not isinstance(record, dict) or set(record) != {
+            "last_published", "replacement", "reason", "release_pr", "merge_commit",
+        }:
+            raise ValueError(f"Invalid withdrawn-version entry: {version}")
+        previous, replacement = record["last_published"], record["replacement"]
+        if not isinstance(previous, str) or not isinstance(replacement, str):
+            raise ValueError(f"Invalid withdrawn-version range: {version}")
+        if not precedence(previous) < precedence(version) < precedence(replacement):
+            raise ValueError(f"Invalid withdrawn-version order: {version}")
+        if record["reason"] != "deleted_immutable_release":
+            raise ValueError(f"Invalid withdrawn-version reason: {version}")
+        if type(record["release_pr"]) is not int or record["release_pr"] <= 0:
+            raise ValueError(f"Invalid withdrawn-version PR: {version}")
+        if not isinstance(record["merge_commit"], str) or not re.fullmatch(r"[0-9a-f]{40}", record["merge_commit"]):
+            raise ValueError(f"Invalid withdrawn-version commit: {version}")
+    return records
+
+
+def withdrawn_versions_on_disk(root: Path) -> dict:
+    path = root / WITHDRAWN_VERSIONS_FILE
+    if path.is_symlink():
+        raise ValueError("Withdrawn-version record must be a regular, non-executable file")
+    if not path.exists():
+        return {}
+    if not path.is_file() or path.stat().st_mode & 0o111:
+        raise ValueError("Withdrawn-version record must be a regular, non-executable file")
+    return parse_withdrawn_versions(path.read_bytes())
+
+
+def withdrawn_versions_at_ref(repo: Path, ref: str) -> dict:
+    if not git(repo, "ls-tree", ref, "--", WITHDRAWN_VERSIONS_FILE):
+        return {}
+    return parse_withdrawn_versions(regular_blob(repo, ref, WITHDRAWN_VERSIONS_FILE))
+
+
+def comparison_base_version(declared: str, target: str, withdrawn: dict) -> str:
+    entry = withdrawn.get(declared)
+    if entry is None:
+        return declared
+    if target != entry["replacement"]:
+        raise ValueError(f"Withdrawn version {declared} must be replaced by {entry['replacement']}")
+    return entry["last_published"]
+
+
 def validate_changes(contents: str) -> None:
     categories = re.split(r"^### (.+)$", contents, flags=re.MULTILINE)
     if len(categories) < 3 or categories[0].strip():
@@ -171,7 +229,7 @@ def validate_release_log(contents: str, version: str, *, previous_version: str |
     if precedence(previous) >= precedence(version):
         raise ValueError("Full Changelog must compare an earlier version to this release")
     if previous_version is not None and previous != previous_version:
-        raise ValueError(f"Full Changelog must start from base version {previous_version}")
+        raise ValueError(f"Full Changelog must start from comparison version {previous_version}")
 
     sections = re.split(r"^## (.+)$", body, flags=re.MULTILINE)
     headings = sections[1::2]
@@ -202,6 +260,7 @@ def check_release_pr(repo: Path, base: str, head: str, title: str) -> str:
     before, old_version = snapshot(repo, ancestor, allow_legacy=True)
     after, new_version = snapshot(repo, head)
     base_documents, base_version = snapshot(repo, base, allow_legacy=True)
+    withdrawn_versions_at_ref(repo, head)
     version_changed = old_version != new_version
     release_title = TITLE.fullmatch(title)
     log_path = release_log_path(new_version)
@@ -251,7 +310,8 @@ def check_release_pr(repo: Path, base: str, head: str, title: str) -> str:
         raise ValueError(f"Release version must be newer than both {old_version} and base version {base_version}")
     if log_path not in changed or git(repo, "ls-tree", ancestor, "--", log_path) or git(repo, "ls-tree", base, "--", log_path):
         raise ValueError(f"Release PR must add a new release log: {log_path}")
-    validate_release_log(regular_blob(repo, head, log_path).decode("utf-8"), new_version, previous_version=base_version)
+    comparison_base = comparison_base_version(base_version, new_version, withdrawn_versions_at_ref(repo, base))
+    validate_release_log(regular_blob(repo, head, log_path).decode("utf-8"), new_version, previous_version=comparison_base)
     return f"OK: release {old_version} -> {new_version}; title, file scope, all six version fields, and release log match"
 
 

@@ -43,12 +43,12 @@ All six values must agree with the PR title and log version, and the version mus
 Prepare the files locally, then complete the generated log. Omit Changes, Compatibility, or Validation when there is nothing noteworthy to report. Group changes by category, summarize related PRs together, and append one or more PR-number links to each change. Keep the generated Full Changelog comparison link at the end. Unfilled placeholders and empty retained sections fail validation. Full validation evidence belongs in the PR description even when omitted from the log. This command does not commit, push, tag, or publish:
 
 ```bash
-python3 scripts/prepare_release.py 1.1.4
+python3 scripts/prepare_release.py 1.1.4 --published-version 1.1.3
 # Fill in releases/v1.1.4.md before running checks.
 python3 scripts/test.py
 ```
 
-The directory uses `latest_version.json` and `template.md` for its two helper files, followed by `vX.Y.Z.md` logs when sorted by name. See the [release directory guide](releases/README.md) for their usage and the initial import of published `v1.0.0` through `v1.1.3` notes. Legacy logs retain their published format; new releases follow the template. The initial import may add historical logs at or below the declared version without editing existing logs, and does not publish another release. Once tracking exists, ordinary PRs cannot add or change historical logs.
+The directory uses `latest_version.json`, `template.md`, and `withdrawn_versions.json` for its helper files, followed by `vX.Y.Z.md` logs when sorted by name. See the [release directory guide](releases/README.md) for their usage and the initial import of published `v1.0.0` through `v1.1.3` notes. Legacy logs retain their published format; new releases follow the template. The initial import may add historical logs at or below the declared version without editing existing logs, and does not publish another release. Once tracking exists, ordinary PRs cannot add or change historical logs.
 
 The `Validate release PR` workflow runs on PR creation, reopening, new commits, and edits, including title changes. It detects version updates regardless of the PR title and validates ordinary PRs for version consistency. It runs the trusted validator from the workflow's commit and reads PR Git objects without checking out or executing PR code. It needs no credentials. After this workflow reaches the default branch, configure `Release PR policy` as a required status check and require branches to be up to date before merging so the base-version comparison stays current.
 

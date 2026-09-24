@@ -10,12 +10,13 @@ import sys
 from pathlib import Path
 
 from check_release_pr import (
-    RELEASE_TEMPLATE, VERSION_FIELDS, precedence, reject_constant,
+    RELEASE_TEMPLATE, VERSION_FIELDS, comparison_base_version, precedence, reject_constant,
     release_log_path, unique_object, validate_release_log, version_fields_for, version_from_documents,
+    withdrawn_versions_on_disk,
 )
 
 
-def prepare_release(root: Path, version: str) -> Path:
+def prepare_release(root: Path, version: str, published_version: str) -> Path:
     documents = {}
     for relative in VERSION_FIELDS:
         path = root / relative
@@ -28,6 +29,12 @@ def prepare_release(root: Path, version: str) -> Path:
     current = version_from_documents(documents)
     if precedence(version) <= precedence(current):
         raise ValueError(f"New version must be newer than {current}")
+    precedence(published_version)
+    comparison_base = comparison_base_version(current, version, withdrawn_versions_on_disk(root))
+    if published_version != comparison_base:
+        raise ValueError(
+            f"Published version {published_version} does not match required comparison base {comparison_base}"
+        )
     log = root / release_log_path(version)
     if log.exists() or log.is_symlink():
         raise ValueError(f"Release log already exists: {log.name}")
@@ -35,10 +42,10 @@ def prepare_release(root: Path, version: str) -> Path:
     for field in ("version", "previous_version"):
         if "{{" + field + "}}" not in template:
             raise ValueError(f"Release template is missing the {field} placeholder")
-    draft = template.replace("{{version}}", version).replace("{{previous_version}}", current)
+    draft = template.replace("{{version}}", version).replace("{{previous_version}}", comparison_base)
     preview = draft.replace("{{pr_number}}", "1").replace("{{related_pr_number}}", "2")
     preview = re.sub(r"\{\{[^{}]+\}\}", "Draft", preview)
-    validate_release_log(preview, version, previous_version=current)
+    validate_release_log(preview, version, previous_version=comparison_base)
 
     # Validate every input before modifying any file.
     for relative in VERSION_FIELDS:
@@ -56,10 +63,11 @@ def prepare_release(root: Path, version: str) -> Path:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("version", help="Target SemVer without the v prefix")
+    parser.add_argument("--published-version", required=True, help="Highest published stable version verified on GitHub")
     parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[1])
     args = parser.parse_args()
     try:
-        log = prepare_release(args.repo, args.version)
+        log = prepare_release(args.repo, args.version, args.published_version)
     except (ValueError, OSError) as error:
         print(f"ERROR: {error}", file=sys.stderr)
         return 1

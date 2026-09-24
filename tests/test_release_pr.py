@@ -96,6 +96,40 @@ class ReleasePRTest(unittest.TestCase):
         self.write_document(path, document)
         self.assertIn("ordinary PR", self.check("fix: clarify the plugin"))
 
+    def add_withdrawn_record(self) -> None:
+        target = self.root / policy.WITHDRAWN_VERSIONS_FILE
+        shutil.copyfile(REPO / policy.WITHDRAWN_VERSIONS_FILE, target)
+
+    def test_withdrawn_version_ledger_is_valid_on_ordinary_pr(self) -> None:
+        self.add_withdrawn_record()
+        self.assertIn("ordinary PR", self.check("chore: record withdrawn release"))
+
+    def test_invalid_withdrawn_version_ledger_fails_ordinary_pr(self) -> None:
+        self.add_withdrawn_record()
+        target = self.root / policy.WITHDRAWN_VERSIONS_FILE
+        record = json.loads(target.read_text())
+        record["withdrawn_versions"]["1.2.8"]["merge_commit"] = "not-a-sha"
+        target.write_text(json.dumps(record))
+        with self.assertRaisesRegex(ValueError, "Invalid withdrawn-version commit"):
+            self.check("chore: record withdrawn release")
+
+    def test_replacement_release_compares_from_last_published_version(self) -> None:
+        self.set_version("1.2.8")
+        self.add_withdrawn_record()
+        self.base = self.commit()
+        self.set_version("1.2.9")
+        path = self.root / policy.release_log_path("1.2.9")
+        path.write_text(path.read_text().replace("v1.2.8...v1.2.9", "v1.2.7...v1.2.9"))
+        self.assertIn("release 1.2.8 -> 1.2.9", self.check("chore: release v1.2.9"))
+
+    def test_replacement_release_rejects_wrong_comparison(self) -> None:
+        self.set_version("1.2.8")
+        self.add_withdrawn_record()
+        self.base = self.commit()
+        self.set_version("1.2.9")
+        with self.assertRaisesRegex(ValueError, "comparison version 1.2.7"):
+            self.check("chore: release v1.2.9")
+
     def use_mcp_identity(self, name: str) -> None:
         path = "plugins/aip/.mcp.json"
         document = self.document(path)
@@ -465,7 +499,7 @@ class ReleaseLogTest(unittest.TestCase):
                 policy.validate_release_log(self.log().replace(self.footer, footer), "0.8.34")
 
     def test_comparison_must_start_at_pr_base_version(self) -> None:
-        with self.assertRaisesRegex(ValueError, "start from base version"):
+        with self.assertRaisesRegex(ValueError, "start from comparison version"):
             policy.validate_release_log(self.log(), "0.8.34", previous_version="0.8.32")
 
 

@@ -37,9 +37,19 @@ class PrepareReleaseTest(unittest.TestCase):
     def files(self) -> dict:
         return {str(path.relative_to(self.root)): path.read_bytes() for path in self.root.rglob("*") if path.is_file()}
 
+    def set_version(self, version: str) -> None:
+        for path in VERSION_FIELDS:
+            document = json.loads((self.root / path).read_text())
+            for field in version_fields_for(path, document):
+                parent = document
+                for key in field[:-1]:
+                    parent = parent[key]
+                parent[field[-1]] = version
+            (self.root / path).write_text(json.dumps(document, indent=2) + "\n")
+
     def test_aligns_every_version_and_preserves_other_fields(self) -> None:
         before = self.documents()
-        log = prepare_release.prepare_release(self.root, self.target)
+        log = prepare_release.prepare_release(self.root, self.target, self.current)
         after = self.documents()
         self.assertEqual(version_from_documents(after), self.target)
         self.assertEqual(json.loads((self.root / LATEST_VERSION_FILE).read_text()), {"version": self.target})
@@ -69,7 +79,7 @@ class PrepareReleaseTest(unittest.TestCase):
                 for relative in VERSION_FIELDS:
                     if relative != "plugins/aip/.mcp.json":
                         shutil.copyfile(REPO / relative, self.root / relative)
-                log = prepare_release.prepare_release(self.root, self.target)
+                log = prepare_release.prepare_release(self.root, self.target, self.current)
                 self.assertEqual(set(json.loads(path.read_text())["mcpServers"]), {name})
                 self.assertEqual(version_from_documents(self.documents()), self.target)
                 log.unlink()
@@ -78,7 +88,7 @@ class PrepareReleaseTest(unittest.TestCase):
         original = self.files()
         for version in (self.current, "0.0.0", "v2.0.0", "02.0.0", "2.0.0-01"):
             with self.subTest(version=version), self.assertRaises(ValueError):
-                prepare_release.prepare_release(self.root, version)
+                prepare_release.prepare_release(self.root, version, self.current)
             self.assertEqual(self.files(), original)
 
     def test_mismatched_copies_leave_files_untouched(self) -> None:
@@ -86,21 +96,21 @@ class PrepareReleaseTest(unittest.TestCase):
         path.write_text('{"version":"0.0.1"}\n')
         original = self.files()
         with self.assertRaisesRegex(ValueError, "six version fields must match"):
-            prepare_release.prepare_release(self.root, self.target)
+            prepare_release.prepare_release(self.root, self.target, self.current)
         self.assertEqual(self.files(), original)
 
     def test_existing_log_is_not_overwritten(self) -> None:
         (self.root / release_log_path(self.target)).write_text("Existing notes.\n")
         original = self.files()
         with self.assertRaisesRegex(ValueError, "already exists"):
-            prepare_release.prepare_release(self.root, self.target)
+            prepare_release.prepare_release(self.root, self.target, self.current)
         self.assertEqual(self.files(), original)
 
     def test_missing_template_leaves_versions_untouched(self) -> None:
         (self.root / RELEASE_TEMPLATE).unlink()
         original = self.files()
         with self.assertRaises(OSError):
-            prepare_release.prepare_release(self.root, self.target)
+            prepare_release.prepare_release(self.root, self.target, self.current)
         self.assertEqual(self.files(), original)
 
     def test_invalid_template_leaves_versions_untouched(self) -> None:
@@ -111,7 +121,7 @@ class PrepareReleaseTest(unittest.TestCase):
                 path.write_text(contents)
                 original = self.files()
                 with self.assertRaises(ValueError):
-                    prepare_release.prepare_release(self.root, self.target)
+                    prepare_release.prepare_release(self.root, self.target, self.current)
                 self.assertEqual(self.files(), original)
 
     def test_template_can_omit_all_optional_sections(self) -> None:
@@ -120,7 +130,7 @@ class PrepareReleaseTest(unittest.TestCase):
             "**Full Changelog**: [v{{previous_version}}...v{{version}}]"
             "(https://github.com/opus-pro/ai-producer-plugin/compare/v{{previous_version}}...v{{version}})\n"
         )
-        log = prepare_release.prepare_release(self.root, self.target)
+        log = prepare_release.prepare_release(self.root, self.target, self.current)
         validate_release_log(log.read_text(), self.target, previous_version=self.current)
         self.assertNotIn("{{", log.read_text())
 
@@ -129,17 +139,38 @@ class PrepareReleaseTest(unittest.TestCase):
         path.chmod(0o755)
         original = self.files()
         with self.assertRaisesRegex(ValueError, "regular and non-executable"):
-            prepare_release.prepare_release(self.root, self.target)
+            prepare_release.prepare_release(self.root, self.target, self.current)
         self.assertEqual(self.files(), original)
 
     def test_cli_accepts_an_explicit_repository(self) -> None:
         result = subprocess.run(
-            [sys.executable, str(REPO / "scripts/prepare_release.py"), self.target, "--repo", str(self.root)],
+            [sys.executable, str(REPO / "scripts/prepare_release.py"), self.target,
+             "--published-version", self.current, "--repo", str(self.root)],
             cwd=self.root, capture_output=True, text=True,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn(f"chore: release v{self.target}", result.stdout)
         self.assertEqual(version_from_documents(self.documents()), self.target)
+
+    def test_withdrawn_version_uses_last_published_comparison(self) -> None:
+        shutil.copyfile(REPO / "releases/withdrawn_versions.json", self.root / "releases/withdrawn_versions.json")
+        self.set_version("1.2.8")
+        log = prepare_release.prepare_release(self.root, "1.2.9", "1.2.7")
+        self.assertIn("[v1.2.7...v1.2.9]", log.read_text())
+
+    def test_wrong_published_version_does_not_modify_files(self) -> None:
+        original = self.files()
+        with self.assertRaisesRegex(ValueError, "does not match required comparison base"):
+            prepare_release.prepare_release(self.root, self.target, "1.2.7")
+        self.assertEqual(self.files(), original)
+
+    def test_withdrawn_version_requires_designated_replacement(self) -> None:
+        shutil.copyfile(REPO / "releases/withdrawn_versions.json", self.root / "releases/withdrawn_versions.json")
+        self.set_version("1.2.8")
+        original = self.files()
+        with self.assertRaisesRegex(ValueError, "must be replaced by 1.2.9"):
+            prepare_release.prepare_release(self.root, "1.2.10", "1.2.7")
+        self.assertEqual(self.files(), original)
 
 
 if __name__ == "__main__":

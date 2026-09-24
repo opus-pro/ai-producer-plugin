@@ -1,0 +1,11 @@
+{
+  "withdrawn_versions": {
+    "1.2.8": {
+      "last_published": "1.2.7",
+      "replacement": "1.2.9",
+      "reason": "deleted_immutable_release",
+      "release_pr": 90,
+      "merge_commit": "e328a1653f2f1764efcb54a51e7c9c203271959c"
+    }
+  }
+}
