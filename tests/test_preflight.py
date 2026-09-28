@@ -158,5 +158,73 @@ class PreflightTests(unittest.TestCase):
         self.assertIn("missing_or_invalid_root", self.codes(preflight.check(self.root)))
 
 
+class StylesheetSyntaxTests(unittest.TestCase):
+    """The export compiles every stylesheet with a strict parser; a browser previews the same
+    malformed CSS without complaint. Each case is a shape that previews and fails to export."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        (self.root / "compositions").mkdir()
+        (self.root / "index.html").write_text(ROOT.format(HOST))
+
+    def css_errors(self, css):
+        style = '<template><div data-composition-id="beat"><style>\n{}\n</style></div></template>'
+        (self.root / "compositions/beat.html").write_text(style.format(css))
+        report = preflight.check(self.root)
+        return [item["detail"] for item in report["errors"] if item["code"] == "css_syntax_error"]
+
+    def test_a_stray_closing_brace_is_located_in_the_file(self):
+        self.assertEqual(self.css_errors(".beat{color:red}}"), ["line 2, column 17: Unexpected }"])
+
+    def test_a_missing_semicolon_points_at_the_next_property(self):
+        errors = self.css_errors(".card{max-width:50%padding:24px}")
+        self.assertEqual(errors, ["line 2, column 20: Missed semicolon"])
+
+    def test_a_rule_cut_off_after_its_selector_is_refused(self):
+        self.assertEqual(self.css_errors(".a{color:red}.page "), ["line 2, column 14: Unknown word"])
+
+    def test_unclosed_structures_are_refused(self):
+        for css, reason in (
+            (".a{color:red", "Unclosed block"),
+            ('.a::after{content:"x}', "Unclosed string"),
+            (".a{color:red}/* note", "Unclosed comment"),
+            (".a{width:calc(1px + 2px}", "Unclosed bracket"),
+            (".a{color red:blue}", "Unknown word"),
+        ):
+            with self.subTest(css=css):
+                errors = self.css_errors(css)
+                self.assertEqual(len(errors), 1)
+                self.assertTrue(errors[0].endswith(reason), errors)
+
+    def test_css_the_parser_accepts_is_not_reported(self):
+        accepted = "\n".join((
+            "@import url(theme.css);",
+            ":root{--gap:a:b;--block:{inner:value}}",
+            ".a{background:url(data:image/png;base64,AA:BB);filter:progid:DX.Gradient(x=1)}",
+            '.b::after{content:"a:b;}{";}',
+            ".md\\:flex{display:flex}",
+            "@media (min-width:600px){.c{margin:0}}",
+            ".d{&:hover{color:red}}",
+            ".e{/* } */color:red;;}",
+            "@keyframes rise{0%{opacity:0}100%{opacity:1}}",
+            ".f{: color:red}",
+        ))
+        self.assertEqual(self.css_errors(accepted), [])
+
+    def test_a_stylesheet_file_is_checked_too(self):
+        (self.root / "compositions/beat.html").write_text(CHILD.format(""))
+        (self.root / "styles").mkdir()
+        (self.root / "styles/theme.css").write_text(".a{color:red}\n.b{color:blue}}\n")
+        report = preflight.check(self.root)
+        self.assertIn({"code": "css_syntax_error", "file": "styles/theme.css",
+                       "detail": "line 2, column 15: Unexpected }"}, report["errors"])
+
+    def test_an_inline_style_attribute_is_not_a_stylesheet(self):
+        (self.root / "compositions/beat.html").write_text(CHILD.format('<div style="color:red; }"></div>'))
+        self.assertTrue(preflight.check(self.root)["ok"])
+
+
 if __name__ == "__main__":
     unittest.main()

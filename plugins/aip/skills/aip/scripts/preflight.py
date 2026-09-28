@@ -8,6 +8,7 @@ import math
 from pathlib import Path
 import re
 from urllib.parse import unquote, urlsplit
+from css_syntax import first_error, position
 from editing_script_sync import EDITING_SCRIPT, sync_workspace, validate_workspace
 
 CSS_URL = re.compile(r"url\(\s*(['\"]?)(.*?)\1\s*\)", re.I)
@@ -29,6 +30,8 @@ class Document(HTMLParser):
         super().__init__()
         self.elements = []
         self.styles = []
+        # Each <style> element's text with the file (line, column) where that text begins.
+        self.sheets = []
         self.in_style = False
         self.template_depth = 0
 
@@ -41,6 +44,7 @@ class Document(HTMLParser):
             self.styles.append(values["style"] or "")
         if tag == "style":
             self.in_style = True
+            self.sheets.append(["", None])
 
     def handle_startendtag(self, tag, attrs):
         self.handle_starttag(tag, attrs)
@@ -55,6 +59,11 @@ class Document(HTMLParser):
     def handle_data(self, data):
         if self.in_style:
             self.styles.append(data)
+            sheet = self.sheets[-1]
+            if sheet[1] is None:
+                line, column = self.getpos()
+                sheet[1] = (line, column + 1)
+            sheet[0] += data
 
 
 def check(root, remote_files=()):
@@ -63,14 +72,27 @@ def check(root, remote_files=()):
     documents = {}
     declared = set()
 
-    def issue(collection, code, path=None, attribute=None):
+    def issue(collection, code, path=None, attribute=None, detail=None):
         item = {"code": code}
         if path is not None:
             item["file"] = path.relative_to(root).as_posix()
         if attribute:
             item["attribute"] = attribute
+        if detail:
+            item["detail"] = detail
         if item not in collection:
             collection.append(item)
+
+    def stylesheet(css, path, start=(1, 1)):
+        """Report the first error the export's strict CSS parser refuses, at its file line and
+        column: a browser drops malformed CSS and previews normally, but the export fails."""
+        error = first_error(css)
+        if error is None:
+            return
+        line, column = position(css, error[0])
+        if line == 1:
+            column += start[1] - 1
+        issue(errors, "css_syntax_error", path, detail=f"line {start[0] + line - 1}, column {column}: {error[1]}")
 
     for name in remote_files:
         if name.startswith("render-engine/"):
@@ -120,6 +142,7 @@ def check(root, remote_files=()):
             issue(errors, "unreadable_text", path)
             continue
         if suffix == ".css":
+            stylesheet(source, path)
             for match in CSS_URL.finditer(source):
                 reference(match[2], path, "css-url", base=path.parent)
             continue
@@ -142,6 +165,9 @@ def check(root, remote_files=()):
                     issue(errors, "invalid_timing", path, key)
             if tag == "video" and (path != root / "index.html" or depth):
                 issue(warnings, "nested_video_requires_player_validation", path)
+        for css, start in doc.sheets:
+            if start is not None:
+                stylesheet(css, path, start)
         for style in doc.styles:
             for match in CSS_URL.finditer(style):
                 reference(match[2], path, "css-url")
