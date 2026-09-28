@@ -129,8 +129,8 @@ Fine-cut the video like a high-performing social media creator: deep-fried, brai
 ### Editing
 
 - Open on massive extra-bold text behind the presenter, 80-90% of frame width, **partially occluded** but readable. Never shrink, shift, or split-screen the presenter to fit the text.
-- Presenter close-ups and punch-ins for emphasis. Minimum zoom 1.3x.
-- Sarcasm, self-deprecation, or a quick aside: monochrome presenter close-up for at most one sentence, then restore color.
+- Presenter close-ups and punch-ins for emphasis, each a zoom effect host. Minimum zoom 1.3x.
+- Sarcasm, self-deprecation, or a quick aside: monochrome presenter close-up for at most one sentence, then restore color: a `grayscale(1)` filter effect host with a zoom effect host over the same words.
 - Show the specific change the speaker describes; demonstrate with real footage or assets when available.
 - Design supporting visuals as **Overlay** first, around the measured head and caption band.
 - Simplify, remove secondary elements, or reveal steps sequentially before changing layout. Never choose a larger layout just to fit an oversized first design.

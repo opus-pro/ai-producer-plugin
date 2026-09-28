@@ -231,5 +231,77 @@ class CodeDrawnTests(unittest.TestCase):
         self.assertEqual((errors, warnings), (set(), {"code_drawn_nondeterministic"}))
 
 
+SPEAKER = ('<video id="speaker" class="clip speaker-clip" src="public/source.mp4" data-start="0" data-duration="4" '
+           'data-media-start="10" data-track-index="0"></video>'
+           '<video id="speaker-2" class="clip speaker-clip" src="public/source.mp4" data-start="4" data-duration="4" '
+           'data-media-start="20" data-track-index="0"></video>')
+ENGINE = '<script src="public/vendor/speaker-effects.js"></script>'
+
+
+def zoom_host(**overrides):
+    attrs = {"class": "visual-host clip", "data-composition-id": "zoom-1", "data-aip-effect": "zoom",
+             "data-no-timeline": "", "data-start": "5", "data-duration": "2", "data-src-anchor": "21",
+             "data-track-index": "20", "data-hide-captions": "false", "data-effect-scale": "1.2",
+             "data-effect-origin": "50% 40%", "data-effect-in": "0.3", "data-effect-out": "0.4"}
+    attrs.update(overrides)
+    text = " ".join(f'{name}="{value}"' for name, value in attrs.items() if value is not None)
+    return f"<div {text}></div>"
+
+
+def filter_host(**overrides):
+    attrs = {"class": "visual-host clip", "data-composition-id": "filter-1", "data-aip-effect": "filter",
+             "data-no-timeline": "", "data-start": "1", "data-duration": "2", "data-src-anchor": "11",
+             "data-track-index": "21", "data-hide-captions": "false", "data-effect-filter": "grayscale(1)"}
+    attrs.update(overrides)
+    text = " ".join(f'{name}="{value}"' for name, value in attrs.items() if value is not None)
+    return f"<div {text}></div>"
+
+
+class SpeakerEffectTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        for name in ("public/source.mp4",):
+            (self.root / name).parent.mkdir(parents=True, exist_ok=True)
+            (self.root / name).write_text("")
+
+    def codes(self, *hosts, engine=ENGINE):
+        (self.root / "index.html").write_text(ROOT.format(SPEAKER + "".join(hosts)) + engine)
+        return {item["code"] for item in preflight.check(self.root)["errors"]}
+
+    def test_valid_zoom_and_filter_hosts_need_no_uploaded_engine(self):
+        self.assertEqual(self.codes(zoom_host(), filter_host()), set())
+
+    def test_the_engine_must_be_loaded(self):
+        self.assertEqual(self.codes(zoom_host(), engine=""), {"speaker_effect_engine_missing"})
+
+    def test_host_contract(self):
+        self.assertEqual(self.codes(zoom_host(**{"data-composition-src": "compositions/zoom.html"})) - {
+            "missing_local_reference", "composition_not_locally_inspectable"}, {"speaker_effect_has_composition"})
+        self.assertEqual(self.codes(zoom_host(**{"data-hide-captions": None})), {"speaker_effect_hides_captions"})
+        self.assertEqual(self.codes(zoom_host(**{"data-no-timeline": None})), {"speaker_effect_waits_for_timeline"})
+        self.assertEqual(self.codes(zoom_host(**{"data-track-index": "3"})), {"speaker_effect_track"})
+        self.assertEqual(self.codes(zoom_host(**{"data-aip-effect": "blur"})), {"invalid_speaker_effect"})
+
+    def test_values(self):
+        self.assertEqual(self.codes(zoom_host(**{"data-effect-scale": "1"})), {"invalid_speaker_effect_scale"})
+        self.assertEqual(self.codes(zoom_host(**{"data-effect-origin": "center"})), {"invalid_speaker_effect_origin"})
+        self.assertEqual(self.codes(zoom_host(**{"data-effect-in": "-1"})), {"invalid_speaker_effect_ramp"})
+        self.assertEqual(self.codes(zoom_host(**{"data-effect-in": "1.8"})), {"speaker_effect_ramps_exceed_window"})
+        self.assertEqual(self.codes(filter_host(**{"data-effect-filter": "url(#x)"})), {"invalid_speaker_effect_filter"})
+
+    def test_the_anchor_is_the_source_second_at_the_start(self):
+        self.assertEqual(self.codes(zoom_host(**{"data-src-anchor": None})), {"speaker_effect_anchor_missing"})
+        # Output 5 s plays source 21 s (second clip: 20 + (5 - 4)); 15 s is the uncut position.
+        self.assertEqual(self.codes(zoom_host(**{"data-src-anchor": "15"})), {"speaker_effect_anchor_mismatch"})
+
+    def test_one_kind_does_not_overlap_itself(self):
+        second = zoom_host(**{"data-composition-id": "zoom-2", "data-start": "6", "data-src-anchor": "22"})
+        self.assertEqual(self.codes(zoom_host(), second), {"speaker_effect_overlap"})
+        overlapping_filter = filter_host(**{"data-start": "5", "data-src-anchor": "21"})
+        self.assertEqual(self.codes(zoom_host(), overlapping_filter), set())
+
+
 if __name__ == "__main__":
     unittest.main()

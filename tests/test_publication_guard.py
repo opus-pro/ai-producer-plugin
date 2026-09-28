@@ -85,6 +85,15 @@ class PublicationGuardTests(unittest.TestCase):
         snapshot = guard.validate_progress(baseline, baseline, index(effects=[effect(1)], caption=caption), 59.85)
         self.assertEqual(set(snapshot["effects"]), {"effect-1"})
 
+    def test_speaker_effect_hosts_ride_any_publication_without_counting(self):
+        baseline = index()
+        zoom = ('<div class="visual-host clip" data-composition-id="zoom-1" data-aip-effect="zoom" data-no-timeline '
+                'data-start="2" data-duration="1" data-track-index="20" data-hide-captions="false" '
+                'data-effect-scale="1.1" data-src-anchor="2"></div>')
+        self.assert_code("invalid_effect_transition", baseline, baseline, index(caption=zoom), 59.85)
+        snapshot = guard.validate_progress(baseline, baseline, index(effects=[effect(1)], caption=zoom), 59.85)
+        self.assertEqual(set(snapshot["effects"]), {"effect-1"})
+
     def test_requires_complete_paired_audio_video_coverage(self):
         baseline = index(clips=speaker(0, 20, 0))
         self.assert_code("incomplete_speaker_coverage", baseline, baseline, index(effects=[effect(1)]), 20)

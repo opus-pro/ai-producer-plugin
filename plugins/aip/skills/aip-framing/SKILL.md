@@ -22,7 +22,7 @@ Apply the user's brief and the [AI Producer text rules](../aip/SKILL.md#on-scree
 
 | register | what it is |
 | --- | --- |
-| `speaker` | the root speaker at full frame, optionally with a zoom that stays on the root timeline |
+| `speaker` | the root speaker at full frame, optionally with a zoom or filter effect host |
 | `seat` | the speaker moved into a declared shape at a declared position on an opaque ground, with the payload drawn in the band the seat leaves; forms and positions in its chapter |
 | `overlay` | the footage stays full-bleed and sharp, and one payload group at a time rides it in the area the measured head leaves clear |
 | `full-cover` | the canvas owns the frame: one opaque ground across the whole page carries the payload, and the speaker is covered but still heard |
@@ -38,7 +38,7 @@ A video asset the speech puts on screen is seated in one of two layouts. Both ar
 
 ## The three layouts
 
-Seat, overlay, and full cover are written the same way below: what it is, its forms, where each canvas lets it sit, what it keeps, and how it is built. A `speaker` beat needs none of this: it is the root speaker at full frame, and its zoom stays on the root timeline.
+Seat, overlay, and full cover are written the same way below: what it is, its forms, where each canvas lets it sit, what it keeps, and how it is built. A `speaker` beat needs none of this: it is the root speaker at full frame, and a zoom or filter on it is an effect host.
 
 ## Seat
 
@@ -125,7 +125,7 @@ The head, the payload, and the band avoid one another. The footage stays full-bl
 ### What an overlay keeps
 
 - **The overlay rides sharp footage.** The composition never pauses, scales, or reframes the source under an overlay.
-- **The head stays clear.** Name the overlay's window in the `frame_speaker` call with the canvas as its `slot`, and keep every text, plate, and image outside the returned `head_in_slot`; a thin connector line may reach past it toward what it points at. On a reframed canvas the box holds while the root clip carries the same result's `object_position`. The box describes the unzoomed frame: when a root zoom runs during the overlay's window, clear the box as it stands at the zoom's largest scale in that window, each edge pushed away from the zoom's origin by that scale, or end the zoom before the overlay starts.
+- **The head stays clear.** Name the overlay's window in the `frame_speaker` call with the canvas as its `slot`, and keep every text, plate, and image outside the returned `head_in_slot`; a thin connector line may reach past it toward what it points at. On a reframed canvas the box holds while the root clip carries the same result's `object_position`. The box describes the unzoomed frame: when a zoom effect runs during the overlay's window, clear the box as it stands at the zoom's largest scale in that window, each edge pushed away from the zoom's origin by that scale, or end the zoom before the overlay starts.
 - **Payloads take turns.** An overlay holds one payload group at a time; the next arrives only as the previous yields.
 
 ### How an overlay is built
@@ -172,14 +172,14 @@ Settle the band first, then compose the payload in the space it leaves: the anim
 
 - **One ground, wholly owned.** The composition paints one opaque ground across the whole canvas, and everything sits on it. An image is staged on the ground as content, never stretched into the ground itself.
 - **Nobody is seated.** No `data-pip-src` view, no window onto the speaker, and no copy of the source. The cutout is the one exception, and it is a seat form with its own [reference](references/cutout.md).
-- **The speaker underneath does not move.** The root speaker keeps its geometry for the whole cover; a root zoom is released before the cover starts.
+- **The speaker underneath does not move.** The root speaker keeps its geometry for the whole cover; a zoom effect ends before the cover starts.
 
 ### How a full cover is built
 
 - A full cover is an ordinary visual moment whose composition root paints the opaque ground (`position: absolute; inset: 0` with a solid `background`), with the payload's entrance and exit on the moment's own paused child timeline. The composition contract's [editable speaker PIP](../aip-composition/references/pip-transition.md) example minus its speaker view is a full cover.
-- It embeds no speaker view. The root speaker and its audio keep playing underneath at their ordinary geometry; release a root zoom before the full cover starts.
+- It embeds no speaker view. The root speaker and its audio keep playing underneath at their ordinary geometry; end a zoom effect before the full cover starts.
 - Declare the window's caption policy on the host and pass it to the caption call as a caption window; a `statement`, or a payload whose relevant detail must occupy the band, goes to `hide_intervals` instead. Reference every image through `src` so the hand-back check sees it.
 
 ## The speaker beat
 
-- Root zooms on a `speaker` beat that is not owned by a visual moment may remain root tweens on every active track-0 speaker clip (`#stage > video[data-track-index="0"]`). Release that camera treatment before the next seated moment; a root zoom never lands inside a seat.
+- A zoom or filter on a `speaker` beat is an effect host (see the [composition contract](../aip-composition/SKILL.md)); the service's engine applies it to every active track-0 speaker clip (`#stage > video[data-track-index="0"]`). End it before the next seated moment; an effect never lands inside a seat.
