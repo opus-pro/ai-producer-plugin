@@ -216,6 +216,16 @@ class CodeDrawnTests(unittest.TestCase):
         errors, warnings = self.result(THREE.replace("if (!window.THREE) return; ", ""))
         self.assertEqual((errors, warnings), (set(), {"three_used_before_load"}))
 
+    def test_every_script_type_a_browser_runs_is_judged(self):
+        body = CANVAS_2D.replace(TICK, "requestAnimationFrame(draw);").replace(
+            "<script>", '<script type="text/javascript; charset=utf-8">', 1)
+        self.assertEqual(self.result(body)[0], {"code_drawn_clock"})
+
+    def test_an_unguarded_alias_of_window_three_is_a_warning(self):
+        body = THREE.replace("if (!window.THREE) return; R = new THREE", "R = new T").replace(
+            "let R = null;", "let R = null; const T = window.THREE;")
+        self.assertEqual(self.result(body), (set(), {"three_used_before_load"}))
+
     def test_randomness_in_a_canvas_is_a_warning(self):
         errors, warnings = self.result(CANVAS_2D.replace("t * 50", "Math.random() * 50"))
         self.assertEqual((errors, warnings), (set(), {"code_drawn_nondeterministic"}))

@@ -40,8 +40,17 @@ CLOCK = re.compile(r"\b(?:requestAnimationFrame|setAnimationLoop|setTimeout|setI
 NONDETERMINISTIC = re.compile(
     r"\bMath\s*\.\s*random\b|\bDate\s*\.\s*now\b|\bnew\s+Date\b|\bperformance\s*\.\s*now\b")
 THREE_SRC = re.compile(r"(?:^|/)three(?:\.min)?\.js$")
-THREE_GUARD = re.compile(r"\bwindow\s*\.\s*THREE\b|\btypeof\s+THREE\b")
-EXECUTABLE_SCRIPT_TYPES = {"", "text/javascript", "application/javascript", "module"}
+# A read of the global that tests it; a bare `const T = window.THREE` at the top level does not.
+THREE_GUARD = re.compile(
+    r"!\s*window\s*\.\s*THREE\b|\bif\s*\(\s*window\s*\.\s*THREE\b"
+    r"|\bwindow\s*\.\s*THREE\s*(?:&&|\|\||\?(?!\.)|[!=]==?)|\btypeof\s+(?:window\s*\.\s*)?THREE\b")
+# The `type` values a browser runs as JavaScript, compared without MIME parameters.
+EXECUTABLE_SCRIPT_TYPES = {
+    "", "module", "application/ecmascript", "application/javascript", "application/x-ecmascript",
+    "application/x-javascript", "text/ecmascript", "text/javascript", "text/javascript1.0",
+    "text/javascript1.1", "text/javascript1.2", "text/javascript1.3", "text/javascript1.4",
+    "text/javascript1.5", "text/jscript", "text/livescript", "text/x-ecmascript", "text/x-javascript",
+}
 
 
 class Document(HTMLParser):
@@ -64,7 +73,8 @@ class Document(HTMLParser):
         if tag == "style":
             self.in_style = True
         if tag == "script" and "src" not in values:
-            self.in_script = (values.get("type") or "").strip().lower() in EXECUTABLE_SCRIPT_TYPES
+            declared = (values.get("type") or "").split(";", 1)[0].strip().lower()
+            self.in_script = declared in EXECUTABLE_SCRIPT_TYPES
 
     def handle_startendtag(self, tag, attrs):
         self.handle_starttag(tag, attrs)
