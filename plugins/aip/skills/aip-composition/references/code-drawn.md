@@ -138,26 +138,29 @@ The local [preflight](../../aip/scripts/preflight.py) reports the same codes bef
       if (ext) ext.loseContext();
       fresh();
     }
-    function onScreen(t) {
-      if (t > 0.0001 && t < DUR - 0.0001) return true;
-      // Local 0 is both "before the window" and its first frame, where a click on the
-      // moment lands; only the root clock tells them apart.
-      const host = root.closest(".visual-host");
-      const rootTl = window.__timelines && window.__timelines["finecut-root"];
-      if (t > 0.0001 || !host || !rootTl) return false;
-      return rootTl.time() >= parseFloat(host.getAttribute("data-start")) - 0.01;
-    }
     function draw(t) {
-      if (!onScreen(t)) {
+      if (t <= 0.0001 || t >= DUR - 0.0001) {
         release();
         return;
       }
+      paint(t);
+    }
+    function paint(t) {
       if (gl && gl.isContextLost()) fresh();
       if (!gl && !init()) return;
       gl.viewport(0, 0, 1080, 1920);
       gl.uniform1f(uT, t);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
+    // Local 0 is both "before the window" and the window's first frame. The editor and the
+    // export announce the global time after every seek, which tells the two apart.
+    document.defaultView.addEventListener("hf-seek", function (e) {
+      const host = root.closest(".visual-host");
+      const at = e.detail && e.detail.time;
+      if (!host || !host.isConnected || typeof at !== "number") return;
+      const start = parseFloat(host.getAttribute("data-start"));
+      if (at >= start - 0.01 && at <= start + 0.0001) paint(0);
+    });
     const st = { t: 0 };
     tl.to(
       st,
@@ -231,26 +234,29 @@ The template, style and canvas are as in the Canvas 2D example. Name GLSL identi
       cv = next;
       R = null;
     }
-    function onScreen(t) {
-      if (t > 0.0001 && t < DUR - 0.0001) return true;
-      // Local 0 is both "before the window" and its first frame, where a click on the
-      // moment lands; only the root clock tells them apart.
-      const host = root.closest(".visual-host");
-      const rootTl = window.__timelines && window.__timelines["finecut-root"];
-      if (t > 0.0001 || !host || !rootTl) return false;
-      return rootTl.time() >= parseFloat(host.getAttribute("data-start")) - 0.01;
-    }
     function draw(t) {
       lastT = t;
-      if (!onScreen(t)) {
+      if (t <= 0.0001 || t >= DUR - 0.0001) {
         release();
         return;
       }
+      paint(t);
+    }
+    function paint(t) {
       if (R && R.getContext().isContextLost()) release();
       if (!R && !init()) return;
       mesh.rotation.y = t * 0.6;
       R.render(scene, cam);
     }
+    // Local 0 is both "before the window" and the window's first frame. The editor and the
+    // export announce the global time after every seek, which tells the two apart.
+    document.defaultView.addEventListener("hf-seek", function (e) {
+      const host = root.closest(".visual-host");
+      const at = e.detail && e.detail.time;
+      if (!host || !host.isConnected || typeof at !== "number") return;
+      const start = parseFloat(host.getAttribute("data-start"));
+      if (at >= start - 0.01 && at <= start + 0.0001) paint(0);
+    });
     const tag =
       root.querySelector('script[src$="three.min.js"]') ||
       document.querySelector('script[src$="three.min.js"]');
@@ -281,4 +287,4 @@ The template, style and canvas are as in the Canvas 2D example. Name GLSL identi
 
 ## First frame
 
-`onScreen(t)` is how a WebGL skeleton decides whether to hold a context. Inside the window the local time decides alone. At local `t = 0` it cannot: the editor seeks a moment to 0 both while the playhead is before the window and when the playhead sits on the window's first frame, which is where clicking the moment on the timeline lands. So at 0 the skeleton compares the root timeline's time with the host's live `data-start`, read at draw time because the user can move the host. The editor seeks the root timeline before the compositions, so the root time is current there; where it is not, the first frame is skipped and nothing else changes. `root.closest(".visual-host")` finds the host in both the editor and the export mount, whichever element carries the composition id there.
+At local `t = 0` a moment's timeline cannot tell "the playhead is before this window" from "the playhead is on this window's first frame": the editor seeks every composition to 0 in both cases, and the first case is the one that must release the context. So `draw` treats 0 as outside, and the `hf-seek` listener repaints frame 0 when the global time the editor and the export announce after every seek lands on the host's live `data-start`, read at that moment because the user can move the host. The root timeline's own time is not that clock: it stops at the end of its last tween, which is usually long before the end of the video. Register the listener on `document.defaultView`, not `window`: the export's script check runs a composition with `window` standing in for a proxy, a DOM method called on it throws `Illegal invocation`, and the export then drops the moment. `root.closest(".visual-host")` finds the host in both the editor and the export mount, and a host that is no longer connected, left behind when the editor remounts a composition, is ignored.
