@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 from urllib.parse import unquote, urlsplit
 from editing_script_sync import EDITING_SCRIPT, sync_workspace, validate_workspace
+import speaker_effects
 
 CSS_URL = re.compile(r"url\(\s*(['\"]?)(.*?)\1\s*\)", re.I)
 
@@ -25,7 +26,7 @@ PROMOTABLE_SUFFIXES = {
 
 # Files the service writes in the same commit that first names them, so a document may load
 # one before it exists locally or in the workspace.
-SERVICE_WRITTEN = ("public/vendor/three.min.js",)
+SERVICE_WRITTEN = ("public/vendor/three.min.js", speaker_effects.ENGINE)
 
 # The commit's code-drawn rules, judged on a document whose script paints a canvas; the
 # composition skill's code-drawn reference explains each code. Comments never count, and
@@ -215,6 +216,9 @@ def check(root, remote_files=()):
         if attrs.get("id") == "stage" and depth == 0]
     if len(stages) != 1 or stages[0].get("data-composition-id") != "finecut-root":
         issue(errors, "missing_or_invalid_root")
+    if index is not None:
+        for code in speaker_effects.check(index.elements):
+            issue(errors, code, root / "index.html")
     for path, doc in documents.items():
         for _, attrs, _ in doc.elements:
             if "data-composition-src" not in attrs:

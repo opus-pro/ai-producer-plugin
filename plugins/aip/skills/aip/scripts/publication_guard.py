@@ -161,7 +161,9 @@ def inspect_index(html_text):
         identifier = attrs.get("data-composition-id")
         if not identifier:
             _fail("invalid_visual_host")
-        if identifier == "narrator-captions":
+        # A speaker zoom or filter host is not a published moment: it mounts no
+        # composition, rides any publication, and preflight checks its values.
+        if identifier == "narrator-captions" or attrs.get("data-aip-effect") is not None:
             continue
         if identifier in effects:
             _fail("duplicate_effect_id")
