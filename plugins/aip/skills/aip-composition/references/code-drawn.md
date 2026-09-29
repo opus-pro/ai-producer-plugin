@@ -6,6 +6,16 @@ Copyright 2026 HeyGen, Inc. Modifications Copyright 2026 OpusClip. Modified by O
 
 A composition may paint a `<canvas>` from script when a shape, a field or a 3D object explains the beat better than DOM elements can. The canvas is one leaf inside an ordinary composition: the host, the template, the paused timeline and its registration are exactly as in the [composition contract](../SKILL.md). This page covers only what a canvas adds.
 
+## When to use a canvas
+
+DOM elements animated by GSAP are the default, as they are for HyperFrames, where GSAP covers nearly all motion work. A canvas earns its place when the beat needs:
+
+- a 3D scene: an object or space whose depth, rotation or camera move carries the idea;
+- a shader-driven surface: a field, flow, glow or distortion no set of elements can paint;
+- data too dense for DOM: hundreds of points, particles or cells.
+
+Titles, cards, lists, counters, simple charts, callouts and anything the user may want to retype or restyle stay DOM. A canvas costs more to render, fails blank rather than degraded when its lifecycle is wrong, and is one leaf in the editor, so none of what it draws can be selected or edited there.
+
 ## What the service provides
 
 - Canvas 2D and WebGL2 are browser built-ins; write them inline.
