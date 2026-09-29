@@ -24,9 +24,8 @@ PROMOTABLE_SUFFIXES = {
     ".mp3", ".wav", ".m4a", ".ogg",
 }
 
-# Files the service writes by the commit that first names them (Three.js on its first
-# reference, the speaker-effect engine on every commit), so a document may load one before
-# it exists locally or in the workspace.
+# Files the service writes in the same commit that first names them, so a document may load
+# one before it exists locally or in the workspace.
 SERVICE_WRITTEN = ("public/vendor/three.min.js", speaker_effects.ENGINE)
 
 # The commit's code-drawn rules, judged on a document whose script paints a canvas; the
