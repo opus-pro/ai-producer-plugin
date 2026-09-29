@@ -15,6 +15,7 @@ HTML is the video: a composition is an HTML element with `data-*` timing attribu
 
 - The project lives under `render-engine/`: `index.html`, `compositions/*.html`, and assets under `public/`. AI Producer stages `public/source.mp4` (the recording) and `public/source.mp3` (its audio) and puts GSAP at `public/vendor/gsap.min.js`; load GSAP from that path.
 - The accepted files and upload limits are described in the [AI Producer workspace format](../aip/references/workspace.md). Scripts from outside the project are refused, so a composition's logic is inline.
+- A composition may paint a `<canvas>` from script: Canvas 2D, WebGL2, or Three.js, which AI Producer puts at `public/vendor/three.min.js` once a committed document loads it. The editor seeks every mounted composition and holds few WebGL contexts, so a canvas follows the lifecycle in [code-drawn layers](references/code-drawn.md), which the commit enforces.
 - A user's image is staged at `public/images/<name>` and a user's clip at `public/videos/<stem>.mp4`, `<name>` being the filename reduced to ASCII letters, digits, `-`, `_` and `.` (a space becomes `-`, anything else is dropped), because other characters change the URL the browser asks for. The hand-back check confirms every file a composition references through `src` or `href` is in the tree; a file referenced any other way (`data-pip-src`, a CSS `url(...)`) is not seen by it, so stage it in the same upload batch as the composition and confirm it in the listing after the commit.
 
 ## What the editor recognises in index.html
