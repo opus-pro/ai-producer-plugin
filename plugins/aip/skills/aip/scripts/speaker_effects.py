@@ -1,7 +1,7 @@
-"""Offline checks for speaker zoom and filter effect hosts in index.html.
+"""Offline checks for effect hosts (zoom, filter, shake, flash) in index.html.
 
-A speaker zoom or filter is an empty visual host the editor lists and edits and the
-service's engine replays; the aip-composition skill owns the contract. These checks
+An effect is an empty visual host the editor lists and edits and the service's engine
+replays; the aip-composition skill owns the contract. These checks
 mirror what the service accepts, so a host that passes here is one the editor shows.
 """
 
@@ -9,9 +9,12 @@ import math
 import re
 
 ENGINE = "public/vendor/speaker-effects.js"
-TRACKS = {"zoom": "20", "filter": "21"}
+TRACKS = {"zoom": "20", "filter": "21", "shake": "22", "flash": "23"}
 MAX_SCALE = 3.0
 MAX_RAMP = 10.0
+MAX_AMPLITUDE = 60.0
+FREQUENCY_RANGE = (1.0, 30.0)
+COLOR = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 ANCHOR_TOLERANCE = 0.02
 
 _FUNCTION = (
@@ -59,12 +62,45 @@ def _value_codes(kind, attrs, duration):
         if not FILTER.match((attrs.get("data-effect-filter") or "").strip()):
             codes.append("invalid_speaker_effect_filter")
         return codes
+    if kind == "shake":
+        return codes + _shake_codes(attrs)
+    if kind == "flash":
+        return codes + _flash_codes(attrs)
     scale = _number(attrs.get("data-effect-scale"))
     if scale is None or not 1 < scale <= MAX_SCALE:
         codes.append("invalid_speaker_effect_scale")
     origin = attrs.get("data-effect-origin")
     if origin is not None and not ORIGIN.match(origin.strip()):
         codes.append("invalid_speaker_effect_origin")
+    return codes
+
+
+def _optional(attrs, name):
+    """An optional value: absent or blank is None, otherwise its text."""
+    value = attrs.get(name)
+    return None if value is None or str(value).strip() == "" else str(value).strip()
+
+
+def _shake_codes(attrs):
+    codes = []
+    amplitude = _number(attrs.get("data-effect-amplitude"))
+    if amplitude is None or not 0 < amplitude <= MAX_AMPLITUDE:
+        codes.append("invalid_speaker_effect_amplitude")
+    frequency = _optional(attrs, "data-effect-frequency")
+    low, high = FREQUENCY_RANGE
+    if frequency is not None and not low <= (_number(frequency) or -1.0) <= high:
+        codes.append("invalid_speaker_effect_frequency")
+    return codes
+
+
+def _flash_codes(attrs):
+    codes = []
+    color = _optional(attrs, "data-effect-color")
+    if color is not None and not COLOR.match(color):
+        codes.append("invalid_speaker_effect_color")
+    opacity = _optional(attrs, "data-effect-opacity")
+    if opacity is not None and not 0 < (_number(opacity) or 0.0) <= 1:
+        codes.append("invalid_speaker_effect_opacity")
     return codes
 
 

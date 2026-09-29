@@ -303,5 +303,53 @@ class SpeakerEffectTests(unittest.TestCase):
         self.assertEqual(self.codes(zoom_host(), overlapping_filter), set())
 
 
+def shake_host(**overrides):
+    attrs = {"class": "visual-host clip", "data-composition-id": "shake-1", "data-aip-effect": "shake",
+             "data-no-timeline": "", "data-start": "5.5", "data-duration": "0.6", "data-src-anchor": "21.5",
+             "data-track-index": "22", "data-hide-captions": "false", "data-effect-amplitude": "14",
+             "data-effect-frequency": "11", "data-effect-in": "0.04", "data-effect-out": "0.3"}
+    attrs.update(overrides)
+    text = " ".join(f'{name}="{value}"' for name, value in attrs.items() if value is not None)
+    return f"<div {text}></div>"
+
+
+def flash_host(**overrides):
+    attrs = {"class": "visual-host clip", "data-composition-id": "flash-1", "data-aip-effect": "flash",
+             "data-no-timeline": "", "data-start": "6", "data-duration": "0.35", "data-src-anchor": "22",
+             "data-track-index": "23", "data-hide-captions": "false", "data-effect-color": "#ffffff",
+             "data-effect-opacity": "0.9", "data-effect-in": "0.04", "data-effect-out": "0.25"}
+    attrs.update(overrides)
+    text = " ".join(f'{name}="{value}"' for name, value in attrs.items() if value is not None)
+    return f"<div {text}></div>"
+
+
+class ShakeFlashTests(SpeakerEffectTests):
+    def test_valid_shake_and_flash_overlap_a_zoom_and_each_other(self):
+        self.assertEqual(self.codes(zoom_host(), shake_host(), flash_host()), set())
+
+    def test_defaults_need_no_values(self):
+        plain_flash = flash_host(**{"data-effect-color": None, "data-effect-opacity": None})
+        plain_shake = shake_host(**{"data-effect-frequency": None})
+        self.assertEqual(self.codes(plain_flash, plain_shake), set())
+
+    def test_shake_and_flash_values(self):
+        self.assertEqual(self.codes(shake_host(**{"data-effect-amplitude": "0"})),
+                         {"invalid_speaker_effect_amplitude"})
+        self.assertEqual(self.codes(shake_host(**{"data-effect-amplitude": None})),
+                         {"invalid_speaker_effect_amplitude"})
+        self.assertEqual(self.codes(shake_host(**{"data-effect-frequency": "40"})),
+                         {"invalid_speaker_effect_frequency"})
+        self.assertEqual(self.codes(flash_host(**{"data-effect-color": "white"})), {"invalid_speaker_effect_color"})
+        self.assertEqual(self.codes(flash_host(**{"data-effect-opacity": "0"})), {"invalid_speaker_effect_opacity"})
+
+    def test_their_own_tracks(self):
+        self.assertEqual(self.codes(shake_host(**{"data-track-index": "20"})), {"speaker_effect_track"})
+        self.assertEqual(self.codes(flash_host(**{"data-track-index": "22"})), {"speaker_effect_track"})
+
+    def test_two_shakes_do_not_overlap(self):
+        second = shake_host(**{"data-composition-id": "shake-2", "data-start": "5.8", "data-src-anchor": "21.8"})
+        self.assertEqual(self.codes(shake_host(), second), {"speaker_effect_overlap"})
+
+
 if __name__ == "__main__":
     unittest.main()

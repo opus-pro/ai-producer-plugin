@@ -22,7 +22,7 @@ Apply the user's brief and the [AI Producer text rules](../aip/SKILL.md#on-scree
 
 | register | what it is |
 | --- | --- |
-| `speaker` | the root speaker at full frame, optionally with a zoom or filter effect host |
+| `speaker` | the root speaker at full frame, optionally with a zoom, filter or shake effect host |
 | `seat` | the speaker moved into a declared shape at a declared position on an opaque ground, with the payload drawn in the band the seat leaves; forms and positions in its chapter |
 | `overlay` | the footage stays full-bleed and sharp, and one payload group at a time rides it in the area the measured head leaves clear |
 | `full-cover` | the canvas owns the frame: one opaque ground across the whole page carries the payload, and the speaker is covered but still heard |
@@ -182,4 +182,4 @@ Settle the band first, then compose the payload in the space it leaves: the anim
 
 ## The speaker beat
 
-- A zoom or filter on a `speaker` beat is an effect host (see the [composition contract](../aip-composition/SKILL.md)); the service's engine applies it to every active track-0 speaker clip (`#stage > video[data-track-index="0"]`). End it before the next seated moment; an effect never lands inside a seat.
+- A zoom, filter or shake on a `speaker` beat is an effect host (see the [composition contract](../aip-composition/SKILL.md)); the service's engine applies it to every active track-0 speaker clip (`#stage > video[data-track-index="0"]`). End it before the next seated moment; an effect never lands inside a seat.
