@@ -214,7 +214,10 @@ The template, style and canvas are as in the Canvas 2D example. Name GLSL identi
         new T.MeshStandardMaterial({ color: 0xd8643f, roughness: 0.5 }),
       );
       scene.add(mesh);
-      scene.add(new T.HemisphereLight(0xf1eedd, 0x2a1012, 1.6));
+      scene.add(new T.HemisphereLight(0xf1eedd, 0x2a1012, 1.2));
+      const key = new T.DirectionalLight(0xffffff, 1.6);
+      key.position.set(3, 4, 6);
+      scene.add(key);
       return true;
     }
     function release() {
