@@ -31,12 +31,16 @@ INLINE_SUFFIXES = frozenset({".html", ".htm", ".css", ".json"})
 # editing script); anything above it takes the signed upload, which streams from disk
 # and returns only a short result.
 MAX_INLINE_RECEIPT_BYTES = 64 * 1024
-# The service includes its own runtime files in a host-authored commit receipt.
+# The service includes its own runtime files in a host-authored commit receipt: the first
+# four on every commit, Three.js and the speaker-effect engine in the commit that writes
+# them because a document loads them.
 SERVER_RUNTIME_PATHS = frozenset({
     "render-engine/package.json",
     "render-engine/public/vendor/gsap.min.js",
     "render-engine/public/vendor/fit-engine.js",
     "render-engine/public/vendor/connector-engine.js",
+    "render-engine/public/vendor/three.min.js",
+    "render-engine/public/vendor/speaker-effects.js",
 })
 CHECKPOINT_SCHEMA = 3
 CHECKPOINT_STATUSES = frozenset({"ready", "prepared", "failed", "finished"})

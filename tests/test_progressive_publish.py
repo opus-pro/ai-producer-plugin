@@ -173,6 +173,18 @@ class ProgressivePublishTests(unittest.TestCase):
         self.assertEqual(len(signed), 2)
         self.assertTrue(all(path.endswith(".css") for path in signed))
 
+    def test_files_the_service_writes_when_a_document_loads_them_are_accepted(self):
+        plan = self.progress.prepare(self.author(1), final=True)
+        self.accept(plan, 1, ["render-engine/public/vendor/three.min.js",
+                              "render-engine/public/vendor/speaker-effects.js"])
+        self.assertEqual(self.progress.status, "finished")
+
+    def test_an_unknown_vendor_file_in_receipt_stops_acceptance(self):
+        plan = self.progress.prepare(self.author(1))
+        with self.assertRaisesRegex(ValueError, "receipt_mismatch"):
+            self.accept(plan, 1, ["render-engine/public/vendor/unknown.js"])
+        self.assertEqual(self.progress.status, "prepared")
+
     def test_unexpected_document_in_receipt_stops_acceptance(self):
         plan = self.progress.prepare(self.author(1))
         with self.assertRaisesRegex(ValueError, "receipt_mismatch"):
