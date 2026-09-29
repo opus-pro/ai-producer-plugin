@@ -138,8 +138,17 @@ The local [preflight](../../aip/scripts/preflight.py) reports the same codes bef
       if (ext) ext.loseContext();
       fresh();
     }
+    function onScreen(t) {
+      if (t > 0.0001 && t < DUR - 0.0001) return true;
+      // Local 0 is both "before the window" and its first frame, where a click on the
+      // moment lands; only the root clock tells them apart.
+      const host = root.closest(".visual-host");
+      const rootTl = window.__timelines && window.__timelines["finecut-root"];
+      if (t > 0.0001 || !host || !rootTl) return false;
+      return rootTl.time() >= parseFloat(host.getAttribute("data-start")) - 0.01;
+    }
     function draw(t) {
-      if (t <= 0.0001 || t >= DUR - 0.0001) {
+      if (!onScreen(t)) {
         release();
         return;
       }
@@ -219,9 +228,18 @@ The template, style and canvas are as in the Canvas 2D example. Name GLSL identi
       cv = next;
       R = null;
     }
+    function onScreen(t) {
+      if (t > 0.0001 && t < DUR - 0.0001) return true;
+      // Local 0 is both "before the window" and its first frame, where a click on the
+      // moment lands; only the root clock tells them apart.
+      const host = root.closest(".visual-host");
+      const rootTl = window.__timelines && window.__timelines["finecut-root"];
+      if (t > 0.0001 || !host || !rootTl) return false;
+      return rootTl.time() >= parseFloat(host.getAttribute("data-start")) - 0.01;
+    }
     function draw(t) {
       lastT = t;
-      if (t <= 0.0001 || t >= DUR - 0.0001) {
+      if (!onScreen(t)) {
         release();
         return;
       }
@@ -260,4 +278,4 @@ The template, style and canvas are as in the Canvas 2D example. Name GLSL identi
 
 ## First frame
 
-In the editor the first frame of a window can be blank, because the moment's timeline reaches `t = 0` exactly there and the skeleton treats that as outside. When the first frame matters, compare the root time with the host's live `data-start` instead of the local `t` alone: read `window.__timelines["finecut-root"].time()` and the host's `data-start` from `document.querySelector('.visual-host[data-composition-id="<id>"]')` inside `draw`, and draw when the root time is inside `[start, start + duration)`.
+`onScreen(t)` is how a WebGL skeleton decides whether to hold a context. Inside the window the local time decides alone. At local `t = 0` it cannot: the editor seeks a moment to 0 both while the playhead is before the window and when the playhead sits on the window's first frame, which is where clicking the moment on the timeline lands. So at 0 the skeleton compares the root timeline's time with the host's live `data-start`, read at draw time because the user can move the host. The editor seeks the root timeline before the compositions, so the root time is current there; where it is not, the first frame is skipped and nothing else changes. `root.closest(".visual-host")` finds the host in both the editor and the export mount, whichever element carries the composition id there.
