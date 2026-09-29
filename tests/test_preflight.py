@@ -158,5 +158,78 @@ class PreflightTests(unittest.TestCase):
         self.assertIn("missing_or_invalid_root", self.codes(preflight.check(self.root)))
 
 
+# The skeletons of the code-drawn reference, reduced to what each rule reads.
+TICK = "const st = { t: 0 }; tl.to(st, { t: 4, duration: 4, ease: 'none', onUpdate: function () { draw(st.t); } }, 0);"
+CANVAS_2D = ('<canvas class="cv"></canvas><script>const tl = gsap.timeline({ paused: true });'
+    "const ctx = root.querySelector('.cv').getContext('2d'); function draw(t) { ctx.fillRect(t * 50, 0, 9, 9); }"
+    + TICK + "</script>")
+WEBGL2 = ('<canvas class="cv"></canvas><script>const tl = gsap.timeline({ paused: true }); let gl = null;'
+    "function draw(t) { if (t <= 0 || t >= 4) { if (gl) gl.getExtension('WEBGL_lose_context').loseContext(); return; }"
+    " if (!gl) gl = cv.getContext('webgl2', { preserveDrawingBuffer: true }); }" + TICK + "</script>")
+THREE = ('<canvas class="cv"></canvas><script src="../public/vendor/three.min.js"></script>'
+    "<script>const tl = gsap.timeline({ paused: true }); let R = null;"
+    "function draw(t) { if (t <= 0 || t >= 4) { if (R) { R.forceContextLoss(); R.dispose(); R = null; } return; }"
+    " if (!R) { if (!window.THREE) return; R = new THREE.WebGLRenderer({ canvas: cv }); } }" + TICK + "</script>")
+
+
+class CodeDrawnTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        (self.root / "compositions").mkdir()
+        (self.root / "index.html").write_text(ROOT.format(HOST))
+
+    def result(self, body):
+        (self.root / "compositions/beat.html").write_text(CHILD.format(body))
+        result = preflight.check(self.root)
+        return ({item["code"] for item in result["errors"]}, {item["code"] for item in result["warnings"]})
+
+    def test_the_reference_skeletons_pass(self):
+        for body in (CANVAS_2D, WEBGL2, THREE):
+            self.assertEqual(self.result(body), (set(), set()))
+
+    def test_three_needs_no_declaration(self):
+        # The service writes it in the commit that first names it, so nothing declares it.
+        self.result(THREE)
+        self.assertFalse((self.root / "public/vendor/three.min.js").exists())
+        self.assertTrue(preflight.check(self.root)["ok"])
+
+    def test_a_canvas_on_its_own_clock_is_an_error(self):
+        errors, _ = self.result(CANVAS_2D.replace(TICK, "function loop() { draw(1); requestAnimationFrame(loop); } loop();"))
+        self.assertEqual(errors, {"code_drawn_clock"})
+
+    def test_a_dom_moment_with_a_timer_is_not_judged(self):
+        self.assertEqual(self.result("<script>setTimeout(function () {}, 10);</script>"), (set(), set()))
+
+    def test_a_clock_in_a_comment_or_string_does_not_count(self):
+        body = CANVAS_2D.replace(TICK, "// requestAnimationFrame\nconst why = 'setTimeout';" + TICK)
+        self.assertEqual(self.result(body), (set(), set()))
+
+    def test_an_unreleased_context_is_an_error(self):
+        errors, _ = self.result(WEBGL2.replace(".loseContext()", ".isContextLost()"))
+        self.assertEqual(errors, {"webgl_context_not_released"})
+        errors, _ = self.result(THREE.replace("R.forceContextLoss(); ", ""))
+        self.assertEqual(errors, {"webgl_context_not_released"})
+
+    def test_three_read_before_it_loads_is_a_warning(self):
+        errors, warnings = self.result(THREE.replace("if (!window.THREE) return; ", ""))
+        self.assertEqual((errors, warnings), (set(), {"three_used_before_load"}))
+
+    def test_every_script_type_a_browser_runs_is_judged(self):
+        body = CANVAS_2D.replace(TICK, "requestAnimationFrame(draw);").replace(
+            "<script>", '<script type="text/javascript; charset=utf-8">', 1)
+        self.assertEqual(self.result(body)[0], {"code_drawn_clock"})
+
+    def test_an_unguarded_alias_of_window_three_is_a_warning(self):
+        body = THREE.replace("if (!window.THREE) return; R = new THREE", "R = new T").replace(
+            "let R = null;", "let R = null; const T = window.THREE;")
+        self.assertEqual(self.result(body), (set(), {"three_used_before_load"}))
+
+    def test_randomness_in_a_canvas_is_a_warning(self):
+        errors, warnings = self.result(CANVAS_2D.replace("t * 50", "Math.random() * 50"))
+        self.assertEqual((errors, warnings), (set(), {"code_drawn_nondeterministic"}))
+
+
 if __name__ == "__main__":
     unittest.main()
