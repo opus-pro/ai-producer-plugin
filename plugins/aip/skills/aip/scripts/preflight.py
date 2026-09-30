@@ -60,6 +60,8 @@ class Document(HTMLParser):
         self.elements = []
         self.styles = []
         self.scripts = []
+        self.motion_scripts = []
+        self.motion_open = False
         self.in_style = False
         self.in_script = False
         self.template_depth = 0
@@ -76,6 +78,9 @@ class Document(HTMLParser):
         if tag == "script" and "src" not in values:
             declared = (values.get("type") or "").split(";", 1)[0].strip().lower()
             self.in_script = declared in EXECUTABLE_SCRIPT_TYPES
+            if self.in_script and "data-aip-motion" in values and not self.template_depth:
+                self.motion_scripts.append([values["data-aip-motion"] or "", ""])
+                self.motion_open = True
 
     def handle_startendtag(self, tag, attrs):
         self.handle_starttag(tag, attrs)
@@ -86,6 +91,7 @@ class Document(HTMLParser):
             self.in_style = False
         if tag == "script":
             self.in_script = False
+            self.motion_open = False
         if tag == "template":
             self.template_depth = max(0, self.template_depth - 1)
 
@@ -94,6 +100,8 @@ class Document(HTMLParser):
             self.styles.append(data)
         if self.in_script:
             self.scripts.append(data)
+            if self.motion_scripts and self.motion_open:
+                self.motion_scripts[-1][1] += data
 
 
 def code_drawn(doc):
@@ -217,7 +225,8 @@ def check(root, remote_files=()):
     if len(stages) != 1 or stages[0].get("data-composition-id") != "finecut-root":
         issue(errors, "missing_or_invalid_root")
     if index is not None:
-        for code in speaker_effects.check(index.elements):
+        effect_codes = speaker_effects.check(index.elements, index.motion_scripts)
+        for code in effect_codes or speaker_effects.sample(index.elements, index.motion_scripts):
             issue(errors, code, root / "index.html")
     for path, doc in documents.items():
         for _, attrs, _ in doc.elements:

@@ -2,6 +2,8 @@
 
 import importlib.util
 from pathlib import Path
+import re
+import shutil
 import sys
 import tempfile
 import unittest
@@ -301,6 +303,80 @@ class SpeakerEffectTests(unittest.TestCase):
         self.assertEqual(self.codes(zoom_host(), second), {"speaker_effect_overlap"})
         overlapping_filter = filter_host(**{"data-start": "5", "data-src-anchor": "21"})
         self.assertEqual(self.codes(zoom_host(), overlapping_filter), set())
+
+
+SLIDE = ('<script data-aip-motion="slide">(window.__aipMotions = window.__aipMotions || {})["slide"] = {'
+         ' params: { dx: { min: -150, max: 150, default: 0 } },'
+         ' frame: function (t, d, p) { return { x: p.dx }; } };</script>')
+
+
+def motion_host(**overrides):
+    attrs = {"class": "visual-host clip", "data-composition-id": "hit-1", "data-aip-effect": "motion",
+             "data-no-timeline": "", "data-start": "5", "data-duration": "0.4", "data-src-anchor": "21",
+             "data-track-index": "900", "data-hide-captions": "false", "data-effect-motion": "slide",
+             "data-effect-params": '{"dx":12}'}
+    attrs.update(overrides)
+    text = " ".join((f"{name}='{value}'" if '"' in value else f'{name}="{value}"')
+                    for name, value in attrs.items() if value is not None)
+    return f"<div {text}></div>"
+
+
+def definition(name, body):
+    return (f'<script data-aip-motion="{name}">(window.__aipMotions = window.__aipMotions || {{}})["{name}"] = '
+            f"{body};</script>")
+
+
+class MotionTests(SpeakerEffectTests):
+    def test_a_motion_with_its_definition_rides_over_a_zoom_and_another_track(self):
+        other = motion_host(**{"data-composition-id": "hit-2", "data-track-index": "901"})
+        self.assertEqual(self.codes(zoom_host(), motion_host(), other, SLIDE), set())
+
+    def test_two_motions_on_one_track_do_not_overlap(self):
+        second = motion_host(**{"data-composition-id": "hit-2", "data-start": "5.2", "data-src-anchor": "21.2"})
+        self.assertEqual(self.codes(motion_host(), second, SLIDE), {"motion_track_overlap"})
+
+    def test_a_host_needs_its_definition(self):
+        self.assertEqual(self.codes(motion_host()), {"motion_definition_missing"})
+
+    def test_host_values(self):
+        for overrides in ({"data-track-index": "22"}, {"data-track-index": "0x384"},
+                          {"data-effect-params": "[1]"}, {"data-effect-params": '{"Dx":1}'},
+                          {"data-effect-motion": "Slide"}):
+            self.assertEqual(self.codes(motion_host(**overrides), SLIDE), {"motion_host_invalid"}, overrides)
+
+    def test_a_definition_reading_randomness_or_time_is_an_error(self):
+        for read in ("var r = Math.random();", "var n = Date.now();", "var n = performance.now();",
+                     "setTimeout(function () {}, 0);"):
+            captured = SLIDE.replace("(window.__aipMotions", read + " (window.__aipMotions", 1)
+            self.assertEqual(self.codes(motion_host(), captured), {"motion_nondeterministic"}, read)
+        quoted = SLIDE.replace("return {", 'var label = "Date"; return {')
+        self.assertEqual(self.codes(motion_host(), quoted), set())
+
+    def test_one_name_one_definition(self):
+        self.assertEqual(self.codes(motion_host(), SLIDE, SLIDE), {"motion_definition_invalid"})
+
+    @unittest.skipUnless(shutil.which("node"), "node is not installed")
+    def test_node_samples_what_the_engine_would_not_draw(self):
+        wild = definition("slide", "{ frame: function () { return { x: 500 }; } }")
+        self.assertEqual(self.codes(motion_host(), wild), {"motion_output_invalid"})
+        counter = definition("slide", "(function () { var n = 0; return { frame: function () { n += 1; "
+                             "return { x: n % 3 }; } }; })()")
+        self.assertEqual(self.codes(motion_host(), counter), {"motion_nondeterministic"})
+
+
+RECIPES = Path(__file__).resolve().parents[1] / "plugins/aip/skills/aip-composition/references/motion-recipes.md"
+
+
+class MotionRecipeTests(SpeakerEffectTests):
+    @unittest.skipUnless(shutil.which("node"), "node is not installed")
+    def test_every_recipe_is_a_definition_the_service_accepts(self):
+        blocks = re.findall(r"```js\n(.*?)```", RECIPES.read_text(), re.S)
+        self.assertGreaterEqual(len(blocks), 7)
+        for code in blocks:
+            name = re.search(r'\)\["([a-z0-9-]+)"\]\s*=', code).group(1)
+            host = motion_host(**{"data-effect-motion": name, "data-effect-params": None, "data-duration": "2"})
+            script = f'<script data-aip-motion="{name}">{code}</script>'
+            self.assertEqual(self.codes(host, script), set(), name)
 
 
 if __name__ == "__main__":

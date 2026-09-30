@@ -182,4 +182,4 @@ Settle the band first, then compose the payload in the space it leaves: the anim
 
 ## The speaker beat
 
-- A zoom or filter on a `speaker` beat is an effect host (see the [composition contract](../aip-composition/SKILL.md)); the service's engine applies it to every active track-0 speaker clip (`#stage > video[data-track-index="0"]`). End it before the next seated moment; an effect never lands inside a seat.
+- A zoom, filter or motion on a `speaker` beat is an effect host (see the [composition contract](../aip-composition/SKILL.md)); the service's engine applies it to every active track-0 speaker clip (`#stage > video[data-track-index="0"]`). End it before the next seated moment; an effect never lands inside a seat.
