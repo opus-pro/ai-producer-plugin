@@ -203,23 +203,65 @@ const vm = require("vm");
 const input = JSON.parse(require("fs").readFileSync(0, "utf8"));
 const LIMITS = { x: 160, y: 160, rotate: 8 };
 const COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-const thrower = () => { throw new Error("randomness or time is not available to a motion definition"); };
-function registry(source) {
-  const sandbox = { window: { __aipMotions: {} }, Math: Object.assign(Object.create(Math), { random: thrower }),
-    Date: Object.assign(function () { thrower(); }, { now: thrower }), performance: { now: thrower },
-    crypto: { getRandomValues: thrower }, setTimeout: thrower, setInterval: thrower, requestAnimationFrame: thrower };
-  vm.createContext(sandbox);
-  vm.runInContext(source, sandbox, { timeout: 1000 });
-  return sandbox.window.__aipMotions;
-}
-function rand(id) {
-  let h = 2166136261;
-  for (let k = 0; k < id.length; k++) h = Math.imul(h ^ id.charCodeAt(k), 16777619) >>> 0;
-  return (i) => {
-    let x = Math.imul(h ^ (((i | 0) + 0x9e3779b9) >>> 0), 2246822519) >>> 0;
-    x = Math.imul(x ^ (x >>> 13), 3266489917) >>> 0;
-    return (((x ^ (x >>> 16)) >>> 0) / 4294967296) * 2 * Math.PI;
-  };
+const MAG = 1000000;
+// A realm of its own per definition: built-ins only, randomness and time throwing, Math
+// and JSON frozen, no code from strings. Only primitives cross into it.
+const SETUP = `
+  var thrower = function () { throw new Error("randomness or time is not available to a motion definition"); };
+  Math.random = thrower;
+  globalThis.Date = function () { thrower(); };
+  globalThis.Date.now = thrower;
+  globalThis.performance = { now: thrower };
+  globalThis.crypto = { getRandomValues: thrower, randomUUID: thrower };
+  globalThis.setTimeout = thrower; globalThis.setInterval = thrower;
+  globalThis.requestAnimationFrame = thrower; globalThis.queueMicrotask = thrower;
+  globalThis.window = globalThis; globalThis.self = globalThis;
+  globalThis.__aipMotions = {};
+  (function () {
+    var rand = function (id) {
+      var h = 2166136261;
+      for (var k = 0; k < id.length; k++) h = Math.imul(h ^ id.charCodeAt(k), 16777619) >>> 0;
+      return function (i) {
+        var x = Math.imul(h ^ (((i | 0) + 0x9e3779b9) >>> 0), 2246822519) >>> 0;
+        x = Math.imul(x ^ (x >>> 13), 3266489917) >>> 0;
+        return (((x ^ (x >>> 16)) >>> 0) / 4294967296) * 2 * Math.PI;
+      };
+    };
+    var ok = function (spec) {
+      return !!spec && typeof spec === "object" && isFinite(spec.min) && isFinite(spec.max) && spec.min < spec.max &&
+        Math.abs(spec.min) <= ${MAG} && Math.abs(spec.max) <= ${MAG} && isFinite(spec.default) &&
+        spec.default >= spec.min && spec.default <= spec.max;
+    };
+    globalThis.__decl = function (name) {
+      var def = Object.prototype.hasOwnProperty.call(globalThis.__aipMotions, name) ? globalThis.__aipMotions[name] : null;
+      if (!def || typeof def.frame !== "function") return "missing";
+      var decl = def.params === undefined ? {} : def.params;
+      if (!decl || typeof decl !== "object" || Object.keys(decl).length > 8) return "invalid";
+      for (var key in decl) if (Object.prototype.hasOwnProperty.call(decl, key) && !ok(decl[key])) return "invalid";
+      return JSON.stringify(decl);
+    };
+    globalThis.__frame = function (name, paramsJson, id, t, d) {
+      var def = globalThis.__aipMotions[name];
+      var values = JSON.parse(paramsJson);
+      var decl = def.params || {};
+      var p = {};
+      for (var key in decl) {
+        if (!Object.prototype.hasOwnProperty.call(decl, key)) continue;
+        var v = Object.prototype.hasOwnProperty.call(values, key) ? values[key] : decl[key].default;
+        p[key] = Math.min(decl[key].max, Math.max(decl[key].min, v));
+      }
+      var out = def.frame(t, d, p, rand(id));
+      return JSON.stringify(out === undefined ? null : out);
+    };
+  })();
+  Object.freeze(Math);
+  Object.freeze(JSON);
+`;
+function realm(source) {
+  const ctx = vm.createContext({}, { codeGeneration: { strings: false, wasm: false }, microtaskMode: "afterEvaluate" });
+  vm.runInContext(SETUP, ctx);
+  vm.runInContext(source, ctx, { timeout: 1000 });
+  return ctx;
 }
 function bad(out) {
   if (!out || typeof out !== "object") return true;
@@ -236,32 +278,44 @@ function bad(out) {
   }
   return false;
 }
+function pass(ctx, host) {
+  const outs = [];
+  for (let k = 0; k < 34; k++) {
+    const t = Math.min(host.duration * k / 33, host.duration - 1e-6);
+    const code = `__frame(${JSON.stringify(host.name)}, ${JSON.stringify(JSON.stringify(host.params))}, ${JSON.stringify(host.id)}, ${t}, ${host.duration})`;
+    const out = JSON.parse(String(vm.runInContext(code, ctx, { timeout: 250 })));
+    if (bad(out)) throw new Error("output");
+    outs.push(JSON.stringify(out));
+  }
+  return outs.join("|");
+}
 const codes = [];
 for (const host of input.hosts) {
-  let defs;
-  try { defs = registry(input.sources[host.name] || ""); } catch (e) { codes.push("motion_nondeterministic"); continue; }
-  const def = defs[host.name];
-  if (!def || typeof def.frame !== "function") { codes.push("motion_definition_invalid"); continue; }
-  const decl = def.params || {};
-  const p = {};
-  for (const [name, spec] of Object.entries(decl)) p[name] = name in host.params ? host.params[name] : spec.default;
-  const passes = [];
+  let a;
+  let b;
   try {
-    for (let pass = 0; pass < 2; pass++) {
-      const outs = [];
-      for (let k = 0; k < 34; k++) {
-        const t = Math.min(host.duration * k / 33, host.duration - 1e-6);
-        const out = def.frame(t, host.duration, p, rand(host.id));
-        if (bad(out)) throw new Error("output");
-        outs.push(JSON.stringify(out));
-      }
-      passes.push(outs.join("|"));
-    }
+    a = realm(input.sources[host.name] || "");
+    b = realm(input.sources[host.name] || "");
   } catch (e) {
-    codes.push(String(e.message) === "output" ? "motion_output_invalid" : "motion_nondeterministic");
+    codes.push("motion_definition_invalid");
     continue;
   }
-  if (passes[0] !== passes[1]) codes.push("motion_nondeterministic");
+  const decl = String(vm.runInContext(`__decl(${JSON.stringify(host.name)})`, a, { timeout: 250 }));
+  if (decl === "missing") { codes.push("motion_definition_missing"); continue; }
+  if (decl === "invalid") { codes.push("motion_definition_invalid"); continue; }
+  const declared = JSON.parse(decl);
+  if (Object.keys(host.params).some((name) => !Object.prototype.hasOwnProperty.call(declared, name) ||
+      host.params[name] < declared[name].min || host.params[name] > declared[name].max)) {
+    codes.push("motion_params_invalid");
+    continue;
+  }
+  try {
+    const first = pass(a, host);
+    if (pass(a, host) !== first || pass(b, host) !== first) codes.push("motion_nondeterministic");
+  } catch (e) {
+    const text = String(e && e.message);
+    codes.push(text === "output" ? "motion_output_invalid" : /timed out/.test(text) ? "motion_too_slow" : "motion_nondeterministic");
+  }
 }
 process.stdout.write(JSON.stringify(codes));
 """

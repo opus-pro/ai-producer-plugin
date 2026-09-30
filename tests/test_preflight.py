@@ -358,11 +358,22 @@ class MotionTests(SpeakerEffectTests):
 
     @unittest.skipUnless(shutil.which("node"), "node is not installed")
     def test_node_samples_what_the_engine_would_not_draw(self):
+        bare = motion_host(**{"data-effect-params": None})
         wild = definition("slide", "{ frame: function () { return { x: 500 }; } }")
-        self.assertEqual(self.codes(motion_host(), wild), {"motion_output_invalid"})
+        self.assertEqual(self.codes(bare, wild), {"motion_output_invalid"})
         counter = definition("slide", "(function () { var n = 0; return { frame: function () { n += 1; "
                              "return { x: n % 3 }; } }; })()")
-        self.assertEqual(self.codes(motion_host(), counter), {"motion_nondeterministic"})
+        self.assertEqual(self.codes(bare, counter), {"motion_nondeterministic"})
+        # Another script's global is out of a definition's reach.
+        captured = definition("slide", "{ frame: function () { return { x: phase }; } }")
+        self.assertEqual(self.codes(bare, "<script>var phase = 3;</script>" + captured),
+                         {"motion_nondeterministic"})
+        # A value the definition does not declare is refused, as the server refuses it.
+        undeclared = motion_host(**{"data-effect-params": '{"constructor":1}'})
+        self.assertEqual(self.codes(undeclared, SLIDE), {"motion_params_invalid"})
+        wide = definition("slide", "{ params: { dx: { min: 0, max: 2000000, default: 0 } }, "
+                          "frame: function () { return {}; } }")
+        self.assertEqual(self.codes(bare, wide), {"motion_definition_invalid"})
 
 
 RECIPES = Path(__file__).resolve().parents[1] / "plugins/aip/skills/aip-composition/references/motion-recipes.md"
