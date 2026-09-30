@@ -131,6 +131,7 @@ Fine-cut the video like a high-performing social media creator: deep-fried, brai
 - Open on massive extra-bold text behind the presenter, 80-90% of frame width, **partially occluded** but readable. Never shrink, shift, or split-screen the presenter to fit the text.
 - Presenter close-ups and punch-ins for emphasis, each a zoom effect host. Minimum zoom 1.3x.
 - Sarcasm, self-deprecation, or a quick aside: monochrome presenter close-up for at most one sentence, then restore color: a `grayscale(1)` filter effect host with a zoom effect host over the same words.
+- Punchline, reveal, or a hard-hitting number: an impact shake motion host of at most 0.45 s on the beat, landing with the slam or number it punctuates; a hard section change: a white flash motion host of at most 0.35 s. At most one shake or flash in any 20 s, and never over ordinary sentences.
 - Show the specific change the speaker describes; demonstrate with real footage or assets when available.
 - Design supporting visuals as **Overlay** first, around the measured head and caption band.
 - Simplify, remove secondary elements, or reveal steps sequentially before changing layout. Never choose a larger layout just to fit an oversized first design.
