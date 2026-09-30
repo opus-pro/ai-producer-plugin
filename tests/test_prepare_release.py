@@ -142,6 +142,11 @@ class PrepareReleaseTest(unittest.TestCase):
         self.assertEqual(version_from_documents(self.documents()), self.target)
 
     def test_next_release_compares_from_reissue_tag(self) -> None:
+        # The fixture declares the reissued 1.2.8 whatever the repository declares now.
+        for relative in VERSION_FIELDS:
+            path = self.root / relative
+            path.write_text(path.read_text().replace(f'"{self.current}"', '"1.2.8"'))
+        self.assertEqual(version_from_documents(self.documents()), "1.2.8")
         shutil.copyfile(REPO / "releases/v1.2.8.md", self.root / "releases/v1.2.8.md")
         shutil.copyfile(REPO / "releases/reissues.json", self.root / "releases/reissues.json")
         shutil.copyfile(REPO / "releases/reissue-v1.2.8.md", self.root / "releases/reissue-v1.2.8.md")
