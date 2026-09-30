@@ -371,6 +371,24 @@ class MotionTests(SpeakerEffectTests):
         # A value the definition does not declare is refused, as the server refuses it.
         undeclared = motion_host(**{"data-effect-params": '{"constructor":1}'})
         self.assertEqual(self.codes(undeclared, SLIDE), {"motion_params_invalid"})
+        # The entry point cannot be replaced, and the output is read as the engine reads it.
+        loop = "{ frame: function () { for (;;) {} } }"
+        forged = ("<script data-aip-motion=\"slide\">var __aipSampler = { frame: function () { return '{}'; } }; "
+                  "(window.__aipMotions = window.__aipMotions || {})[\"slide\"] = " + loop + ";</script>")
+        self.assertEqual(self.codes(bare, forged), {"motion_too_slow"})
+        masked = definition("slide", "{ frame: function () { return { get x() { for (;;) {} }, "
+                            "toJSON: function () { return { x: 0 }; } }; } }")
+        self.assertEqual(self.codes(bare, masked), {"motion_too_slow"})
+        clock = definition("slide", '{ frame: function () { return { x: new globalThis["In" + "tl"]'
+                           '.DateTimeFormat("en").formatToParts().length % 2 }; } }')
+        self.assertEqual(self.codes(bare, clock), {"motion_nondeterministic"})
+        # The registry is judged as the page's document order leaves it.
+        other = motion_host(**{"data-composition-id": "hit-2", "data-effect-motion": "other",
+                               "data-effect-params": None, "data-start": "7", "data-src-anchor": "23"})
+        replacer = ("<script data-aip-motion=\"other\">(window.__aipMotions = window.__aipMotions || {})"
+                    "[\"other\"] = { frame: function () { return {}; } }; window.__aipMotions[\"slide\"] = "
+                    + loop + ";</script>")
+        self.assertEqual(self.codes(bare, other, SLIDE, replacer), {"motion_definition_invalid"})
         wide = definition("slide", "{ params: { dx: { min: 0, max: 2000000, default: 0 } }, "
                           "frame: function () { return {}; } }")
         self.assertEqual(self.codes(bare, wide), {"motion_definition_invalid"})

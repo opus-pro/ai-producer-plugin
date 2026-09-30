@@ -28,7 +28,8 @@ MAX_PARAMS, MAX_PARAMS_CHARS, MAX_PARAM_MAGNITUDE = 8, 400, 1_000_000
 # The sources a definition could read once and keep; read on code with strings and
 # comments blanked, as the service reads it.
 MOTION_NONDETERMINISTIC = re.compile(
-    r"\bMath\s*\.\s*random\b|\bDate\b|\bperformance\b|\bcrypto\b|\bsetTimeout\b|\bsetInterval\b"
+    r"\bMath\s*\.\s*random\b|\bDate\b|\bperformance\b|\bcrypto\b|\bIntl\b|\bWeakRef\b|\bFinalizationRegistry\b|"
+    r"\bsetTimeout\b|\bsetInterval\b|\brequestAnimationFrame\b"
     r"|\brequestAnimationFrame\b")
 _JS_STRING_OR_COMMENT = re.compile(
     r"\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|/\*.*?\*/|//[^\n]*", re.S)
@@ -195,19 +196,24 @@ def check(elements, motion_scripts=()):
     return list(dict.fromkeys(codes))
 
 
-# Runs each motion host's definition in a Node vm context where randomness and time throw,
-# at 34 instants across its window, twice, and reports what the service's commit check
-# would refuse. The service repeats this in its own contained boot.
+# Runs the index's definition scripts in document order in a Node vm context where
+# randomness and time throw, samples each motion host at 34 instants across its window in
+# that context twice and in a second one once, and reports what the service's commit check
+# would refuse. The service repeats this in its own contained preflight step.
 _SAMPLER = r"""
 const vm = require("vm");
 const input = JSON.parse(require("fs").readFileSync(0, "utf8"));
 const LIMITS = { x: 160, y: 160, rotate: 8 };
 const COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 const MAG = 1000000;
-// A realm of its own per definition: built-ins only, randomness and time throwing, Math
-// and JSON frozen, no code from strings. Only primitives cross into it.
+const STUB = "randomness or time is not available to a motion definition";
+// One realm holding the definition scripts in document order, as the page runs them:
+// built-ins only, randomness, time, Intl and the collector's observers throwing, Math and
+// JSON frozen, no code from strings. The harness is a frozen, non-writable entry built
+// from built-ins captured before any definition runs, and it reads each frame the way the
+// engine does, handing back only a string of primitives.
 const SETUP = `
-  var thrower = function () { throw new Error("randomness or time is not available to a motion definition"); };
+  var thrower = function () { throw new Error(${JSON.stringify(STUB)}); };
   Math.random = thrower;
   globalThis.Date = function () { thrower(); };
   globalThis.Date.now = thrower;
@@ -215,9 +221,30 @@ const SETUP = `
   globalThis.crypto = { getRandomValues: thrower, randomUUID: thrower };
   globalThis.setTimeout = thrower; globalThis.setInterval = thrower;
   globalThis.requestAnimationFrame = thrower; globalThis.queueMicrotask = thrower;
+  ["Intl", "WeakRef", "FinalizationRegistry"].forEach(function (name) {
+    Object.defineProperty(globalThis, name, { get: thrower, configurable: false });
+  });
   globalThis.window = globalThis; globalThis.self = globalThis;
   globalThis.__aipMotions = {};
   (function () {
+    var keys = Object.keys, create = Object.create, isArray = Array.isArray, stringify = JSON.stringify;
+    var parse = JSON.parse, hasOwn = Function.prototype.call.bind(Object.prototype.hasOwnProperty);
+    var CHANNELS = create(null);
+    CHANNELS.x = CHANNELS.y = CHANNELS.scale = CHANNELS.rotate = CHANNELS.overlay = true;
+    var THREW = create(null);
+    var marked = create(null);
+    var prim = function (v) {
+      var type = typeof v;
+      return v === undefined || v === null || type === "number" || type === "string" || type === "boolean" ? v : "[" + type + "]";
+    };
+    var definition = function (name) {
+      try {
+        var reg = globalThis.__aipMotions;
+        if (!reg || !hasOwn(reg, name)) return null;
+        var def = reg[name];
+        return def && typeof def.frame === "function" ? def : null;
+      } catch (e) { return null; }
+    };
     var rand = function (id) {
       var h = 2166136261;
       for (var k = 0; k < id.length; k++) h = Math.imul(h ^ id.charCodeAt(k), 16777619) >>> 0;
@@ -232,36 +259,101 @@ const SETUP = `
         Math.abs(spec.min) <= ${MAG} && Math.abs(spec.max) <= ${MAG} && isFinite(spec.default) &&
         spec.default >= spec.min && spec.default <= spec.max;
     };
-    globalThis.__decl = function (name) {
-      var def = Object.prototype.hasOwnProperty.call(globalThis.__aipMotions, name) ? globalThis.__aipMotions[name] : null;
-      if (!def || typeof def.frame !== "function") return "missing";
-      var decl = def.params === undefined ? {} : def.params;
-      if (!decl || typeof decl !== "object" || Object.keys(decl).length > 8) return "invalid";
-      for (var key in decl) if (Object.prototype.hasOwnProperty.call(decl, key) && !ok(decl[key])) return "invalid";
-      return JSON.stringify(decl);
-    };
-    globalThis.__frame = function (name, paramsJson, id, t, d) {
-      var def = globalThis.__aipMotions[name];
-      var values = JSON.parse(paramsJson);
-      var decl = def.params || {};
-      var p = {};
-      for (var key in decl) {
-        if (!Object.prototype.hasOwnProperty.call(decl, key)) continue;
-        var v = Object.prototype.hasOwnProperty.call(values, key) ? values[key] : decl[key].default;
-        p[key] = Math.min(decl[key].max, Math.max(decl[key].min, v));
+    var entries = function () {
+      var now = create(null), reg = globalThis.__aipMotions;
+      if (!reg || (typeof reg !== "object" && typeof reg !== "function")) return now;
+      var own = keys(reg);
+      for (var i = 0; i < own.length; i++) {
+        try {
+          var d = reg[own[i]], live = d && (typeof d === "object" || typeof d === "function");
+          now[own[i]] = [d, live ? d.frame : undefined, live ? d.params : undefined];
+        } catch (e) { now[own[i]] = [THREW, THREW, THREW]; }
       }
-      var out = def.frame(t, d, p, rand(id));
-      return JSON.stringify(out === undefined ? null : out);
+      return now;
     };
+    var api = {
+      mark: function () { marked = entries(); return ""; },
+      changed: function () {
+        var now = entries(), out = "", seen = create(null), lists = [keys(now), keys(marked)];
+        for (var j = 0; j < 2; j++) {
+          for (var i = 0; i < lists[j].length; i++) {
+            var k = lists[j][i];
+            if (k in seen) continue;
+            seen[k] = true;
+            var a = marked[k], b = now[k];
+            if (!a || !b || a[0] !== b[0] || a[1] !== b[1] || a[2] !== b[2]) out += (out ? "," : "") + stringify(k);
+          }
+        }
+        return "[" + out + "]";
+      },
+      decl: function (name) {
+        var def = definition(name);
+        if (!def) return "missing";
+        var decl = def.params === undefined ? {} : def.params;
+        if (!decl || typeof decl !== "object" || isArray(decl) || keys(decl).length > 8) return "invalid";
+        var own = keys(decl), p = create(null);
+        for (var i = 0; i < own.length; i++) {
+          if (!ok(decl[own[i]])) return "invalid";
+          var q = create(null);
+          q.min = prim(decl[own[i]].min); q.max = prim(decl[own[i]].max); q.default = prim(decl[own[i]].default);
+          p[own[i]] = q;
+        }
+        return stringify(p);
+      },
+      frame: function (name, paramsJson, id, t, d) {
+        var def = definition(name);
+        if (!def) return "";
+        var values = parse(paramsJson), decl = parse(api.decl(name)), names = keys(decl), p = {};
+        for (var i = 0; i < names.length; i++) {
+          var key = names[i], v = hasOwn(values, key) ? values[key] : decl[key].default;
+          p[key] = Math.min(decl[key].max, Math.max(decl[key].min, v));
+        }
+        var out = def.frame(t, d, p, rand(id));
+        if (!out || typeof out !== "object" || isArray(out)) return "null";
+        var r = create(null), names = ["x", "y", "scale", "rotate"];
+        for (var n = 0; n < names.length; n++) { var c = out[names[n]]; if (c !== undefined) r[names[n]] = prim(c); }
+        var o = out.overlay;
+        if (o !== undefined) {
+          if (!o || typeof o !== "object") r.overlay = prim(o);
+          else { var ov = create(null); ov.opacity = prim(o.opacity); ov.color = prim(o.color); r.overlay = ov; }
+        }
+        var own = keys(out);
+        for (var m = 0; m < own.length; m++) if (!(own[m] in CHANNELS)) r[own[m]] = "[unknown]";
+        return stringify(r);
+      },
+    };
+    Object.defineProperty(globalThis, "__aipSampler", { value: Object.freeze(api), writable: false, configurable: false });
   })();
   Object.freeze(Math);
   Object.freeze(JSON);
 `;
-function realm(source) {
+function entry(ctx, code) {
+  const text = vm.runInContext("__aipSampler." + code, ctx, { timeout: 250 });
+  if (typeof text !== "string") throw new Error("output");
+  return text;
+}
+function realm() {
   const ctx = vm.createContext({}, { codeGeneration: { strings: false, wasm: false }, microtaskMode: "afterEvaluate" });
   vm.runInContext(SETUP, ctx);
-  vm.runInContext(source, ctx, { timeout: 1000 });
-  return ctx;
+  const errors = new Map();
+  const lastSetBy = new Map();
+  const strays = new Set();
+  for (const script of input.scripts) {
+    let changed = [];
+    try {
+      entry(ctx, "mark()");
+      vm.runInContext(script.source, ctx, { timeout: 1000 });
+    } catch (e) {
+      if (!errors.has(script.name)) errors.set(script.name, e);
+    }
+    try { changed = JSON.parse(entry(ctx, "changed()")); } catch (e) { if (!errors.has(script.name)) errors.set(script.name, e); }
+    for (const name of changed) {
+      lastSetBy.set(name, script.name);
+      if (name !== script.name) strays.add(script.name);
+    }
+  }
+  for (const [name, by] of lastSetBy) if (by !== name) strays.add(name);
+  return { ctx, errors, strays };
 }
 function bad(out) {
   if (!out || typeof out !== "object") return true;
@@ -282,25 +374,29 @@ function pass(ctx, host) {
   const outs = [];
   for (let k = 0; k < 34; k++) {
     const t = Math.min(host.duration * k / 33, host.duration - 1e-6);
-    const code = `__frame(${JSON.stringify(host.name)}, ${JSON.stringify(JSON.stringify(host.params))}, ${JSON.stringify(host.id)}, ${t}, ${host.duration})`;
-    const out = JSON.parse(String(vm.runInContext(code, ctx, { timeout: 250 })));
+    const text = entry(ctx, `frame(${JSON.stringify(host.name)}, ${JSON.stringify(JSON.stringify(host.params))}, ${JSON.stringify(host.id)}, ${t}, ${host.duration})`);
+    if (text === "") throw new Error("output");
+    const out = JSON.parse(text);
     if (bad(out)) throw new Error("output");
-    outs.push(JSON.stringify(out));
+    outs.push(text);
   }
   return outs.join("|");
 }
+function thrown(e) {
+  const text = String(e && e.message);
+  if (/timed out/.test(text)) return "motion_too_slow";
+  if (text === "output") return "motion_output_invalid";
+  return text.indexOf(STUB) >= 0 || (e && e.name === "ReferenceError") ? "motion_nondeterministic" : "motion_definition_invalid";
+}
+const a = realm();
+const b = realm();
 const codes = [];
 for (const host of input.hosts) {
-  let a;
-  let b;
-  try {
-    a = realm(input.sources[host.name] || "");
-    b = realm(input.sources[host.name] || "");
-  } catch (e) {
-    codes.push("motion_definition_invalid");
-    continue;
-  }
-  const decl = String(vm.runInContext(`__decl(${JSON.stringify(host.name)})`, a, { timeout: 250 }));
+  if (!input.scripts.some((script) => script.name === host.name)) { codes.push("motion_definition_missing"); continue; }
+  if (a.errors.has(host.name)) { codes.push(thrown(a.errors.get(host.name))); continue; }
+  if (a.strays.has(host.name)) { codes.push("motion_definition_invalid"); continue; }
+  let decl;
+  try { decl = entry(a.ctx, `decl(${JSON.stringify(host.name)})`); } catch (e) { codes.push("motion_definition_invalid"); continue; }
   if (decl === "missing") { codes.push("motion_definition_missing"); continue; }
   if (decl === "invalid") { codes.push("motion_definition_invalid"); continue; }
   const declared = JSON.parse(decl);
@@ -309,12 +405,19 @@ for (const host of input.hosts) {
     codes.push("motion_params_invalid");
     continue;
   }
-  try {
-    const first = pass(a, host);
-    if (pass(a, host) !== first || pass(b, host) !== first) codes.push("motion_nondeterministic");
-  } catch (e) {
-    const text = String(e && e.message);
-    codes.push(text === "output" ? "motion_output_invalid" : /timed out/.test(text) ? "motion_too_slow" : "motion_nondeterministic");
+  let first;
+  try { first = pass(a.ctx, host); } catch (e) {
+    const code = thrown(e);
+    codes.push(code === "motion_definition_invalid" ? "motion_output_invalid" : code);
+    continue;
+  }
+  for (const ctx of [a.ctx, b.ctx]) {
+    let again;
+    try { again = pass(ctx, host); } catch (e) {
+      codes.push(thrown(e) === "motion_too_slow" ? "motion_too_slow" : "motion_nondeterministic");
+      break;
+    }
+    if (again !== first) { codes.push("motion_nondeterministic"); break; }
   }
 }
 process.stdout.write(JSON.stringify(codes));
@@ -325,20 +428,21 @@ def sample(elements, motion_scripts=()):
     """Error codes from running each valid motion host's definition, or [] when there are
     none, when Node is absent, or when the static checks already refuse the index."""
     node = shutil.which("node")
-    sources = {(name or "").strip(): text for name, text in motion_scripts}
+    scripts = [{"name": (name or "").strip(), "source": text} for name, text in motion_scripts]
+    named = {script["name"] for script in scripts}
     hosts = []
     for tag, attrs, depth in elements:
         if depth or attrs.get("data-aip-effect") != "motion" or not _motion_host_ok(attrs):
             continue
         duration = _number(attrs.get("data-duration"))
         name = attrs["data-effect-motion"].strip()
-        if duration and duration > 0 and name in sources:
+        if duration and duration > 0 and name in named:
             hosts.append({"id": attrs.get("data-composition-id") or "", "name": name, "duration": duration,
                           "params": motion_params(attrs.get("data-effect-params"))})
     if node is None or not hosts:
         return []
     try:
-        done = subprocess.run([node, "-e", _SAMPLER], input=json.dumps({"hosts": hosts, "sources": sources}),
+        done = subprocess.run([node, "-e", _SAMPLER], input=json.dumps({"hosts": hosts, "scripts": scripts}),
                               capture_output=True, text=True, timeout=30, check=False)
         found = json.loads(done.stdout) if done.returncode == 0 else []
     except (OSError, subprocess.TimeoutExpired, ValueError):
