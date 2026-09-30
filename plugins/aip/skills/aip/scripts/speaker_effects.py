@@ -21,10 +21,10 @@ MAX_RAMP = 10.0
 ANCHOR_TOLERANCE = 0.02
 
 MOTION_NAME = re.compile(r"^[a-z0-9-]{1,40}$")
-PARAM_NAME = re.compile(r"^[a-z][a-zA-Z0-9]{0,23}$")
+PARAM_NAME = re.compile(r"^[a-z][a-zA-Z0-9]{0,15}$")
 MOTION_TRACK = re.compile(r"^\s*\d{1,4}\s*$")
 MIN_MOTION_TRACK, MAX_MOTION_TRACK = 900, 907
-MAX_PARAMS, MAX_PARAMS_CHARS = 8, 400
+MAX_PARAMS, MAX_PARAMS_CHARS, MAX_PARAM_MAGNITUDE = 8, 400, 1_000_000
 # The sources a definition could read once and keep; read on code with strings and
 # comments blanked, as the service reads it.
 MOTION_NONDETERMINISTIC = re.compile(
@@ -80,7 +80,7 @@ def motion_params(raw):
         return None
     for name, number in value.items():
         is_number = isinstance(number, (int, float)) and not isinstance(number, bool)
-        if not PARAM_NAME.fullmatch(name) or not is_number or not math.isfinite(number):
+        if not PARAM_NAME.fullmatch(name) or not is_number or not math.isfinite(number) or abs(number) > MAX_PARAM_MAGNITUDE:
             return None
     return value
 

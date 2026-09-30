@@ -341,7 +341,8 @@ class MotionTests(SpeakerEffectTests):
     def test_host_values(self):
         for overrides in ({"data-track-index": "22"}, {"data-track-index": "0x384"},
                           {"data-effect-params": "[1]"}, {"data-effect-params": '{"Dx":1}'},
-                          {"data-effect-motion": "Slide"}):
+                          {"data-effect-motion": "Slide"}, {"data-effect-params": '{"abcdefghijklmnopq":1}'},
+                          {"data-effect-params": '{"dx":1000001}'}, {"data-effect-params": '{"dx\\n":1}'}):
             self.assertEqual(self.codes(motion_host(**overrides), SLIDE), {"motion_host_invalid"}, overrides)
 
     def test_a_definition_reading_randomness_or_time_is_an_error(self):
