@@ -66,5 +66,65 @@ const assert = require("node:assert/strict");
         self.assertEqual(result.returncode, 0, result.stderr)
 
 
+
+def _fine_cut_section(skill):
+    """The fine cut's prose, from its heading to the finishes round."""
+    return skill[skill.index("**Fine cut.**"):skill.index("**Finishes.**")]
+
+
+class FineCutReferenceImageContractTests(unittest.TestCase):
+    """The reference image is collected by the card where it can save a file, and asked in words where not."""
+
+    def setUp(self):
+        self.skill = SKILL.read_text(encoding="utf-8")
+        self.fine_cut = _fine_cut_section(self.skill)
+
+    def test_the_card_no_longer_claims_it_cannot_carry_an_image(self):
+        self.assertNotIn("The reference image is not on this card", self.skill)
+        self.assertNotIn("a card collects one line of text and an image is a file", self.skill)
+
+    def test_rounds_table_offers_the_image_as_the_cards_own_question(self):
+        row = next(line for line in self.skill.splitlines() if line.startswith("| Fine cut |"))
+        self.assertIn("`reference_image` where the server offers it", row)
+        self.assertIn("`reference_image=<path>` once the image is accepted", row)
+
+    def test_card_upload_is_staged_until_the_commit_round_accepts_it(self):
+        self.assertIn("present_choices` given the `project_id` and `reference_image`", self.fine_cut)
+        self.assertIn("the card collects the image: do not ask for it in words", self.fine_cut)
+        self.assertIn("staged, not yet accepted", self.fine_cut)
+        self.assertIn("poll `get_task` on that task id until it reports the file accepted", self.fine_cut)
+        self.assertIn(
+            "A successful upload, a queued task, or a task that finished without accepting the file is not acceptance.",
+            self.fine_cut,
+        )
+        # Waiting comes before recording, and the recording carries every answer at once.
+        self.assertLess(
+            self.fine_cut.index("poll `get_task`"),
+            self.fine_cut.index("only then record `branding`"),
+        )
+        self.assertIn("every fine cut answer and `reference_image=<path>` in one `record_choices` call", self.fine_cut)
+        self.assertIn("When the round refuses it, record `branding` without the path", self.fine_cut)
+
+    def test_intent_answer_is_never_a_path(self):
+        self.assertIn('"I\'ll attach a reference image" is intent, never a path', self.fine_cut)
+        self.assertIn("give a local image path you can read, and end the turn", self.fine_cut)
+        self.assertIn("`commit_workspace` with `expected_files` bound to that exact path and its sha256", self.fine_cut)
+        self.assertIn('"Continue without one" is the skip too', self.fine_cut)
+
+    def test_ask_once_never_after_skip_and_reuse_an_earlier_picture(self):
+        self.assertIn("Ask it once for the whole project, and never a second time - not after a skip", self.fine_cut)
+        self.assertIn("`reference_image` already recorded under `branding`", self.fine_cut)
+        self.assertIn("When they handed a picture over earlier in the conversation, do not ask: use it", self.fine_cut)
+        self.assertEqual(self.fine_cut.count("Ask it once for the whole project"), 1)
+
+    def test_card_without_the_question_keeps_the_plain_words_ask(self):
+        self.assertIn("the result reports it rejected where it does not; the card then goes up without it", self.fine_cut)
+        fallback = self.fine_cut[self.fine_cut.index("When the card does not carry the question"):]
+        self.assertIn("before the finishes round goes up, ask them for the picture in plain words", fallback)
+        self.assertIn("not a card and not a line inside the note", fallback)
+        self.assertIn('"skip" or any other reply: raise the finishes round.', fallback)
+        # Hosts with no cards at all still ask it as its own question.
+        self.assertIn("the reference image is still asked for as its own question", self.skill)
+
 if __name__ == "__main__":
     unittest.main()
