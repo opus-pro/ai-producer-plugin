@@ -145,6 +145,7 @@ Every full cover is one of these forms. Name the form in the plan.
 | form | what it is |
 | --- | --- |
 | `figure` | a drawn diagram, chart, or mechanism at full scale |
+| `scene` | an immersive 3D object or space - a Three.js scene or a CSS 3D stage - that carries the idea itself at full scale, with the camera moving through or around it |
 | `photo` | a real image staged on the ground as content; a video asset is seated as `Video assets` above says, not covered |
 | `statement` | one oversized line, a few words at the largest size the page allows |
 | `source-text` | a crop of dense source material, enlarged until the relevant detail reads |
