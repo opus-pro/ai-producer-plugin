@@ -8,6 +8,7 @@
   },
   "homepage": "https://producer.opus.pro",
   "repository": "https://github.com/opus-pro/ai-producer-plugin",
+  "privacyPolicyUrl": "https://www.opus.pro/privacy-policy",
   "keywords": [
     "video",
     "editing",
