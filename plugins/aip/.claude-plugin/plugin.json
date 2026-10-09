@@ -1,7 +1,8 @@
 {
   "name": "aip",
+  "displayName": "AI Producer by OpusClip",
   "version": "1.2.9",
-  "description": "Create an editable talking-head video with AI Producer. Deliver the preview link by default; export only on explicit request, without automatic playback inspection.",
+  "description": "Create an editable talking-head video in chat. Upload footage, direct cuts, captions, reframing, and motion graphics, then open the AI Producer preview to refine or export.",
   "author": {
     "name": "OpusClip",
     "url": "https://www.opus.pro/"
@@ -9,6 +10,8 @@
   "homepage": "https://producer.opus.pro",
   "repository": "https://github.com/opus-pro/ai-producer-plugin",
   "privacyPolicyUrl": "https://www.opus.pro/privacy-policy",
+  "termsOfServiceUrl": "https://www.opus.pro/terms-of-service",
+  "supportUrl": "https://www.opus.pro/contact-support",
   "keywords": [
     "video",
     "editing",
