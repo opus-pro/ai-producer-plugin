@@ -12,6 +12,7 @@ The host in `index.html` carries the output window:
 <div class="visual-host clip"
   data-composition-id="example-pip"
   data-composition-src="compositions/example-pip.html"
+  data-title="Speaker picture-in-picture"
   data-start="4.5" data-duration="6.5" data-track-index="3"
   data-width="1080" data-height="1920"></div>
 ```

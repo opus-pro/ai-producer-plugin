@@ -11,6 +11,7 @@ An editable effect or caption is a composition document containing a `<template>
 ```html
 <div class="visual-host clip" data-composition-id="example"
      data-composition-src="compositions/example.html"
+     data-title="Example title card"
      data-start="0" data-duration="3" data-track-index="3"
      data-width="1080" data-height="1920"></div>
 ```
