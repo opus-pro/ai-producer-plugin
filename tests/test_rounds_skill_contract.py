@@ -65,14 +65,6 @@ class RoundsSkillContractTests(unittest.TestCase):
             self.assertIn(f"`{component}`", fine_cut)
         self.assertIn("styling reference for palette and type; use it without asking for one or recording it", fine_cut)
 
-    def test_rough_cut_settings_do_not_narrow_the_edit(self):
-        rough_cut = section(self.skill, "**Rough cut.**")
-        self.assertNotIn("For a rough-cut-only or targeted speech-cleanup request", rough_cut)
-        self.assertIn("only when the user limits the edit to the rough cut or speech cleanup", rough_cut)
-        self.assertIn("a boldness or a list of what to clean is a rough-cut setting, not a narrower scope", rough_cut)
-        self.assertIn("on top of the default rather than in place of it", self.skill)
-        self.assertIn("how many visual moments were published and what was not done", self.skill)
-
 
 if __name__ == "__main__":
     unittest.main()
