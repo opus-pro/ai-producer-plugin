@@ -5,7 +5,8 @@ This repository owns the public OpusClip AI Producer plugin for Codex and Claude
 - Keep public plugin content in `plugins/aip/`; retain both host manifests and both marketplaces as separate files.
 - Preserve marketplace `ai-producer-plugins`, plugin `aip`, and server `ai-producer` unless a coordinated migration is requested.
 - Keep the production MCP URL and OAuth resource aligned.
-- Ship only skills and MCP configuration: no lifecycle hooks, no self-update commands. Installation and updates belong to the host client.
+- Ship only skills, MCP configuration, and the decision card widget bundle: no lifecycle hooks, no self-update commands. Installation and updates belong to the host client.
+- `plugins/aip/assets/decision-card/` holds the decision card that hosts rendering agent-authored HTML widgets load from the public CDN at a pinned release, with its caption previews. The plugin host never executes it. The bundle is generated from the service's decision card resource and never edited by hand; a changed preview ships under a new versioned directory.
 - Skills teach capabilities; tool descriptions own service procedures and refusals. Keep each SKILL.md at most 500 lines, with its linked references and helper scripts.
 - Run `python3 scripts/test.py` after changes; validate packaging changes with both host parsers. State which checks actually ran.
 - Keep CI runnable without service credentials or private runners. Employee environments, private integration tests, internal notifications, and internal release orchestration belong outside this repository. Codex and Claude Code publish releases locally using the user's authenticated GitHub identity; CI only validates and never publishes.
