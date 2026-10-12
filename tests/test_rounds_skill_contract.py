@@ -84,7 +84,11 @@ class RoundsSkillContractTests(unittest.TestCase):
         assert script is not None
         expected = "sha384-" + base64.b64encode(hashlib.sha384(CARD_BUNDLE.read_bytes()).digest()).decode()
         self.assertEqual(script.group(2), expected, "the pinned integrity must match the bundle this package ships")
-        self.assertIn('<script>AIPDecisionCard.render(RESULT, { mount: "aip-card", key: "roughcut-1" })</script>', self.skill)
+        self.assertIn('<script>AIPDecisionCard.render(CARD, { mount: "aip-card", key: "roughcut-1" })</script>', self.skill)
+        short_card = section(self.skill, "`CARD` is ")
+        self.assertIn("each component it served by its id alone", short_card)
+        self.assertIn("`displays` true when its result's components carry a `display` field", short_card)
+        self.assertIn("Never copy the result's options or descriptions into the widget", short_card)
         self.assertIn("A tool with a similar name or purpose does not stand in for `show_widget`", self.skill)
 
     def test_terminal_hosts_ask_each_round_without_the_card(self):
