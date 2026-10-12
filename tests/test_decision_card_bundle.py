@@ -22,6 +22,7 @@ CAPTION_PATTERNS = {
 MAX_BUNDLE_BYTES = 256 * 1024
 MAX_TILE_BYTES = 128 * 1024
 SVG_NAMESPACE = "http://www.w3.org/2000/svg"
+FINE_CUT_COMPONENTS = {"editing_preference_example", "editing_preference", "reference_image", "visual_preference_prompt"}
 
 
 class DecisionCardBundleTest(unittest.TestCase):
@@ -40,6 +41,13 @@ class DecisionCardBundleTest(unittest.TestCase):
         urls = set(re.findall(r"https?://[^\s\"')]+", self.source))
         self.assertLessEqual(urls, {SVG_NAMESPACE}, "the bundle must not reach any origin beyond its own directory")
         self.assertNotIn("opus.pro", self.source)
+
+    def test_fine_cut_components_never_reach_the_card(self) -> None:
+        match = re.search(r"var FINE_CUT = \[([^\]]*)\];", self.source)
+        self.assertIsNotNone(match, "the bundle must name the fine-cut components it drops")
+        assert match is not None
+        self.assertEqual(set(re.findall(r'"([a-z_]+)"', match.group(1))), FINE_CUT_COMPONENTS)
+        self.assertIn("FINE_CUT.indexOf(component.id) >= 0", self.source)
 
     def test_caption_previews_ship_beside_the_bundle(self) -> None:
         self.assertIn('BASE + "caption-tiles/v1/"', self.source)
