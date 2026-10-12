@@ -515,7 +515,7 @@
     var status = el("span", "sub", sent ? "Added to your message. Press Enter to send it." :
       submitting ? "Waiting for the chat to confirm receipt..." :
       imageBusy() && !picking ? "Saving the image..." :
-      view.submission ? "The chat rejected this selection. Retry or type your choices in the chat." : "");
+      view.submission ? "Not added to your message. Press Send again, or type your choices in the chat." : "");
     send.addEventListener("click", function () {
       if (send.disabled || (view.submission && view.submission.status !== "failed")) { return; }
       var submittedView = view;

@@ -51,6 +51,11 @@ class DecisionCardBundleTest(unittest.TestCase):
         self.assertIn('el("button", "change", "Change")', self.source)
         self.assertIn("view.submission = null; save(); render();", self.source)
 
+    def test_a_refused_card_asks_for_another_press(self) -> None:
+        # The host refuses a message that does not follow a recent click; a new press is one.
+        self.assertIn('"Not added to your message. Press Send again, or type your choices in the chat."', self.source)
+        self.assertNotIn("The chat rejected this selection", self.source)
+
     def test_bundle_names_no_network_origin(self) -> None:
         urls = set(re.findall(r"https?://[^\s\"')]+", self.source))
         self.assertLessEqual(urls, {SVG_NAMESPACE}, "the bundle must not reach any origin beyond its own directory")
