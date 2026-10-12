@@ -24,6 +24,11 @@ class ProgressiveSkillContractTests(unittest.TestCase):
         self.assertNotIn("before generating any source for the next effect", skill)
         self.assertIn("progressive_checkpoint.py\" init", reference)
 
+    def test_speaker_effect_hosts_ride_with_an_effect_step(self):
+        reference = REFERENCE.read_text(encoding="utf-8")
+        self.assertIn("A speaker zoom or filter host is not a step either", reference)
+        self.assertIn("put it in the draft of the next planned effect", reference)
+
     def test_publication_uses_the_current_task_mcp(self):
         skill = SKILL.read_text(encoding="utf-8")
         reference = REFERENCE.read_text(encoding="utf-8")

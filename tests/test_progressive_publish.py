@@ -185,6 +185,25 @@ class ProgressivePublishTests(unittest.TestCase):
             self.accept(plan, 1, ["render-engine/public/vendor/unknown.js"])
         self.assertEqual(self.progress.status, "prepared")
 
+    def test_a_remote_file_registered_at_init_is_accepted_in_receipt(self):
+        self.progress = ProgressCheckpoint(
+            self.root,
+            "test-project",
+            59.85,
+            "initial",
+            ["render-engine/public/source.mp4", "render-engine/public/source.mp3",
+             "render-engine/public/speaker_opening.webm"],
+        )
+        plan = self.progress.prepare(self.author(1))
+        self.accept(plan, 1, ["render-engine/public/speaker_opening.webm"])
+        self.assertEqual(self.progress.status, "ready")
+
+    def test_an_unregistered_media_file_in_receipt_stops_acceptance(self):
+        plan = self.progress.prepare(self.author(1))
+        with self.assertRaisesRegex(ValueError, "receipt_mismatch"):
+            self.accept(plan, 1, ["render-engine/public/speaker_opening.webm"])
+        self.assertEqual(self.progress.status, "prepared")
+
     def test_unexpected_document_in_receipt_stops_acceptance(self):
         plan = self.progress.prepare(self.author(1))
         with self.assertRaisesRegex(ValueError, "receipt_mismatch"):
