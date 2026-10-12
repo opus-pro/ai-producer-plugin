@@ -37,6 +37,13 @@ class DecisionCardBundleTest(unittest.TestCase):
         self.assertIn("window.AIPDecisionCard = {", self.source)
         self.assertLessEqual(BUNDLE.stat().st_size, MAX_BUNDLE_BYTES)
 
+    def test_card_rules_outweigh_the_widget_host(self) -> None:
+        # A widget host styles buttons with an id-weight selector; every card rule below the
+        # document level is scoped under the shell twice so the card keeps its own look.
+        self.assertIn("#card-shell#card-shell .seg", self.source)
+        self.assertIn("#card-shell#card-shell button", self.source)
+        self.assertNotRegex(self.source, r'(?:\\n|[}]) *\.seg[ {\[:]', "an unscoped card rule loses to the host")
+
     def test_bundle_names_no_network_origin(self) -> None:
         urls = set(re.findall(r"https?://[^\s\"')]+", self.source))
         self.assertLessEqual(urls, {SVG_NAMESPACE}, "the bundle must not reach any origin beyond its own directory")
