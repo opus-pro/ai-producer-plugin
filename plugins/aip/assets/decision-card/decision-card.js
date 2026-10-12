@@ -512,7 +512,7 @@
     var actions = el("div", "actions");
     var send = el("button", "go", "Send my preference");
     send.disabled = sendBlocked(card);
-    var status = el("span", "sub", sent ? "Sent. Your choices are recorded in the chat." :
+    var status = el("span", "sub", sent ? "Added to your message. Press Enter to send it." :
       submitting ? "Waiting for the chat to confirm receipt..." :
       imageBusy() && !picking ? "Saving the image..." :
       view.submission ? "The chat rejected this selection. Retry or type your choices in the chat." : "");
@@ -535,7 +535,7 @@
     // An answered card drops the button rather than disabling it: the row then costs one
     // line of status text, which is never taller than the button it replaces.
     sendButton = sent ? null : send;
-    if (!sent) { actions.appendChild(send); }
+    if (!sent) { actions.appendChild(send); } else { var change = el("button", "change", "Change"); change.addEventListener("click", function () { view.submission = null; save(); render(); }); actions.appendChild(change); }
     actions.appendChild(status);
     root.appendChild(actions);
     if (submitting) { root.appendChild(fallback(view.submission.text, actions)); }

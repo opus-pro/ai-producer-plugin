@@ -44,6 +44,13 @@ class DecisionCardBundleTest(unittest.TestCase):
         self.assertIn("#card-shell#card-shell button", self.source)
         self.assertNotRegex(self.source, r'(?:\\n|[}]) *\.seg[ {\[:]', "an unscoped card rule loses to the host")
 
+    def test_a_sent_card_says_where_its_answer_went_and_reopens(self) -> None:
+        # sendPrompt only fills the message box, and the host never tells the widget it was sent.
+        self.assertIn('"Added to your message. Press Enter to send it."', self.source)
+        self.assertNotIn("recorded in the chat", self.source)
+        self.assertIn('el("button", "change", "Change")', self.source)
+        self.assertIn("view.submission = null; save(); render();", self.source)
+
     def test_bundle_names_no_network_origin(self) -> None:
         urls = set(re.findall(r"https?://[^\s\"')]+", self.source))
         self.assertLessEqual(urls, {SVG_NAMESPACE}, "the bundle must not reach any origin beyond its own directory")
