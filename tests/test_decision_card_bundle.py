@@ -1,0 +1,56 @@
+from __future__ import annotations
+
+import re
+import unittest
+from pathlib import Path
+
+
+REPO = Path(__file__).resolve().parents[1]
+CARD_DIR = REPO / "plugins" / "aip" / "assets" / "decision-card"
+BUNDLE = CARD_DIR / "decision-card.js"
+TILES = CARD_DIR / "caption-tiles" / "v1"
+CAPTION_PATTERNS = {
+    "blur-ladder",
+    "editorial-stack",
+    "inverted-stack",
+    "lead-in-flare",
+    "pace-adaptive",
+    "scribble-subtitle",
+    "solo-word-punch",
+    "tilt-slam",
+}
+MAX_BUNDLE_BYTES = 256 * 1024
+MAX_TILE_BYTES = 128 * 1024
+SVG_NAMESPACE = "http://www.w3.org/2000/svg"
+
+
+class DecisionCardBundleTest(unittest.TestCase):
+    """The widget bundle is generated, public-safe, and ships every preview it rewrites to."""
+
+    def setUp(self) -> None:
+        self.source = BUNDLE.read_text(encoding="utf-8")
+
+    def test_bundle_is_generated_from_the_service_card(self) -> None:
+        self.assertRegex(self.source, r"Generated from the AI Producer service's decision card resource ui://aip/decision-card/v\d+\.")
+        self.assertIn("Do not edit by hand", self.source)
+        self.assertIn("window.AIPDecisionCard = {", self.source)
+        self.assertLessEqual(BUNDLE.stat().st_size, MAX_BUNDLE_BYTES)
+
+    def test_bundle_names_no_network_origin(self) -> None:
+        urls = set(re.findall(r"https?://[^\s\"')]+", self.source))
+        self.assertLessEqual(urls, {SVG_NAMESPACE}, "the bundle must not reach any origin beyond its own directory")
+        self.assertNotIn("opus.pro", self.source)
+
+    def test_caption_previews_ship_beside_the_bundle(self) -> None:
+        self.assertIn('BASE + "caption-tiles/v1/"', self.source)
+        shipped = {path.stem for path in TILES.glob("*.mp4")}
+        self.assertEqual(shipped, CAPTION_PATTERNS)
+        self.assertEqual({path.suffix for path in TILES.iterdir()}, {".mp4"})
+        for tile in TILES.glob("*.mp4"):
+            data = tile.read_bytes()
+            self.assertLessEqual(len(data), MAX_TILE_BYTES, tile.name)
+            self.assertEqual(data[4:8], b"ftyp", f"{tile.name} is not an MP4 file")
+
+
+if __name__ == "__main__":
+    unittest.main()
