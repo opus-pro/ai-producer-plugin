@@ -1882,7 +1882,9 @@
     }
     input.addEventListener("change", function () { if (input.checked) { choose(); } });
     cell.addEventListener("click", function (event) {
-      if (event.target === input) { return; }
+      // A sent card's radio stays as it was read: checking a disabled one would tell a
+      // screen reader a pick the card never recorded.
+      if (event.target === input || input.disabled) { return; }
       input.checked = true;
       choose();
     });
@@ -1988,7 +1990,7 @@
       video.setAttribute("data-select-on-click", "1");
       selectOnClick = function (input, adoptPick) {
         video.addEventListener("click", function () {
-          if (video.getAttribute("data-select-on-click") !== "1" || releaseHeld(group, input, option.value)) { return; }
+          if (input.disabled || video.getAttribute("data-select-on-click") !== "1" || releaseHeld(group, input, option.value)) { return; }
           input.checked = true;
           adoptPick();
         });
