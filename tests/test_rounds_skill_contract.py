@@ -23,9 +23,10 @@ CAPTION_PATTERNS = [
     "solo-word-punch",
     "tilt-slam",
 ]
-FINE_CUT_COMPONENTS = [
+# Fine-cut components the agent never asks for; `editing_preference` is the optional
+# "Anything else?" box at the foot of the one card, asked but never followed up.
+REFUSED_FINE_CUT_COMPONENTS = [
     "editing_preference_example",
-    "editing_preference",
     "reference_image",
     "visual_preference_prompt",
 ]
@@ -64,12 +65,29 @@ class RoundsSkillContractTests(unittest.TestCase):
         fine_cut = section(self.skill, "**Fine cut.**")
         self.assertIn("The fine cut is not a round.", fine_cut)
         self.assertIn("even when `present_choices` offers components for them", fine_cut)
-        for component in FINE_CUT_COMPONENTS:
-            self.assertIn(f"`{component}`", fine_cut)
+        refused = fine_cut[fine_cut.index("Do not ask"):fine_cut.index("The user's own words outrank")]
+        for component in REFUSED_FINE_CUT_COMPONENTS:
+            self.assertIn(f"`{component}`", refused)
+        self.assertNotIn("`editing_preference`", refused)
         self.assertIn("styling reference for palette and type; use it without asking for one or recording it", fine_cut)
 
+    def test_open_rounds_are_asked_on_one_card_and_recorded_apart(self):
+        self.assertIn("Ask every round still open at once, on one card, in the order they are listed.", self.skill)
+        self.assertIn("two separate decisions with a record each; they are only asked together", self.skill)
+        self.assertNotIn("one at a time", self.skill)
+        self.assertNotIn("raise the next round", self.skill)
+        rounds = section(self.skill, "All open rounds go on one card")
+        self.assertIn("call `present_choices` with the components of every round still open, in table order, then `editing_preference` last", rounds)
+        self.assertIn("A round the opening settled puts none of its components on the card.", rounds)
+        self.assertIn("one `record_choices` per round it asked: the rough-cut answer under `roughcut` and the finishing answers under `finishing`", rounds)
+
+    def test_anything_else_box_is_optional_and_never_recorded(self):
+        fine_cut = section(self.skill, "**Fine cut.**")
+        self.assertIn("the optional \"Anything else?\" box at the foot of the card: the card sends without it, and a blank box is never followed up", fine_cut)
+        self.assertIn("`editing_preference=<text>`", fine_cut)
+        self.assertIn("record no `branding` entry for it", fine_cut)
+
     def test_hosts_that_draw_the_card_keep_the_card_flow(self):
-        self.assertIn("Each round is one card: call `present_choices` with that round's components, end your turn, and wait.", self.skill)
         hosts = section(self.skill, "**Hosts that show the card as data.**")
         self.assertIn("Hosts with neither of the two tools named below draw the card: run the rounds as above.", hosts)
 
@@ -112,8 +130,8 @@ class RoundsSkillContractTests(unittest.TestCase):
     def test_first_round_goes_up_while_the_source_uploads(self):
         preparing = section(self.skill, "Preparing the project is not editing")
         self.assertNotIn("Only then read the saved default", preparing)
-        self.assertLess(preparing.index("`sign_upload`"), preparing.index("put up the first round"))
-        self.assertLess(preparing.index("put up the first round"), preparing.index("The moment the PUT finishes, call `start_transcribe_project`"))
+        self.assertLess(preparing.index("`sign_upload`"), preparing.index("put up the card"))
+        self.assertLess(preparing.index("put up the card"), preparing.index("The moment the PUT finishes, call `start_transcribe_project`"))
         self.assertIn("keep the turn until the upload has finished and preparation has started", preparing)
         self.assertIn("a question tool that waits for the answer", preparing)
         self.assertIn("[upload_batch.py](scripts/upload_batch.py) given the source's folder as its root", preparing)
@@ -121,23 +139,30 @@ class RoundsSkillContractTests(unittest.TestCase):
         self.assertIn("A conversation with no computer behind it, which Known issues below covers: nothing is signed there.", preparing)
         price = section(self.skill, "Preparation spends")
         self.assertIn("`get_pricing`, without a project", price)
-        self.assertIn("the message that raises the first round", price)
+        self.assertIn("the message that raises the card", price)
 
     def test_answers_before_the_project_are_held_then_recorded(self):
-        rounds = section(self.skill, "Each round is one card")
+        rounds = section(self.skill, "All open rounds go on one card")
         self.assertNotIn("Preparation is already under way by the first card", rounds)
-        self.assertIn("is held in the conversation as given, the latest answer for each card", rounds)
+        self.assertIn("is held in the conversation as given, the latest answer for each round", rounds)
         self.assertIn("written down under its card id as soon as the project is created", rounds)
-        self.assertIn("Do not hold the next round for the project", rounds)
+        self.assertIn("When the card is answered before the project exists, let the upload finish, start preparation, write the held answers", rounds)
         widget = section(self.skill, "The card's Send puts the answer")
         self.assertIn("end your turn once preparation has started", widget)
 
     def test_terminal_hosts_ask_each_round_without_the_card(self):
         terminal = section(self.skill, "Without `show_widget` under any prefix, a host whose tools include one named exactly `AskUserQuestion`")
         self.assertIn("so do not call `present_choices` there", terminal)
+        self.assertIn("ask every open round in one `AskUserQuestion` call", terminal)
+        self.assertIn("at most four questions, which the two rounds fill exactly", terminal)
         self.assertIn("at most four options each", terminal)
         self.assertIn("letting the run choose, which records no `caption_style`", terminal)
         self.assertIn("Write down the token each chosen option stands for, never the label the user saw.", terminal)
+
+    def test_hosts_without_cards_ask_the_open_rounds_in_one_message(self):
+        plain = section(self.skill, "Not every install has the cards.")
+        self.assertIn("every still-open round in one message, each as a question of its own", plain)
+        self.assertNotIn("one round per turn", plain)
 
 
 if __name__ == "__main__":
