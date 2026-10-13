@@ -1940,7 +1940,13 @@
       // Folded rather than hidden, so moving the pick eases one description shut and the
       // next open over the same frames instead of jumping the card by their line counts.
       var desc = el("div", "ldesc");
-      desc.appendChild(el("div", "ldescin", option.description));
+      var descText = el("div", "ldescin", option.description);
+      // Read with its radio whether or not the row is picked: a description referenced this
+      // way is announced even while folded and hidden. The input's name is unique per copy
+      // of the question, so a repeated card never shares an id.
+      descText.id = input.name + "-" + option.value + "-desc";
+      input.setAttribute("aria-describedby", descText.id);
+      desc.appendChild(descText);
       text.appendChild(desc);
     }
     cell.appendChild(input);
