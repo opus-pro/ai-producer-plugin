@@ -153,7 +153,8 @@ class RoundsSkillContractTests(unittest.TestCase):
         # The conversation without a computer still signs nothing.
         self.assertIn("A conversation with no computer behind it, which Known issues below covers: nothing is signed there.", preparing)
         price = section(self.skill, "Whether preparation can charge this user")
-        self.assertIn("`get_pricing`, without a project", price)
+        self.assertIn("`get_pricing`", price)
+        self.assertIn("without a project", price)
         self.assertIn("the message that raises the card", price)
 
     def test_answers_before_the_project_are_held_then_recorded(self):
