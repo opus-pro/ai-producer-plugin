@@ -23,14 +23,16 @@ CAPTION_PATTERNS = {
 MAX_BUNDLE_BYTES = 256 * 1024
 MAX_TILE_BYTES = 128 * 1024
 SVG_NAMESPACE = "http://www.w3.org/2000/svg"
-ROUND_COMPONENTS = ["rough_cut_boldness", "caption_style", "bgm_enabled", "sfx_enabled"]
+ROUND_COMPONENTS = ["rough_cut_boldness", "caption_style", "bgm_enabled", "sfx_enabled", "editing_preference"]
+# The single card's free-text "Anything else?" box: typed, so it has no options and no display.
+TYPED_COMPONENTS = {"editing_preference"}
 ROUND_VALUES = {
     "rough_cut_boldness": ["off", "conservative", "balanced", "aggressive"],
     "caption_style": ["no-caption", *sorted(CAPTION_PATTERNS)],
     "bgm_enabled": ["on", "off"],
     "sfx_enabled": ["on", "off"],
 }
-FINE_CUT_COMPONENTS = {"editing_preference_example", "editing_preference", "reference_image", "visual_preference_prompt"}
+FINE_CUT_COMPONENTS = {"editing_preference_example", "reference_image", "visual_preference_prompt"}
 
 
 class DecisionCardBundleTest(unittest.TestCase):
@@ -52,12 +54,12 @@ class DecisionCardBundleTest(unittest.TestCase):
         self.assertIn("#card-shell#card-shell button", self.source)
         self.assertNotRegex(self.source, r'(?:\\n|[}]) *\.seg[ {\[:]', "an unscoped card rule loses to the host")
 
-    def test_a_sent_card_says_where_its_answer_went_and_reopens(self) -> None:
+    def test_a_sent_card_says_where_its_answer_went_and_stays_locked(self) -> None:
         # sendPrompt only fills the message box, and the host never tells the widget it was sent.
+        # It can only append, never replace, so a sent card offers no way to send a second answer.
         self.assertIn('"Added to your message. Press Enter to send it."', self.source)
         self.assertNotIn("recorded in the chat", self.source)
-        self.assertIn('el("button", "change", "Change")', self.source)
-        self.assertIn("view.submission = null; save(); render();", self.source)
+        self.assertNotIn('"Change"', self.source)
 
     def test_a_refused_card_asks_for_another_press(self) -> None:
         # The host refuses a message that does not follow a recent click; a new press is one.
@@ -86,6 +88,10 @@ class DecisionCardBundleTest(unittest.TestCase):
         for mode, components in catalog.items():
             self.assertEqual(list(components), ROUND_COMPONENTS, mode)
             for component_id, component in components.items():
+                if component_id in TYPED_COMPONENTS:
+                    self.assertEqual(component["kind"], "text", f"{mode} {component_id}")
+                    self.assertNotIn("options", component, f"{mode} {component_id}")
+                    continue
                 self.assertEqual([option["value"] for option in component["options"]], ROUND_VALUES[component_id], f"{mode} {component_id}")
                 self.assertEqual("display" in component, mode == "displays", f"{mode} {component_id}")
                 for option in component["options"]:
