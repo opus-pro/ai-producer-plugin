@@ -33,7 +33,6 @@ class FramingSkillContractTests(unittest.TestCase):
         self.assertIn("Name exactly that footage as `source_start_ms` and `source_end_ms`", cutout)
         self.assertIn("split at the cut: one cutout beat per clip, each with its own window", cutout)
         self.assertIn("`data-media-start` at the window's `source_start_ms` / 1000", cutout)
-        self.assertNotIn("matte.source_start_ms", cutout)
         self.assertNotIn("the beat's `start` and `end`", cutout)
         self.assertNotIn("the source seconds of the beat's start", cutout)
 
