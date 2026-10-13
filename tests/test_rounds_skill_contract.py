@@ -87,9 +87,24 @@ class RoundsSkillContractTests(unittest.TestCase):
         self.assertIn("`editing_preference=<text>`", fine_cut)
         self.assertIn("record no `branding` entry for it", fine_cut)
 
-    def test_hosts_that_draw_the_card_keep_the_card_flow(self):
+    def test_tool_availability_does_not_imply_a_visible_card(self):
         hosts = section(self.skill, "**Hosts that show the card as data.**")
-        self.assertIn("Hosts with neither of the two tools named below draw the card: run the rounds as above.", hosts)
+        self.assertIn("The presence of `present_choices` does not tell you whether the user can see a card.", hosts)
+        self.assertNotIn("Hosts with neither of the two tools named below draw the card", hosts)
+
+    def test_default_hosts_always_show_complete_returned_choices_and_record_answers(self):
+        hosts = section(self.skill, "On hosts with neither `show_widget` under any prefix nor `AskUserQuestion`")
+        self.assertIn("including Codex, call `present_choices` as above", hosts)
+        self.assertIn("always put the complete choices in your assistant message: every returned option for each still-open component", hosts)
+        self.assertIn("in returned order", hosts)
+        self.assertIn("Keep the exact returned option values for recording", hosts)
+        self.assertIn("This message accompanies any card the host draws", hosts)
+        self.assertIn("the user can answer by name, number, or their own words", hosts)
+        self.assertIn("Ask for all open rounds together in this one message", hosts)
+        self.assertIn("an optional line for anything else", hosts)
+        self.assertIn("For a saved default, mark its current selections and ask once at the end", hosts)
+        self.assertIn("use `record_choices` per round as above, including answers held until the project exists", hosts)
+        self.assertIn("End your turn once preparation has started", hosts)
 
     def test_widget_hosts_draw_the_pinned_bundle_as_written(self):
         hosts = section(self.skill, "**Hosts that show the card as data.**")
@@ -163,6 +178,9 @@ class RoundsSkillContractTests(unittest.TestCase):
         plain = section(self.skill, "Not every install has the cards.")
         self.assertIn("every still-open round in one message, each as a question of its own", plain)
         self.assertNotIn("one round per turn", plain)
+        self.assertIn("when `get_editing_preset` is available", plain)
+        self.assertIn("when `record_choices` is available", plain)
+        self.assertNotIn("`record_choices` is absent with it", plain)
 
 
 if __name__ == "__main__":

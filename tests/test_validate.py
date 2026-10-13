@@ -45,6 +45,11 @@ class ValidateFixtureTest(unittest.TestCase):
     def test_pristine_copy_passes(self) -> None:
         validate.main(self.root)
 
+    def test_missing_dark_icon_fails(self) -> None:
+        (self.root / "plugins/aip/assets/icon-dark.png").unlink()
+        with self.assertRaises(AssertionError):
+            validate.validate_manifests(self.root)
+
     def test_legacy_or_duplicate_mcp_server_fails(self) -> None:
         path = self.root / MCP_CONFIG
         original = validate.load_json(path)
