@@ -392,7 +392,7 @@
       } else {
         answer = blankAnswer(group);
       }
-      lines.push("- " + (group.label || group.id) + (group.authority === "server" ? "" : " (" + group.id + ")") + ": " + answer);
+      lines.push("- " + (group.label || group.id) + (group.authority === "server" && group.id !== "editing_preference_example" ? "" : " (" + group.id + ")") + ": " + answer);
     });
     return lines.join("\n");
   }
