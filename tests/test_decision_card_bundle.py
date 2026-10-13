@@ -61,6 +61,11 @@ class DecisionCardBundleTest(unittest.TestCase):
         self.assertNotIn("recorded in the chat", self.source)
         self.assertNotIn('"Change"', self.source)
 
+    def test_the_button_says_it_adds_to_the_chat(self) -> None:
+        # Only this widget bundle fills the message box; the service's own card sends, and keeps its label.
+        self.assertIn('el("button", "go", "Add to chat")', self.source)
+        self.assertNotIn('"Send my preference"', self.source)
+
     def test_a_refused_card_asks_for_another_press(self) -> None:
         # The host refuses a message that does not follow a recent click; a new press is one.
         self.assertIn('"Not added to your message. Press Send again, or type your choices in the chat."', self.source)

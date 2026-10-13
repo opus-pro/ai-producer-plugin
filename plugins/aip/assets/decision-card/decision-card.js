@@ -462,7 +462,7 @@
     // document taller than the height the host measured before the click, and the overflow
     // is what scrolls inside the frame.
     var actions = el("div", "actions");
-    var send = el("button", "go", "Send my preference");
+    var send = el("button", "go", "Add to chat");
     send.disabled = sendBlocked(card);
     var status = el("span", "sub", sent ? "Added to your message. Press Enter to send it." :
       submitting ? "Waiting for the chat to confirm receipt..." :
