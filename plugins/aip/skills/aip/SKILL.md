@@ -65,7 +65,7 @@ For a requested duration, highlights, or short version, select valuable, fluent 
 
 ```html
 <div id="aip-card"></div>
-<script src="https://cdn.jsdelivr.net/gh/opus-pro/ai-producer-plugin@f78b957123f47202d804324edc540b0d4f64ac21/plugins/aip/assets/decision-card/decision-card.js" integrity="sha384-v+suHx4a0YAnOsWN8OjbbB8BRiQ7LJzUrYjrqmCE1LxVA4pezb1KBrmpqahCUtS+" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/gh/opus-pro/ai-producer-plugin@a1152899701fb8f4227cd8f6800c723298a5c0f8/plugins/aip/assets/decision-card/decision-card.js" integrity="sha384-Tf96ZZqYRnFPUhZncYQwhMcPnW9aHfB0QFlqc5x1ahH48N6sXCfDjtlW1aSP2Ssh" crossorigin="anonymous"></script>
 <script>AIPDecisionCard.render(CARD, { mount: "aip-card", key: "roughcut-1" })</script>
 ```
 
