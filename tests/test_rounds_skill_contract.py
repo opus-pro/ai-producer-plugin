@@ -75,7 +75,11 @@ class RoundsSkillContractTests(unittest.TestCase):
 
     def test_widget_hosts_draw_the_pinned_bundle_as_written(self):
         hosts = section(self.skill, "**Hosts that show the card as data.**")
-        self.assertIn("When a tool named exactly `show_widget` is among your tools", hosts)
+        self.assertIn(
+            "When `show_widget` is among your tools - by that name alone or behind a server prefix, as in Claude Code's `mcp__visualize__show_widget` -",
+            hosts,
+        )
+        self.assertNotIn("named exactly `show_widget`", self.skill, "Claude Code lists the tool with its server prefix")
         script = re.search(
             r'<script src="https://cdn\.jsdelivr\.net/gh/opus-pro/ai-producer-plugin@([0-9a-f]{40})/plugins/aip/assets/decision-card/decision-card\.js" integrity="(sha384-[A-Za-z0-9+/=]+)" crossorigin="anonymous"></script>',
             self.skill,
@@ -89,10 +93,13 @@ class RoundsSkillContractTests(unittest.TestCase):
         self.assertIn("each component it served by its id alone", short_card)
         self.assertIn("`displays` true when its result's components carry a `display` field", short_card)
         self.assertIn("Never copy the result's options or descriptions into the widget", short_card)
-        self.assertIn("A tool with a similar name or purpose does not stand in for `show_widget`", self.skill)
+        self.assertIn(
+            "A server prefix does not make it a different tool, but a tool with another name, however similar its name or purpose, does not stand in for `show_widget`",
+            self.skill,
+        )
 
     def test_terminal_hosts_ask_each_round_without_the_card(self):
-        terminal = section(self.skill, "Without `show_widget`, a host whose tools include one named exactly `AskUserQuestion`")
+        terminal = section(self.skill, "Without `show_widget` under any prefix, a host whose tools include one named exactly `AskUserQuestion`")
         self.assertIn("so do not call `present_choices` there", terminal)
         self.assertIn("at most four options each", terminal)
         self.assertIn("letting the run choose, which records no `caption_style`", terminal)
