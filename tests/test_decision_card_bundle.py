@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 import unittest
 from pathlib import Path
@@ -22,6 +23,13 @@ CAPTION_PATTERNS = {
 MAX_BUNDLE_BYTES = 256 * 1024
 MAX_TILE_BYTES = 128 * 1024
 SVG_NAMESPACE = "http://www.w3.org/2000/svg"
+ROUND_COMPONENTS = ["rough_cut_boldness", "caption_style", "bgm_enabled", "sfx_enabled"]
+ROUND_VALUES = {
+    "rough_cut_boldness": ["off", "conservative", "balanced", "aggressive"],
+    "caption_style": ["no-caption", *sorted(CAPTION_PATTERNS)],
+    "bgm_enabled": ["on", "off"],
+    "sfx_enabled": ["on", "off"],
+}
 FINE_CUT_COMPONENTS = {"editing_preference_example", "editing_preference", "reference_image", "visual_preference_prompt"}
 
 
@@ -67,6 +75,26 @@ class DecisionCardBundleTest(unittest.TestCase):
         assert match is not None
         self.assertEqual(set(re.findall(r'"([a-z_]+)"', match.group(1))), FINE_CUT_COMPONENTS)
         self.assertIn("FINE_CUT.indexOf(component.id) >= 0", self.source)
+
+    def test_rounds_are_served_by_id_under_both_display_settings(self) -> None:
+        # A widget names a round component by id; the bundle carries what present_choices serves.
+        match = re.search(r"var CATALOG = (\{.*?\});\n", self.source, re.S)
+        self.assertIsNotNone(match, "the bundle must carry the rounds' components")
+        assert match is not None
+        catalog = json.loads(match.group(1))
+        self.assertEqual(set(catalog), {"displays", "plain"})
+        for mode, components in catalog.items():
+            self.assertEqual(list(components), ROUND_COMPONENTS, mode)
+            for component_id, component in components.items():
+                self.assertEqual([option["value"] for option in component["options"]], ROUND_VALUES[component_id], f"{mode} {component_id}")
+                self.assertEqual("display" in component, mode == "displays", f"{mode} {component_id}")
+                for option in component["options"]:
+                    preview = option.get("preview")
+                    if preview:
+                        self.assertRegex(preview["src"], r"^/caption-card-tiles/v1/[a-z0-9-]+\.mp4$")
+                        self.assertIn(preview["src"].rsplit("/", 1)[1][:-4], CAPTION_PATTERNS)
+        self.assertIn("function expand(output)", self.source)
+        self.assertIn("var data = localize(expand(output));", self.source)
 
     def test_caption_previews_ship_beside_the_bundle(self) -> None:
         self.assertIn('BASE + "caption-tiles/v1/"', self.source)
