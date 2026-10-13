@@ -10,16 +10,25 @@ SKILL = ROOT / "plugins/aip/skills/aip/SKILL.md"
 
 
 class PreparationPriceDisclosureTest(unittest.TestCase):
-    def test_price_is_announced_only_when_preparation_charges(self) -> None:
-        skill = SKILL.read_text(encoding="utf-8")
-        self.assertIn("When it charges, whatever you say when you start preparation carries the price", skill)
-        self.assertIn("When it is free, say nothing about money, not even that it is free", skill)
-        self.assertIn("no zero amount, no credits, no note about free usage or a limited time", skill)
-        self.assertIn("A user who asks what something costs is answered from `get_pricing` either way", skill)
+    def setUp(self) -> None:
+        self.skill = SKILL.read_text(encoding="utf-8")
+
+    def test_price_is_announced_only_when_preparation_can_charge(self) -> None:
+        self.assertIn("When it can charge, whatever you say when you start preparation carries the price", self.skill)
+        self.assertIn("When it is free, that message says nothing about money, not even that it is free", self.skill)
+        self.assertIn("no zero amount, no credits, no note about free usage or a limited time", self.skill)
+
+    def test_quota_first_preparation_counts_as_charging(self) -> None:
+        self.assertIn("Preparation is free only when its row is in the `free` band", self.skill)
+        self.assertIn("a row with a `per_unit` price can charge, including one a daily quota may cover first", self.skill)
+
+    def test_user_initiated_cost_talk_is_always_answered(self) -> None:
+        self.assertIn("asks to talk the edit through before anything is spent, is answered from `get_pricing` either way, free included", self.skill)
+        self.assertIn("tell them what preparing costs", self.skill)
+        self.assertIn("A free usage status or refusal the service reports later is passed on as it reads", self.skill)
 
     def test_no_unconditional_preparation_price_rule(self) -> None:
-        skill = SKILL.read_text(encoding="utf-8")
-        self.assertNotIn("Preparation spends, so whatever you say when you start it carries its price", skill)
+        self.assertNotIn("Preparation spends, so whatever you say when you start it carries its price", self.skill)
 
 
 if __name__ == "__main__":
