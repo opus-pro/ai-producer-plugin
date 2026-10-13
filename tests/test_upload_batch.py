@@ -39,6 +39,19 @@ class UploadTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 upload.prepare(root, [dict(row, path='render-engine/../outside')])
 
+    def test_source_video_uploads_from_its_own_folder(self):
+        # The skill sends the source the same way: its folder is the root, its name the path.
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp).resolve(); (folder / 'talk.mp4').write_bytes(b'video')
+            row = {'path': 'talk.mp4', 'upload_url': 'https://example.test/source?sig=private', 'headers': {'Content-Type': 'video/mp4'}}
+            job = upload.prepare(folder, [row])[0]
+            self.assertEqual(job[1], folder / 'talk.mp4')
+            with patch.object(upload.http.client, 'HTTPSConnection') as cls:
+                conn = cls.return_value; conn.getresponse.return_value.status = 200
+                self.assertEqual(upload.upload(job), {'path': 'talk.mp4', 'ok': True, 'status': 200})
+                conn.putheader.assert_any_call('Content-Type', 'video/mp4')
+                conn.putheader.assert_any_call('Content-Length', '5')
+
     def test_upload_and_error_are_sanitized(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve(); (root / 'x').write_bytes(b'abc')

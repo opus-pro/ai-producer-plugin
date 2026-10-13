@@ -98,6 +98,40 @@ class RoundsSkillContractTests(unittest.TestCase):
             self.skill,
         )
 
+    def test_skill_descriptions_are_english_and_route_any_language(self):
+        # Hosts show a skill's description in their menus, so it stays English; the
+        # "in any language" clause is what routes a request written in another one.
+        for skill in sorted((ROOT / "plugins/aip/skills").glob("*/SKILL.md")):
+            description = re.search(r"^description:\s*(.+)$", skill.read_text(encoding="utf-8"), re.MULTILINE).group(1)
+            self.assertTrue(description.isascii(), skill)
+        entry = re.search(r"^description:\s*(.+)$", self.skill, re.MULTILINE).group(1)
+        self.assertIn("in any language", entry)
+        for capability in ("cut or edit", "captions or subtitles", "motion graphics", "background music", "inserted images or video clips", "export"):
+            self.assertIn(capability, entry)
+
+    def test_first_round_goes_up_while_the_source_uploads(self):
+        preparing = section(self.skill, "Preparing the project is not editing")
+        self.assertNotIn("Only then read the saved default", preparing)
+        self.assertLess(preparing.index("`sign_upload`"), preparing.index("put up the first round"))
+        self.assertLess(preparing.index("put up the first round"), preparing.index("The moment the PUT finishes, call `start_transcribe_project`"))
+        self.assertIn("keep the turn until the upload has finished and preparation has started", preparing)
+        self.assertIn("a question tool that waits for the answer", preparing)
+        self.assertIn("[upload_batch.py](scripts/upload_batch.py) given the source's folder as its root", preparing)
+        # The conversation without a computer still signs nothing.
+        self.assertIn("A conversation with no computer behind it, which Known issues below covers: nothing is signed there.", preparing)
+        price = section(self.skill, "Preparation spends")
+        self.assertIn("`get_pricing`, without a project", price)
+        self.assertIn("the message that raises the first round", price)
+
+    def test_answers_before_the_project_are_held_then_recorded(self):
+        rounds = section(self.skill, "Each round is one card")
+        self.assertNotIn("Preparation is already under way by the first card", rounds)
+        self.assertIn("is held in the conversation as given, the latest answer for each card", rounds)
+        self.assertIn("written down under its card id as soon as the project is created", rounds)
+        self.assertIn("Do not hold the next round for the project", rounds)
+        widget = section(self.skill, "The card's Send puts the answer")
+        self.assertIn("end your turn once preparation has started", widget)
+
     def test_terminal_hosts_ask_each_round_without_the_card(self):
         terminal = section(self.skill, "Without `show_widget` under any prefix, a host whose tools include one named exactly `AskUserQuestion`")
         self.assertIn("so do not call `present_choices` there", terminal)
