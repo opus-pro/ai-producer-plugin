@@ -152,7 +152,7 @@ class RoundsSkillContractTests(unittest.TestCase):
         self.assertIn("[upload_batch.py](scripts/upload_batch.py) given the source's folder as its root", preparing)
         # The conversation without a computer still signs nothing.
         self.assertIn("A conversation with no computer behind it, which Known issues below covers: nothing is signed there.", preparing)
-        price = section(self.skill, "Preparation spends")
+        price = section(self.skill, "Whether preparation can charge this user")
         self.assertIn("`get_pricing`, without a project", price)
         self.assertIn("the message that raises the card", price)
 
