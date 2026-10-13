@@ -385,14 +385,14 @@
       if (picked.length > 0) {
         answer = picked.map(function (value) {
           var option = (group.options || []).find(function (item) { return item.value === value; });
-          return option && option.label && option.label !== value ? value + " (" + option.label + ")" : value;
+          return group.authority !== "server" && option && option.label && option.label !== value ? value + " (" + option.label + ")" : value;
         }).join(", ");
       } else if (group.select === "multi") {
         answer = "none of them - submit this as an EMPTY LIST, not as an omitted field";
       } else {
         answer = blankAnswer(group);
       }
-      lines.push("- " + (group.label || group.id) + " (" + group.id + "): " + answer);
+      lines.push("- " + (group.label || group.id) + (group.authority === "server" ? "" : " (" + group.id + ")") + ": " + answer);
     });
     return lines.join("\n");
   }
