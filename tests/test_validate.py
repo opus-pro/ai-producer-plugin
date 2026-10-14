@@ -45,14 +45,15 @@ class ValidateFixtureTest(unittest.TestCase):
     def test_pristine_copy_passes(self) -> None:
         validate.main(self.root)
 
-    def test_default_composer_icon_does_not_depend_on_theme_switching(self) -> None:
-        self.rewrite(
-            "plugins/aip/.codex-plugin/plugin.json",
-            '"composerIcon": "./assets/icon.png"',
-            '"composerIcon": "./assets/icon-light.png"',
-        )
-        with self.assertRaisesRegex(AssertionError, "visible without theme switching"):
-            validate.validate_manifests(self.root)
+    def test_default_icons_do_not_depend_on_theme_switching(self) -> None:
+        path = self.root / "plugins/aip/.codex-plugin/plugin.json"
+        original = validate.load_json(path)
+        for field in ("composerIcon", "logo"):
+            with self.subTest(field=field):
+                changed = {**original, "interface": {**original["interface"], field: "./assets/icon-light.png"}}
+                path.write_text(json.dumps(changed), encoding="utf-8")
+                with self.assertRaisesRegex(AssertionError, "visible without theme switching"):
+                    validate.validate_manifests(self.root)
 
     def test_missing_dark_icon_fails(self) -> None:
         (self.root / "plugins/aip/assets/icon-dark.png").unlink()
