@@ -92,15 +92,32 @@ class RoundsSkillContractTests(unittest.TestCase):
         self.assertIn("The presence of `present_choices` does not tell you whether the user can see a card.", hosts)
         self.assertNotIn("Hosts with neither of the two tools named below draw the card", hosts)
 
-    def test_default_hosts_always_show_complete_returned_choices_and_record_answers(self):
+    def test_displayed_cards_wait_for_answers_without_a_second_question_surface(self):
+        surface = section(self.skill, "**One question surface.**")
+        self.assertIn("Once the host has displayed an interactive card for the open rounds, wait for its answer", surface)
+        self.assertIn("Do not ask those choices again in an assistant message", surface)
+        for tool in ("request_user_input", "request_user_input_async", "AskUserQuestion"):
+            self.assertIn(f"`{tool}`", surface)
+        self.assertIn("or draw a second widget", surface)
+        self.assertIn("service-rendered cards, widgets and saved-default confirmations on every host", surface)
+        self.assertIn("An unanswered card, a long upload or preparation, and text or JSON in a tool result are not evidence that rendering failed", surface)
+        self.assertIn("only when the host cannot render the card, reports a rendering failure, or the user says the card is missing or unusable", surface)
+        self.assertIn("Do not ask whether a card is visible just to choose a fallback", surface)
+        self.assertLess(self.skill.index("**One question surface.**"), self.skill.index("**Hosts that show the card as data.**"))
+        self.assertIn("The paths below apply only when the fallback condition above is met", self.skill)
+
+    def test_fallback_hosts_show_complete_returned_choices_once_and_record_answers(self):
         hosts = section(self.skill, "On hosts with neither `show_widget` under any prefix nor `AskUserQuestion`")
         self.assertIn("including Codex, call `present_choices` as above", hosts)
-        self.assertIn("always put the complete choices in your assistant message: every returned option for each still-open component", hosts)
+        self.assertIn("If the host displays the card, wait for its answer", hosts)
+        self.assertIn("Only when the fallback condition is met, present the complete choices once: every returned option for each still-open component", hosts)
         self.assertIn("in returned order", hosts)
+        self.assertIn("Use a native question tool if it can carry every option; otherwise use one assistant message, never both", hosts)
         self.assertIn("Keep the exact returned option values for recording", hosts)
-        self.assertIn("This message accompanies any card the host draws", hosts)
-        self.assertIn("the user can answer by name, number, or their own words", hosts)
-        self.assertIn("Ask for all open rounds together in this one message", hosts)
+        self.assertNotIn("This message accompanies any card the host draws", self.skill)
+        self.assertNotIn("always put the complete choices", self.skill)
+        self.assertIn("The user can answer by name, number, or their own words", hosts)
+        self.assertIn("Ask for all open rounds together", hosts)
         self.assertIn("an optional line for anything else", hosts)
         self.assertIn("For a saved default, mark its current selections and ask once at the end", hosts)
         self.assertIn("use `record_choices` per round as above, including answers held until the project exists", hosts)
