@@ -85,7 +85,8 @@ def validate_manifests(root: Path) -> str:
 
     interface = codex_manifest["interface"]
     assert isinstance(interface, dict)
-    assert interface["composerIcon"] == interface["logo"] == "./assets/icon-light.png"
+    assert interface["composerIcon"] == "./assets/icon.png", "default composer icon must be visible without theme switching"
+    assert interface["logo"] == "./assets/icon-light.png"
     assert interface["composerIconDark"] == interface["logoDark"] == "./assets/icon-dark.png"
     for field in ("composerIcon", "logo", "composerIconDark", "logoDark"):
         asset = interface[field]
