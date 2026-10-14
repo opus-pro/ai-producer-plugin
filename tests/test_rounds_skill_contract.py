@@ -163,7 +163,7 @@ class RoundsSkillContractTests(unittest.TestCase):
         self.assertIn("is held in the conversation as given, the latest answer for each round", rounds)
         self.assertIn("written down under its card id as soon as the project is created", rounds)
         self.assertIn("When the card is answered before the project exists, let the upload finish, start preparation, write the held answers", rounds)
-        widget = section(self.skill, "The card's Send puts the answer")
+        widget = section(self.skill, "The card's Add to chat button puts the answer")
         self.assertIn("end your turn once preparation has started", widget)
 
     def test_terminal_hosts_ask_each_round_without_the_card(self):
