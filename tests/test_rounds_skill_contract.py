@@ -102,9 +102,21 @@ class RoundsSkillContractTests(unittest.TestCase):
         self.assertIn("service-rendered cards, widgets and saved-default confirmations on every host", surface)
         self.assertIn("An unanswered card, a long upload or preparation, and text or JSON in a tool result are not evidence that rendering failed", surface)
         self.assertIn("only when the host cannot render the card, reports a rendering failure, or the user says the card is missing or unusable", surface)
-        self.assertIn("Do not ask whether a card is visible just to choose a fallback", surface)
+        self.assertIn("When rendering status is unknown, do not assume success or failure", surface)
+        self.assertIn("say once that the user can tell you if the choices are missing or unusable, and wait", surface)
+        self.assertIn("do not repeat the choices or ask for visibility confirmation", surface)
         self.assertLess(self.skill.index("**One question surface.**"), self.skill.index("**Hosts that show the card as data.**"))
-        self.assertIn("The paths below apply only when the fallback condition above is met", self.skill)
+        self.assertIn("A displayed card takes precedence over every path below", self.skill)
+
+    def test_unusable_widgets_fall_back_without_retrying_the_same_renderer(self):
+        recovery = section(self.skill, "**Recover an unusable card.**")
+        self.assertIn("after it was raised, do not redraw it", recovery)
+        self.assertIn("Bypass the tool-availability conditions below", recovery)
+        self.assertIn("a native question tool that can carry every returned option", recovery)
+        self.assertIn("`AskUserQuestion` with the question and option limits described below", recovery)
+        self.assertIn("otherwise one assistant message with the complete returned choices", recovery)
+        self.assertIn("Use only one of these answer surfaces", recovery)
+        self.assertIn("Preserve saved selections, optional direction and per-round recording", recovery)
 
     def test_fallback_hosts_show_complete_returned_choices_once_and_record_answers(self):
         hosts = section(self.skill, "On hosts with neither `show_widget` under any prefix nor `AskUserQuestion`")
