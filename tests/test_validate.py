@@ -55,6 +55,27 @@ class ValidateFixtureTest(unittest.TestCase):
                 with self.assertRaisesRegex(AssertionError, "unexpected MCP server identity"):
                     validate.main(self.root)
 
+    def test_each_host_must_declare_the_sound_effect_library(self) -> None:
+        path = self.root / MCP_CONFIG
+        original = path.read_text(encoding="utf-8")
+        for key in validate.MCP_HEADER_KEYS:
+            for declared in (None, "", "other"):
+                with self.subTest(key=key, declared=declared):
+                    document = json.loads(original)
+                    headers = document["mcpServers"][validate.MCP_SERVER_NAME][key]
+                    if declared is None:
+                        del headers[validate.PLUGIN_CAPABILITIES_HEADER]
+                    else:
+                        headers[validate.PLUGIN_CAPABILITIES_HEADER] = declared
+                    path.write_text(json.dumps(document), encoding="utf-8")
+                    with self.assertRaisesRegex(AssertionError, f"{key}.X-AIP-Plugin-Capabilities must declare sfx-library"):
+                        validate.main(self.root)
+        document = json.loads(original)
+        for key in validate.MCP_HEADER_KEYS:
+            document["mcpServers"][validate.MCP_SERVER_NAME][key][validate.PLUGIN_CAPABILITIES_HEADER] = "other, sfx-library"
+        path.write_text(json.dumps(document), encoding="utf-8")
+        validate.main(self.root)
+
     def test_missing_skill_reference_fails(self) -> None:
         reference = self.root / "plugins/aip/skills/aip/references/workspace.md"
         reference.unlink()

@@ -33,6 +33,12 @@ EXPECTED_SKILLS = {"aip", "aip-composition", "aip-dynamic-caption", "aip-framing
 
 # The service needs the plugin version on each tool call.
 PLUGIN_VERSION_HEADER = "X-AIP-Plugin-Version"
+# What this bundle tells the service it supports. The service serves a capability's tools
+# only to a bundle that declares it, so a host whose headers drop one loses what the skills
+# teach for it without any error: `sfx-library` serves the sound effect library the
+# finishes round places effects from.
+PLUGIN_CAPABILITIES_HEADER = "X-AIP-Plugin-Capabilities"
+REQUIRED_CAPABILITIES = ("sfx-library",)
 # Both host-specific header keys carry the same version.
 MCP_HEADER_KEYS = ("headers", "http_headers")
 SEMVER = re.compile(
@@ -129,6 +135,12 @@ def validate_mcp(root: Path, version: str) -> None:
         assert declared == version, (
             f".mcp.json {key}.{PLUGIN_VERSION_HEADER} is {declared!r} but the plugin "
             f"manifests ship {version!r}; bump the header with the version"
+        )
+        capabilities = [token.strip() for token in str(headers.get(PLUGIN_CAPABILITIES_HEADER, "")).split(",")]
+        missing = [name for name in REQUIRED_CAPABILITIES if name not in capabilities]
+        assert not missing, (
+            f".mcp.json {key}.{PLUGIN_CAPABILITIES_HEADER} must declare {', '.join(missing)}; "
+            "the service serves those tools only to a bundle that declares them"
         )
 
 
