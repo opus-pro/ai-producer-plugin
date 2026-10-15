@@ -1,46 +1,80 @@
 /*
  * AI Producer decision card, packaged for hosts that render agent-authored HTML widgets.
- * Generated from the AI Producer service's decision card resource ui://aip/decision-card/v29.
+ * Generated from the AI Producer service's decision card resource ui://aip/decision-card/v36.
  * Do not edit by hand: regenerate it from the service.
  *
  * Load it with a <script src> pinned to a release, then call
  * AIPDecisionCard.render(card, { mount: "<element id>", key: "<unique id>" }), where card is
- * { title, note, displays, components: [{ id, selected }] } naming the rounds' components by id
- * (a full present_choices result is also accepted). A selection is sent through the host's
- * sendPrompt; the key keeps the sent state when the widget remounts.
+ * { title, note, locale, displays, components: [{ id, selected }] } naming the rounds' components
+ * by id (a full present_choices result is also accepted). locale is one of en, zh, pt-BR, es-ES, de-DE, fr-FR, it-IT, nl-NL, pl-PL, ko-KR;
+ * any other value draws the card in English. A selection is sent through the host's sendPrompt;
+ * the key keeps the sent state when the widget remounts.
  */
 (function () {
   "use strict";
   var current = document.currentScript || document.querySelector('script[src$="/decision-card.js"]');
   var BASE = current && current.src ? current.src.replace(/[^/]*$/, "") : "";
   var TILE_PATH = /[/]caption-card-tiles[/]v1[/]([a-z0-9-]+[.]mp4)$/;
-  var STYLE = "\n:root {\n  color-scheme: light dark;\n  /* The card's palette, per the decision card design (Figma 2695-745952). The design is\n     drawn dark - white text, white at 5% and 10% for surfaces, a white primary button with\n     black text - and the light scheme mirrors it in black, so a selection is always drawn\n     in the text colour rather than a hue the host's theme never chose. Secondary text is\n     60% black on light rather than the mirrored 50%, which falls under 4.5:1 on a surface. */\n  --fg: light-dark(#000, #fff);\n  --fg-2: light-dark(rgba(0,0,0,.6), rgba(255,255,255,.5));\n  --surface: light-dark(rgba(0,0,0,.05), rgba(255,255,255,.05));\n  --tonal: light-dark(rgba(0,0,0,.1), rgba(255,255,255,.1));\n  --accent: var(--fg);\n  --on-accent: light-dark(#fff, #000);\n  --line: rgba(128,128,128,.35);\n  /* The app's --ease-out-quart (apps/web/app/globals.css), for 150-300ms UI motion. */\n  --ease-out: cubic-bezier(0.25, 1, 0.5, 1);\n  /* How long a gate's fold takes; the visibility flip waits exactly this long. */\n  --fold-time: .2s;\n}\n* { box-sizing: border-box; }\nbody { margin: 0; padding: 16px; font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, sans-serif; }\n#card-shell#card-shell h1 { font-size: 18px; line-height: 21.8px; font-weight: 600; margin: 0 0 4px; }\n#card-shell#card-shell h2 { font-size: 14px; margin: 0 0 2px; }\n#card-shell#card-shell .note, #card-shell#card-shell .sub { opacity: .75; margin: 0 0 12px; }\n#card-shell#card-shell .group { border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 12px; }\n#card-shell#card-shell .warn { border-left: 3px solid #d08700; padding-left: 8px; margin: 6px 0 10px; font-size: 13px; opacity: .9; }\n#card-shell#card-shell .opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 10px; }\n#card-shell#card-shell .opt { display: flex; flex-direction: column; border: 1px solid rgba(128,128,128,.35); border-radius: 8px; }\n/* A column, so the opener can be pushed to the bottom: in flow it followed a description\n   of whatever length and landed at a different height on every tile of the row. */\n#card-shell#card-shell .opt label { display: flex; flex-direction: column; flex: 1 1 auto; padding: 8px; cursor: pointer; }\n#card-shell#card-shell .opt[data-on=\"1\"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }\n#card-shell#card-shell .opt input { margin-right: 6px; accent-color: var(--accent); }\n#card-shell#card-shell .opt img, #card-shell#card-shell .opt video { display: block; width: 100%; border-radius: 6px; margin-bottom: 6px; background: rgba(128,128,128,.15); }\n#card-shell#card-shell .opt > video { width: auto; margin: 8px 8px 0; } /* Outside the label: insets itself, and that frame does not select. */\n#card-shell#card-shell .opt .name { font-weight: 600; }\n#card-shell#card-shell .opt .why { font-size: 12px; opacity: .75; margin: 4px 0; max-height: 4.5em; overflow: hidden; }\n#card-shell#card-shell .opt .why[data-open=\"1\"] { max-height: none; }\n#card-shell#card-shell .opt .more { font-size: 11px; padding: 1px 6px; margin-top: auto; align-self: flex-start; border-radius: 6px; }\n#card-shell#card-shell .tag { font-size: 11px; border: 1px solid rgba(128,128,128,.5); border-radius: 99px; padding: 0 6px; margin-left: 4px; }\n/* One typed question, one row: the label sits beside its field rather than above it. */\n#card-shell#card-shell .field { display: flex; gap: 8px; align-items: center; margin: 0 0 6px; }\n#card-shell#card-shell .field .rowlabel { flex: 0 0 34%; max-width: 180px; font-size: 13px; opacity: .85; overflow-wrap: break-word; }\n#card-shell#card-shell .field input[type=\"text\"] { flex: 1 1 auto; min-width: 0; font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(128,128,128,.5); background: transparent; color: inherit; }\n#card-shell#card-shell .field input[type=\"color\"] { flex: 0 0 auto; width: 40px; height: 32px; padding: 0; border: 1px solid rgba(128,128,128,.5); border-radius: 8px; background: transparent; }\n#card-shell#card-shell .field input[data-bad=\"1\"], #card-shell#card-shell .field textarea[data-bad=\"1\"] { border-color: #d08700; }\n/* A field revealed by one option of the picker above it: no side label, and the full width\n   of the group it was drawn into. */\n#card-shell#card-shell .reveal { margin-top: 10px; }\n#card-shell#card-shell .reveal .hint { margin: 6px 0 0; }\n#card-shell#card-shell .field.bare { display: block; margin: 0; }\n#card-shell#card-shell .field textarea { display: block; width: 100%; font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(128,128,128,.5); background: transparent; color: inherit; resize: vertical; }\n/* One sentence for every typed question on the card, at its foot. */\n#card-shell#card-shell .hint { font-size: 12px; opacity: .75; margin: 8px 0 12px; }\n/* A question drawn as a row: pictogram, label with its line, control at the right edge. */\n#card-shell#card-shell .rowgroup { padding: 12px 14px; }\n#card-shell#card-shell .row { display: flex; align-items: center; gap: 12px; cursor: pointer; }\n#card-shell#card-shell .row .ico { flex: 0 0 auto; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }\n#card-shell#card-shell .rowtext { flex: 1 1 auto; min-width: 0; }\n#card-shell#card-shell .rowlabel { font-weight: 600; }\n#card-shell#card-shell .rowdesc { font-size: 12px; opacity: .7; }\n#card-shell#card-shell .rowdesc:empty { display: none; }\n/* The input is the control; the knob is what a person sees of it. */\n#card-shell#card-shell .switch { position: relative; flex: 0 0 auto; width: 40px; height: 22px; cursor: pointer; }\n#card-shell#card-shell .switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }\n#card-shell#card-shell .switch .knob { position: absolute; inset: 0; border-radius: 99px; background: rgba(128,128,128,.45); transition: background .15s; }\n#card-shell#card-shell .switch .knob::after { content: \"\"; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .15s; }\n#card-shell#card-shell .switch input:checked + .knob { background: var(--accent); }\n#card-shell#card-shell .switch input:checked + .knob::after { background: var(--on-accent); }\n#card-shell#card-shell .switch input:checked + .knob::after { transform: translateX(18px); }\n#card-shell#card-shell .switch input:focus-visible + .knob { outline: 2px solid var(--accent); outline-offset: 2px; }\n#card-shell#card-shell .switch input[disabled] + .knob { opacity: .6; }\n#card-shell#card-shell .gategroup .opts { margin-top: 12px; }\n/* A gate's hint and tiles fold under its row: the one track eases between 0fr and 1fr with\n   the fade, so the card's height (and the frame the host sizes from it) moves over 200ms\n   instead of jumping. Visibility flips after the fold has closed and at once when it opens,\n   so folded tiles stay out of reach even where inert is unsupported. The inner box clips,\n   which also holds its children's margins inside the track. */\n#card-shell#card-shell .fold { display: grid; grid-template-rows: 1fr; opacity: 1; transition: grid-template-rows var(--fold-time) var(--ease-out), opacity var(--fold-time) var(--ease-out), visibility 0s; }\n#card-shell#card-shell .fold[data-open=\"0\"] { grid-template-rows: 0fr; opacity: 0; visibility: hidden; transition: grid-template-rows var(--fold-time) var(--ease-out), opacity var(--fold-time) var(--ease-out), visibility 0s var(--fold-time); }\n#card-shell#card-shell .foldin { min-height: 0; overflow: hidden; }\n/* The gate's line eases to its new height over the same time and curve when its copy changes\n   with the switch, so its wrap cannot push the card against the fold. */\n#card-shell#card-shell .gategroup .rowdesc { transition: height var(--fold-time) var(--ease-out); }\n#card-shell#card-shell .gategroup .rowdesc[data-easing=\"1\"] { overflow: hidden; }\n@media (prefers-reduced-motion: reduce) { #card-shell#card-shell .fold, #card-shell#card-shell .fold[data-open=\"0\"], #card-shell#card-shell .gategroup .rowdesc { transition: none; } }\n/* Radio rows, each its own box; a picked row may open a segmented control and the line\n   saying what its current segment does. Sizes are the design's: 12px boxes 8px apart, a 16px\n   radio drawn as a ring that fills when picked, 32px segments in a 10px track. */\n#card-shell#card-shell .rowsgroup { border: none; padding: 0; }\n#card-shell#card-shell .rowbox { border-radius: 12px; padding: 12px; margin-bottom: 8px; background: var(--surface); }\n#card-shell#card-shell .rowbox .row { gap: 8px; }\n#card-shell#card-shell .rowbox .rowtext { padding: 0 2px; }\n#card-shell#card-shell .rowbox .rowlabel { font-weight: 500; line-height: 17px; }\n#card-shell#card-shell .rowbox .rowdesc { color: var(--fg-2); opacity: 1; line-height: 19px; }\n#card-shell#card-shell .rowbox .row .ico { width: 24px; height: 24px; opacity: 1; }\n#card-shell#card-shell .ico.solid { fill: currentColor; fill-rule: evenodd; stroke: none; }\n#card-shell#card-shell .rowbox .row input[type=\"radio\"] { appearance: none; flex: 0 0 auto; width: 16px; height: 16px; margin: 0; border-radius: 50%; border: 1px solid var(--fg-2); background: transparent; cursor: pointer; }\n#card-shell#card-shell .rowbox .row input[type=\"radio\"]:checked { border: 2px solid var(--fg); background: radial-gradient(circle, var(--fg) 0 3px, var(--on-accent) 3.5px); }\n#card-shell#card-shell .rowbox .row input[type=\"radio\"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }\n#card-shell#card-shell .rowbox .row input[type=\"radio\"][disabled] { opacity: .6; cursor: default; }\n#card-shell#card-shell .segments { display: flex; height: 32px; margin-top: 16px; border-radius: 10px; overflow: hidden; background: var(--surface); }\n#card-shell#card-shell .seg { flex: 1 1 0; min-width: 0; height: 32px; padding: 0 8px; border: none; border-radius: 8px; background: transparent; color: var(--fg-2); font-weight: 500; line-height: 17px; }\n#card-shell#card-shell .seg[data-on=\"1\"] { background: var(--tonal); color: var(--fg); }\n#card-shell#card-shell .seg:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }\n#card-shell#card-shell .segdesc { margin-top: 6px; }\n/* A rows picker's segments and their line fold open and shut: the row track runs 0fr to 1fr\n   while the content fades, 200ms on the product's ease-out-quart, so the card grows over the\n   same frames the host reads its size on. Reduced motion lands on the end state at once. */\n#card-shell#card-shell .segfold { display: grid; grid-template-rows: 1fr; opacity: 1; transition: grid-template-rows 200ms cubic-bezier(0.25, 1, 0.5, 1), opacity 200ms cubic-bezier(0.25, 1, 0.5, 1); }\n#card-shell#card-shell .segfold[data-open=\"0\"] { grid-template-rows: 0fr; opacity: 0; }\n#card-shell#card-shell .segfoldin { min-height: 0; overflow: hidden; }\n@media (prefers-reduced-motion: reduce) { #card-shell#card-shell .segfold { transition: none; } }\n#card-shell#card-shell .gategroup .warn { margin-top: 10px; }\n/* The typed field with shortcut chips under it, per the Fine cut design (Figma 2695-934065):\n   no box around the section, a secondary label, a 76px field, 32px outlined chips 10px apart.\n   Colours use the shared card palette. The field's fill (black at 15%) has no token. */\n#card-shell#card-shell .chipsgroup, #card-shell#card-shell .tabsgroup { border: none; padding: 0; margin-bottom: 20px; }\n#card-shell#card-shell .chipsgroup h2, #card-shell#card-shell .tabsgroup h2 { font-weight: 500; line-height: 17px; padding: 3px 0; margin: 0 0 8px; color: var(--fg-2); }\n#card-shell#card-shell .chipsgroup textarea, #card-shell#card-shell .tabsgroup textarea { min-height: 76px; padding: 8px 12px; border-radius: 10px; line-height: 22px; border-color: var(--tonal); background: light-dark(rgba(0,0,0,.03), rgba(0,0,0,.15)); }\n#card-shell#card-shell .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }\n#card-shell#card-shell .chipsgroup .hint, #card-shell#card-shell .tabsgroup .hint { margin: 8px 0 0; }\n/* The design keeps 20px between the title and the first section, as between sections. */\n#card-shell#card-shell h1 + .chipsgroup, #card-shell#card-shell h1 + .tabsgroup { margin-top: 20px; }\n/* Visual preference (Figma 2695-934191): the two tabs, then the open half under them. */\n#card-shell#card-shell .tabsgroup .segments { margin: 0 0 8px; }\n#card-shell#card-shell .chip { height: 32px; padding: 0 10px; border-radius: 10px; border-color: var(--tonal); background: transparent; color: inherit; font-weight: 500; line-height: 17px; }\n#card-shell#card-shell .chip[data-on=\"1\"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }\n/* The reference image row, per the Fine cut design (Figma 2695-933840): five 120:160 cells,\n   the Upload tile first. The tile's fill and dashed edge are white at 10% on the dark\n   palette and the same weight of black on the light one. */\n#card-shell#card-shell .imgs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding-top: 8px; }\n#card-shell#card-shell .upload { aspect-ratio: 120 / 160; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 0; border: 1px dashed light-dark(rgba(0,0,0,.12), rgba(255,255,255,.1)); border-radius: 10px; background: light-dark(rgba(0,0,0,.05), rgba(255,255,255,.1)); color: inherit; font-weight: 500; font-size: 14px; line-height: 17px; }\n#card-shell#card-shell .upload svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }\n#card-shell#card-shell .upload[data-on=\"1\"] { border-style: solid; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }\n#card-shell#card-shell .imgcell { position: relative; aspect-ratio: 120 / 160; overflow: hidden; border-radius: 10px; border: 1.5px solid light-dark(#000, #fff); }\n#card-shell#card-shell .imgcell img { display: block; width: 100%; height: 100%; object-fit: cover; }\n#card-shell#card-shell .imgcell .badge { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px; font-size: 12px; line-height: 19px; color: #fff; background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.6)); }\n#card-shell#card-shell .imgcell[data-status=\"failed\"] { border-color: #d08700; }\n/* A preset tile: the thumbnail edge to edge; picked, the picture's white edge and a check in\n   the top right corner, which draws over a light or a dark thumbnail alike. */\n#card-shell#card-shell .preset { position: relative; aspect-ratio: 120 / 160; overflow: hidden; padding: 0; border-radius: 10px; border: 1.5px solid transparent; background: light-dark(rgba(0,0,0,.05), rgba(255,255,255,.1)); }\n#card-shell#card-shell .preset img { display: block; width: 100%; height: 100%; object-fit: cover; }\n#card-shell#card-shell .preset[data-on=\"1\"] { border-color: light-dark(#000, #fff); }\n#card-shell#card-shell .preset[data-status=\"failed\"] { border-color: #d08700; }\n#card-shell#card-shell .preset .check { position: absolute; top: 8px; right: 8px; width: 16px; height: 16px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 2px rgba(0,0,0,.6)); }\n#card-shell#card-shell .preset .badge { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px; font-size: 12px; line-height: 19px; color: #fff; text-align: left; background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.6)); }\n#card-shell#card-shell .imgacts { display: flex; gap: 8px; margin-top: 8px; }\n#card-shell#card-shell .imgacts button { padding: 4px 10px; font-size: 13px; background: transparent; color: inherit; }\n#card-shell#card-shell .imggroup .hint { margin-bottom: 0; }\n#card-shell#card-shell .actions { display: flex; gap: 12px; align-items: center; justify-content: flex-end; }\n/* The status line reads before the button it reports on, and the button keeps the right edge. */\n#card-shell#card-shell .actions .sub { margin: 0; order: -1; }\n#card-shell#card-shell button { font: inherit; padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(128,128,128,.5); cursor: pointer; }\n/* The primary button: the text colour filled, per the design's white-on-dark button. */\n#card-shell#card-shell button.go { min-width: 38px; height: 38px; padding: 0 12px; border-radius: 10px; border: none; background: var(--accent); color: var(--on-accent); font-weight: 500; line-height: 17px; }\n#card-shell#card-shell button.link { border: none; background: none; padding: 0; font-size: 12px; opacity: .8; text-decoration: underline; }\n#card-shell#card-shell button[disabled] { opacity: .6; cursor: default; }\n#card-shell#card-shell .done { opacity: .8; white-space: pre-wrap; }\n#card-shell#card-shell [hidden] { display: none; }\n\n/* A flow root keeps its children's outer margins inside its own height, so the height the\n   shell eases to is the height the card is laid out at once the shell lets go. */\n#card-shell#card-shell #card { display: flow-root; }\n/* The card's layout width never depends on whether it overflows the frame: the gutter is kept\n   either way and the body's right padding gives it back. While a height settles the frame\n   clips its overflow, so no scrollbar flickers in that gutter. */\n:root { scrollbar-gutter: stable; }\n:root[data-settling=\"1\"] { overflow: hidden; }\nbody { padding-right: max(0px, calc(16px - var(--gutter, 0px))); }\n#card-shell#card-shell[data-moving=\"1\"] { overflow: clip; transition: height 200ms cubic-bezier(0.25, 1, 0.5, 1); }\n@media (prefers-reduced-motion: reduce) { #card-shell#card-shell[data-moving=\"1\"] { transition: none; } }\n";
+  var STYLE = "\n:root {\n  color-scheme: light dark;\n  /* The card's palette, per the decision card design (Figma 2695-745952). The design is\n     drawn dark - white text, white at 5% and 10% for surfaces, a white primary button with\n     black text - and the light scheme mirrors it in black, so a selection is always drawn\n     in the text colour rather than a hue the host's theme never chose. Secondary text is\n     60% black on light rather than the mirrored 50%, which falls under 4.5:1 on a surface. */\n  --fg: light-dark(#000, #fff);\n  --fg-2: light-dark(rgba(0,0,0,.6), rgba(255,255,255,.5));\n  --surface: light-dark(rgba(0,0,0,.05), rgba(255,255,255,.05));\n  --tonal: light-dark(rgba(0,0,0,.1), rgba(255,255,255,.1));\n  --accent: var(--fg);\n  --on-accent: light-dark(#fff, #000);\n  --line: rgba(128,128,128,.35);\n  /* The app's --ease-out-quart, for 150-300ms UI motion. */\n  --ease-out: cubic-bezier(0.25, 1, 0.5, 1);\n  /* How long a gate's fold takes; the visibility flip waits exactly this long. */\n  --fold-time: .2s;\n  /* The ground under a caption preview, per the single card design: black on dark, the\n     agent background on light. */\n  --tile-ground: light-dark(#121212, #000);\n}\n* { box-sizing: border-box; }\nbody { margin: 0; padding: 16px; font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, sans-serif; }\n/* Korean breaks between words, not between syllables: the shell names the card's language. */\n#card-shell#card-shell[lang=\"ko-KR\"] { word-break: keep-all; overflow-wrap: anywhere; }\n#card-shell#card-shell h1 { font-size: 18px; line-height: 21.8px; font-weight: 600; margin: 0 0 4px; }\n#card-shell#card-shell h2 { font-size: 14px; margin: 0 0 2px; }\n#card-shell#card-shell .note, #card-shell#card-shell .sub { opacity: .75; margin: 0 0 12px; }\n#card-shell#card-shell .group { border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 12px; }\n#card-shell#card-shell .warn { border-left: 3px solid #d08700; padding-left: 8px; margin: 6px 0 10px; font-size: 13px; opacity: .9; }\n#card-shell#card-shell .opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 10px; }\n#card-shell#card-shell .opt { display: flex; flex-direction: column; border: 1px solid rgba(128,128,128,.35); border-radius: 8px; }\n/* A column, so the opener can be pushed to the bottom: in flow it followed a description\n   of whatever length and landed at a different height on every tile of the row. */\n#card-shell#card-shell .opt label { display: flex; flex-direction: column; flex: 1 1 auto; padding: 8px; cursor: pointer; }\n#card-shell#card-shell .opt[data-on=\"1\"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }\n#card-shell#card-shell .opt input { margin-right: 6px; accent-color: var(--accent); }\n#card-shell#card-shell .opt img, #card-shell#card-shell .opt video { display: block; width: 100%; border-radius: 6px; margin-bottom: 6px; background: rgba(128,128,128,.15); }\n#card-shell#card-shell .opt > video { width: auto; margin: 8px 8px 0; } /* Outside the label: insets itself, and that frame does not select. */\n#card-shell#card-shell .opt .name { font-weight: 600; }\n#card-shell#card-shell .opt .why { font-size: 12px; opacity: .75; margin: 4px 0; max-height: 4.5em; overflow: hidden; }\n#card-shell#card-shell .opt .why[data-open=\"1\"] { max-height: none; }\n#card-shell#card-shell .opt .more { font-size: 11px; padding: 1px 6px; margin-top: auto; align-self: flex-start; border-radius: 6px; }\n#card-shell#card-shell .tag { font-size: 11px; border: 1px solid rgba(128,128,128,.5); border-radius: 99px; padding: 0 6px; margin-left: 4px; }\n/* One typed question, one row: the label sits beside its field rather than above it. */\n#card-shell#card-shell .field { display: flex; gap: 8px; align-items: center; margin: 0 0 6px; }\n#card-shell#card-shell .field .rowlabel { flex: 0 0 34%; max-width: 180px; font-size: 13px; opacity: .85; overflow-wrap: break-word; }\n#card-shell#card-shell .field input[type=\"text\"] { flex: 1 1 auto; min-width: 0; font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(128,128,128,.5); background: transparent; color: inherit; }\n#card-shell#card-shell .field input[type=\"color\"] { flex: 0 0 auto; width: 40px; height: 32px; padding: 0; border: 1px solid rgba(128,128,128,.5); border-radius: 8px; background: transparent; }\n#card-shell#card-shell .field input[data-bad=\"1\"], #card-shell#card-shell .field textarea[data-bad=\"1\"] { border-color: #d08700; }\n/* A field revealed by one option of the picker above it: no side label, and the full width\n   of the group it was drawn into. */\n#card-shell#card-shell .reveal { margin-top: 10px; }\n#card-shell#card-shell .reveal .hint { margin: 6px 0 0; }\n#card-shell#card-shell .field.bare { display: block; margin: 0; }\n#card-shell#card-shell .field textarea { display: block; width: 100%; font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(128,128,128,.5); background: transparent; color: inherit; resize: vertical; }\n/* One sentence for every typed question on the card, at its foot. */\n#card-shell#card-shell .hint { font-size: 12px; opacity: .75; margin: 8px 0 12px; }\n/* A question drawn as a row: pictogram, label with its line, control at the right edge. */\n#card-shell#card-shell .rowgroup { padding: 12px 14px; }\n#card-shell#card-shell .row { display: flex; align-items: center; gap: 12px; cursor: pointer; }\n#card-shell#card-shell .row .ico { flex: 0 0 auto; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }\n#card-shell#card-shell .rowtext { flex: 1 1 auto; min-width: 0; }\n#card-shell#card-shell .rowlabel { font-weight: 600; }\n#card-shell#card-shell .rowdesc { font-size: 12px; opacity: .7; }\n#card-shell#card-shell .rowdesc:empty { display: none; }\n/* The input is the control; the knob is what a person sees of it. */\n#card-shell#card-shell .switch { position: relative; flex: 0 0 auto; width: 40px; height: 22px; cursor: pointer; }\n#card-shell#card-shell .switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }\n#card-shell#card-shell .switch .knob { position: absolute; inset: 0; border-radius: 99px; background: rgba(128,128,128,.45); transition: background .15s; }\n#card-shell#card-shell .switch .knob::after { content: \"\"; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .15s; }\n#card-shell#card-shell .switch input:checked + .knob { background: var(--accent); }\n#card-shell#card-shell .switch input:checked + .knob::after { background: var(--on-accent); }\n#card-shell#card-shell .switch input:checked + .knob::after { transform: translateX(18px); }\n#card-shell#card-shell .switch input:focus-visible + .knob { outline: 2px solid var(--accent); outline-offset: 2px; }\n#card-shell#card-shell .switch input[disabled] + .knob { opacity: .6; }\n#card-shell#card-shell .gategroup .opts { margin-top: 12px; }\n/* A gate's hint and tiles fold under its row: the one track eases between 0fr and 1fr with\n   the fade, so the card's height (and the frame the host sizes from it) moves over 200ms\n   instead of jumping. Visibility flips after the fold has closed and at once when it opens,\n   so folded tiles stay out of reach even where inert is unsupported. The inner box clips,\n   which also holds its children's margins inside the track. */\n#card-shell#card-shell .fold { display: grid; grid-template-rows: 1fr; opacity: 1; transition: grid-template-rows var(--fold-time) var(--ease-out), opacity var(--fold-time) var(--ease-out), visibility 0s; }\n#card-shell#card-shell .fold[data-open=\"0\"] { grid-template-rows: 0fr; opacity: 0; visibility: hidden; transition: grid-template-rows var(--fold-time) var(--ease-out), opacity var(--fold-time) var(--ease-out), visibility 0s var(--fold-time); }\n#card-shell#card-shell .foldin { min-height: 0; overflow: hidden; }\n/* The gate's line eases to its new height over the same time and curve when its copy changes\n   with the switch, so its wrap cannot push the card against the fold. */\n#card-shell#card-shell .gategroup .rowdesc { transition: height var(--fold-time) var(--ease-out); }\n#card-shell#card-shell .gategroup .rowdesc[data-easing=\"1\"] { overflow: hidden; }\n@media (prefers-reduced-motion: reduce) { #card-shell#card-shell .fold, #card-shell#card-shell .fold[data-open=\"0\"], #card-shell#card-shell .gategroup .rowdesc { transition: none; } }\n/* Radio rows, each its own box; a picked row may open a segmented control and the line\n   saying what its current segment does. Sizes are the design's: 12px boxes 8px apart, a 16px\n   radio drawn as a ring that fills when picked, 32px segments in a 10px track. */\n#card-shell#card-shell .rowsgroup { border: none; padding: 0; }\n#card-shell#card-shell .rowbox { border-radius: 12px; padding: 12px; margin-bottom: 8px; background: var(--surface); }\n#card-shell#card-shell .rowbox .row { gap: 8px; }\n#card-shell#card-shell .rowbox .rowtext { padding: 0 2px; }\n#card-shell#card-shell .rowbox .rowlabel { font-weight: 500; line-height: 17px; }\n#card-shell#card-shell .rowbox .rowdesc { color: var(--fg-2); opacity: 1; line-height: 19px; }\n#card-shell#card-shell .rowbox .row .ico { width: 24px; height: 24px; opacity: 1; }\n#card-shell#card-shell .ico.solid { fill: currentColor; fill-rule: evenodd; stroke: none; }\n#card-shell#card-shell .rowbox .row input[type=\"radio\"] { appearance: none; flex: 0 0 auto; width: 16px; height: 16px; margin: 0; border-radius: 50%; border: 1px solid var(--fg-2); background: transparent; cursor: pointer; }\n#card-shell#card-shell .rowbox .row input[type=\"radio\"]:checked { border: 2px solid var(--fg); background: radial-gradient(circle, var(--fg) 0 3px, var(--on-accent) 3.5px); }\n#card-shell#card-shell .rowbox .row input[type=\"radio\"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }\n#card-shell#card-shell .rowbox .row input[type=\"radio\"][disabled] { opacity: .6; cursor: default; }\n#card-shell#card-shell .segments { display: flex; height: 32px; margin-top: 16px; border-radius: 10px; overflow: hidden; background: var(--surface); }\n#card-shell#card-shell .seg { flex: 1 1 0; min-width: 0; height: 32px; padding: 0 8px; border: none; border-radius: 8px; background: transparent; color: var(--fg-2); font-weight: 500; line-height: 17px; }\n#card-shell#card-shell .seg[data-on=\"1\"] { background: var(--tonal); color: var(--fg); }\n#card-shell#card-shell .seg:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }\n#card-shell#card-shell .segdesc { margin-top: 6px; }\n/* A rows picker's segments and their line fold open and shut: the row track runs 0fr to 1fr\n   while the content fades, 200ms on the product's ease-out-quart, so the card grows over the\n   same frames the host reads its size on. Reduced motion lands on the end state at once. */\n#card-shell#card-shell .segfold { display: grid; grid-template-rows: 1fr; opacity: 1; transition: grid-template-rows 200ms cubic-bezier(0.25, 1, 0.5, 1), opacity 200ms cubic-bezier(0.25, 1, 0.5, 1); }\n#card-shell#card-shell .segfold[data-open=\"0\"] { grid-template-rows: 0fr; opacity: 0; }\n#card-shell#card-shell .segfoldin { min-height: 0; overflow: hidden; }\n@media (prefers-reduced-motion: reduce) { #card-shell#card-shell .segfold { transition: none; } }\n/* The typed field with shortcut chips under it, per the Fine cut design (Figma 2695-934065):\n   no box around the section, a secondary label, a 76px field, 32px outlined chips 10px apart.\n   Colours use the shared card palette. The field's fill (black at 15%) has no token. */\n#card-shell#card-shell .chipsgroup, #card-shell#card-shell .tabsgroup { border: none; padding: 0; margin-bottom: 20px; }\n#card-shell#card-shell .chipsgroup h2, #card-shell#card-shell .tabsgroup h2 { font-weight: 500; line-height: 17px; padding: 3px 0; margin: 0 0 8px; color: var(--fg-2); }\n#card-shell#card-shell .chipsgroup textarea, #card-shell#card-shell .tabsgroup textarea { min-height: 76px; padding: 8px 12px; border-radius: 10px; line-height: 22px; border-color: var(--tonal); background: light-dark(rgba(0,0,0,.03), rgba(0,0,0,.15)); }\n#card-shell#card-shell .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }\n#card-shell#card-shell .chipsgroup .hint, #card-shell#card-shell .tabsgroup .hint { margin: 8px 0 0; }\n/* The design keeps 20px between the title and the first section, as between sections. */\n#card-shell#card-shell h1 + .chipsgroup, #card-shell#card-shell h1 + .tabsgroup { margin-top: 20px; }\n/* Visual preference (Figma 2695-934191): the two tabs, then the open half under them. */\n#card-shell#card-shell .tabsgroup .segments { margin: 0 0 8px; }\n#card-shell#card-shell .chip { height: 32px; padding: 0 10px; border-radius: 10px; border-color: var(--tonal); background: transparent; color: inherit; font-weight: 500; line-height: 17px; }\n#card-shell#card-shell .chip[data-on=\"1\"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }\n/* The reference image row, per the Fine cut design (Figma 2695-933840): five 120:160 cells,\n   the Upload tile first. The tile's fill and dashed edge are white at 10% on the dark\n   palette and the same weight of black on the light one. */\n#card-shell#card-shell .imgs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding-top: 8px; }\n#card-shell#card-shell .upload { aspect-ratio: 120 / 160; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 0; border: 1px dashed light-dark(rgba(0,0,0,.12), rgba(255,255,255,.1)); border-radius: 10px; background: light-dark(rgba(0,0,0,.05), rgba(255,255,255,.1)); color: inherit; font-weight: 500; font-size: 14px; line-height: 17px; }\n#card-shell#card-shell .upload svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }\n#card-shell#card-shell .upload[data-on=\"1\"] { border-style: solid; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }\n#card-shell#card-shell .imgcell { position: relative; aspect-ratio: 120 / 160; overflow: hidden; border-radius: 10px; border: 1.5px solid light-dark(#000, #fff); }\n#card-shell#card-shell .imgcell img { display: block; width: 100%; height: 100%; object-fit: cover; }\n#card-shell#card-shell .imgcell .badge { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px; font-size: 12px; line-height: 19px; color: #fff; background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.6)); }\n#card-shell#card-shell .imgcell[data-status=\"failed\"] { border-color: #d08700; }\n/* A preset tile: the thumbnail edge to edge; picked, the picture's white edge and a check in\n   the top right corner, which draws over a light or a dark thumbnail alike. */\n#card-shell#card-shell .preset { position: relative; aspect-ratio: 120 / 160; overflow: hidden; padding: 0; border-radius: 10px; border: 1.5px solid transparent; background: light-dark(rgba(0,0,0,.05), rgba(255,255,255,.1)); }\n#card-shell#card-shell .preset img { display: block; width: 100%; height: 100%; object-fit: cover; }\n#card-shell#card-shell .preset[data-on=\"1\"] { border-color: light-dark(#000, #fff); }\n#card-shell#card-shell .preset[data-status=\"failed\"] { border-color: #d08700; }\n#card-shell#card-shell .preset .check { position: absolute; top: 8px; right: 8px; width: 16px; height: 16px; fill: #fff; filter: drop-shadow(0 0 2px rgba(0,0,0,.6)); }\n#card-shell#card-shell .preset .badge { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px; font-size: 12px; line-height: 19px; color: #fff; text-align: left; background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.6)); }\n#card-shell#card-shell .imgacts { display: flex; gap: 8px; margin-top: 8px; }\n#card-shell#card-shell .imgacts button { padding: 4px 10px; font-size: 13px; background: transparent; color: inherit; }\n#card-shell#card-shell .imggroup .hint { margin-bottom: 0; }\n#card-shell#card-shell .actions { display: flex; gap: 12px; align-items: center; justify-content: flex-end; }\n/* The status line reads before the button it reports on, and the button keeps the right edge. */\n#card-shell#card-shell .actions .sub { margin: 0; order: -1; }\n#card-shell#card-shell button { font: inherit; padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(128,128,128,.5); cursor: pointer; }\n/* The primary button: the text colour filled, per the design's white-on-dark button. */\n#card-shell#card-shell button.go { min-width: 38px; height: 38px; padding: 0 12px; border-radius: 10px; border: none; background: var(--accent); color: var(--on-accent); font-weight: 500; line-height: 17px; }\n#card-shell#card-shell button.link { border: none; background: none; padding: 0; font-size: 12px; opacity: .8; text-decoration: underline; }\n#card-shell#card-shell button[disabled] { opacity: .6; cursor: default; }\n#card-shell#card-shell .done { opacity: .8; white-space: pre-wrap; }\n#card-shell#card-shell [hidden] { display: none; }\n\n#card-shell#card-shell .section { margin-bottom: 24px; }\n#card-shell#card-shell .sectionhead { font-size: 18px; line-height: 21.8px; font-weight: 600; margin: 0 0 16px; }\n#card-shell#card-shell .sectionhead:has(+ .sectiondesc) { margin-bottom: 4px; }\n#card-shell#card-shell .sectiondesc { font-size: 13px; line-height: 19px; color: var(--fg-2); margin: 0 0 16px; }\n#card-shell#card-shell .section > .group { margin-bottom: 10px; }\n#card-shell#card-shell .section > .group:last-child { margin-bottom: 0; }\n#card-shell#card-shell .rowgroup { border: none; border-radius: 12px; padding: 12px; background: var(--surface); }\n#card-shell#card-shell .rowgroup .row { gap: 8px; }\n#card-shell#card-shell .rowgroup .row .ico { width: 24px; height: 24px; opacity: 1; }\n#card-shell#card-shell .rowgroup .rowtext { padding: 0 2px; }\n#card-shell#card-shell .rowgroup .rowlabel { font-weight: 500; line-height: 17px; }\n#card-shell#card-shell .rowgroup .rowdesc { font-size: 12px; line-height: 19px; color: var(--fg-2); opacity: 1; }\n#card-shell#card-shell .switch { width: 44px; height: 24px; }\n#card-shell#card-shell .switch .knob::after { width: 20px; height: 20px; background: light-dark(#fff, #000); }\n#card-shell#card-shell .switch input:checked + .knob::after { transform: translateX(20px); }\n#card-shell#card-shell .gategroup .foldin > .tiles, #card-shell#card-shell .gategroup .foldin > .lrows { margin-top: 16px; }\n/* The native radio stays for the answer, the lock and the keyboard; the cell is what shows. */\n#card-shell#card-shell .pickinput { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }\n#card-shell#card-shell .lrows { display: flex; flex-direction: column; gap: 8px; }\n#card-shell#card-shell .lrow { position: relative; display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--tonal); border-radius: 10px; cursor: pointer; }\n/* The pick's 1.5px outline is the 1px border plus an inset half pixel, so a row is the same\n   height picked or not: a browser that rounds a 1.5px border down would otherwise shorten\n   the picked row by the padding meant to offset it, and moving the pick would jump a pixel. */\n#card-shell#card-shell .lrow[data-on=\"1\"] { border-color: var(--fg); box-shadow: inset 0 0 0 .5px var(--fg); }\n#card-shell#card-shell .ltext { flex: 1 1 auto; min-width: 0; padding: 0 2px; }\n#card-shell#card-shell .lname { font-weight: 500; line-height: 17px; }\n/* The picked row's description folds open the way a gate does: its track eases between 0fr\n   and 1fr with the fade, so a pick moving between depths whose descriptions differ in lines\n   moves the card over --fold-time rather than in one frame. Shut, it is hidden as well, so it\n   leaves the accessibility tree as it did when it was not drawn. */\n#card-shell#card-shell .ldesc { display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden; font-size: 12px; line-height: 19px; color: var(--fg-2); transition: grid-template-rows var(--fold-time) var(--ease-out), opacity var(--fold-time) var(--ease-out), visibility 0s var(--fold-time); }\n#card-shell#card-shell .lrow[data-on=\"1\"] .ldesc { grid-template-rows: 1fr; opacity: 1; visibility: visible; transition: grid-template-rows var(--fold-time) var(--ease-out), opacity var(--fold-time) var(--ease-out), visibility 0s; }\n#card-shell#card-shell .ldescin { min-height: 0; overflow: hidden; }\n@media (prefers-reduced-motion: reduce) { #card-shell#card-shell .ldesc, #card-shell#card-shell .lrow[data-on=\"1\"] .ldesc { transition: none; } }\n#card-shell#card-shell .lrow .check, #card-shell#card-shell .tile .check { flex: 0 0 auto; width: 16px; height: 16px; visibility: hidden; }\n#card-shell#card-shell .lrow .check { fill: var(--fg); }\n#card-shell#card-shell .lrow[data-on=\"1\"] .check, #card-shell#card-shell .tile[data-on=\"1\"] .check { visibility: visible; }\n#card-shell#card-shell .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 8px; }\n#card-shell#card-shell .tile { position: relative; display: flex; flex-direction: column; gap: 4px; min-width: 0; cursor: pointer; }\n#card-shell#card-shell .tile .frame { position: relative; height: 80px; border-radius: 10px; }\n#card-shell#card-shell .tile[data-on=\"1\"] .frame { padding: 2px; border: 1.5px solid var(--fg); border-radius: 12px; }\n#card-shell#card-shell .tile .screen { display: flex; align-items: center; justify-content: center; height: 100%; overflow: hidden; border-radius: 10px; background: var(--tile-ground); }\n#card-shell#card-shell .tile .screen video, #card-shell#card-shell .tile .screen img { display: block; width: 100%; height: 100%; object-fit: cover; }\n#card-shell#card-shell .tile .screen .ico { width: 24px; height: 24px; color: #fff; }\n#card-shell#card-shell .tile .check { position: absolute; top: 6px; right: 6.67px; fill: #fff; filter: drop-shadow(0 0 2px rgba(0,0,0,.6)); }\n#card-shell#card-shell .tname { font-size: 12px; line-height: 15px; font-weight: 500; text-align: center; color: var(--fg-2); overflow-wrap: break-word; }\n#card-shell#card-shell .tile[data-on=\"1\"] .tname { color: var(--fg); }\n#card-shell#card-shell .lrow:has(.pickinput:focus-visible), #card-shell#card-shell .tile:has(.pickinput:focus-visible) .frame { outline: 2px solid var(--accent); outline-offset: 2px; }\n#card-shell#card-shell .lrow:has(.pickinput[disabled]), #card-shell#card-shell .tile:has(.pickinput[disabled]) { cursor: default; }\n/* The \"Anything else?\" field (Figma 3035-361236 light, 3032-360788 dark): black at 5% on\n   light, with black at 25% for the placeholder. The dark fill (black at 15%) has no token. */\n#card-shell#card-shell .section .field.bare textarea { min-height: 76px; padding: 8px 12px; border-radius: 10px; line-height: 22px; border: 1px solid var(--tonal); background: light-dark(rgba(0,0,0,.05), rgba(0,0,0,.15)); }\n#card-shell#card-shell .section .field.bare textarea::placeholder { color: light-dark(rgba(0,0,0,.25), rgba(255,255,255,.25)); }\n\n\n/* A flow root keeps its children's outer margins inside its own height, so the height the\n   shell eases to is the height the card is laid out at once the shell lets go. */\n#card-shell#card-shell #card { display: flow-root; }\n/* The card's layout width never depends on whether it overflows the frame: the gutter is kept\n   either way and the body's right padding gives it back. While a height settles the frame\n   clips its overflow, so no scrollbar flickers in that gutter. */\n:root { scrollbar-gutter: stable; }\n:root[data-settling=\"1\"] { overflow: hidden; }\nbody { padding-right: max(0px, calc(16px - var(--gutter, 0px))); }\n#card-shell#card-shell[data-moving=\"1\"] { overflow: clip; transition: height 200ms cubic-bezier(0.25, 1, 0.5, 1); }\n@media (prefers-reduced-motion: reduce) { #card-shell#card-shell[data-moving=\"1\"] { transition: none; } }\n";
   var SHELL = "<div id=\"card-shell\"><div id=\"card\"></div></div>";
-  var CATALOG = {"displays":{"rough_cut_boldness":{"id":"rough_cut_boldness","label":"Rough cut boldness","authority":"server","kind":"select","select":"single","narrowed":true,"selected":[],"options":[{"value":"off","label":"Keep the original video","description":"No rough cut at all. Nothing is removed - every filler word, false start, failed take and pause stays exactly where it was recorded, and the cut runs at the full source length. Pick this to keep the whole take, not to cut cautiously; conservative is the cautious one."},{"value":"conservative","label":"Conservative","description":"The most cautious. Cuts filler words, false starts and failed takes, and only clearly dead pauses - a gap has to be long before it counts as one.","recommended":false},{"value":"balanced","label":"Balanced","description":"The usual choice. The same material as conservative, with a lower bar for what counts as a trimmable pause, so the cut tightens noticeably.","recommended":true},{"value":"aggressive","label":"Aggressive","description":"Reaches furthest: a wider list of crutch words, and shorter gaps count as trimmable. Still only filler, failed takes and pauses - it never drops a point for being repeated or off topic, so it shortens the delivery rather than the content.","recommended":false}],"display":{"kind":"rows","rows":[{"icon":"clean","label":"Auto-clean my video","description":"Remove filler words, false starts and failed takes","values":["conservative","balanced","aggressive"],"initial":"balanced"},{"icon":"keep","value":"off","description":""}],"initial":"balanced"}},"caption_style":{"id":"caption_style","label":"Caption style","authority":"server","kind":"select","select":"single","narrowed":false,"narrowing_note":"Not narrowed to this project, so a pick here is a HEDGE and not a promise, and it can go wrong in two different ways. If this project's CANVAS cannot render the chosen pattern, the worker silently substitutes `pace-adaptive` and stages the substitution, so the user would believe the pattern they chose is the one that shipped. If the staged FACE leaves the chosen pattern no clear position, the pick is KEPT rather than replaced and the caption can render across the speaker's face. Both checks need the worker's canvas and staged face box, neither of which is readable here. Tell the user their pick may be replaced or may sit over the speaker. A user who would rather the run decide is asking for Auto, which is the ABSENCE of a pin rather than one of the patterns below: it is not an option on this card, and it is reached by submitting no caption style at all. `no-caption` instead declines the layer and has no canvas or face restriction.","narrowing_hint":"Previews are illustrative. If this style does not suit the footage, the run may swap it for the closest one or place it differently. Leave it unpicked to let the run choose. Turn the switch off to leave subtitles off.","selected":[],"options":[{"value":"no-caption","label":"No captions","description":"Leave running subtitles off. Text already baked into the source video stays visible."},{"value":"blur-ladder","label":"Blur Ladder","description":"A rack-focus caption LADDER - every word arrives out of focus and snaps sharp, a new sentence glides up into place, and each line steps one indent further right than the one above it. Two registers (quiet lead-in / loud payload) mix on a single baseline, the payload is set ALL CAPS against the lowercase run-up, and a line that has been spoken past goes grey and racks back out of focus. Carries a deep dark shadow, not a light bloom, so it holds on bright footage.\n\nA punchy tutorial / talking-head voice where the caption should feel hand-cut per sentence - the register flip plus the caps break do the emphasis, and the focus rack gives every word a physical arrival. Needs a face outside the 50-73 band. Rotate away from it when captions should read as a quiet legibility layer, or when the source is busy enough that a two-rung size jump competes with the footage.","preview":{"kind":"video","src":"/caption-card-tiles/v1/blur-ladder.mp4","still":0.86},"recommended":false},{"value":"editorial-stack","label":"Editorial Stack","description":"A mixed-typography caption STACK - each spoken phrase breaks into 2-3 lines that each change register (bold grotesk lead / high-contrast serif / bold-italic mid / oversize hero), accumulating downward from a fixed top edge with tight-to-negative leading and a layered white bloom on the glyphs. The line layout rotates per phrase-group off the payload word's position, so the caption re-composes almost every sentence instead of holding one shape.\n\nThe loud editorial caption voice - when the running caption IS the video's design, not a legibility layer under it. Needs a dark-ish source (its identity is a white light bloom) and a face out of the 50-68% band. Rotate away from it when captions should stay quiet under the speaker or under visual moments.","preview":{"kind":"video","src":"/caption-card-tiles/v1/editorial-stack.mp4","still":1.98},"recommended":false},{"value":"inverted-stack","label":"Inverted Stack","description":"A caption whose glyphs are the photographic NEGATIVE of the footage behind them - the caption layer composites with a `difference` blend against a white fill, so a word reads near-white over a dark shoulder and flips to near-black the instant a bright frame cuts in, with nothing in the timeline changing. Two registers on one face (hero 2.95x / sub 1.58x), one split rule, and the block alternates flush-left / flush-right per phrase-group. The emphasis word is promoted to the hero line and stays inside the inversion with everything else.\n\nWhen the caption should belong to the footage rather than sit on top of it - the polarity flip is a reaction to the picture, so it reads as grade rather than as an overlay, and it is the loudest way to make a cut between a dark speaker and a bright b-roll land. Needs a source with real tonal contrast in the caption band. Rotate away from it on flat mid-tone footage, where a negative fill approaches its own backdrop and the glyphs dissolve. The inversion covers the whole caption layer - everything this host paints rides the blend.","preview":{"kind":"video","src":"/caption-card-tiles/v1/inverted-stack.mp4","still":2.38},"recommended":false},{"value":"lead-in-flare","label":"Lead In Flare","description":"A two-register phrase - the words leading up to the beat run small and light, then the phrase's TAIL lands oversize (3.1x) tucked under them with negative leading, arriving out of a blur. On a group carrying an emphasis word the tail takes `var(--caption-accent)`, with a vertical lightening ramp, a white bloom, and a one-sided left edge highlight that gives the type its dimension.\n\nThe steered default - a quiet lead-in resolving into one loud tail, so every sentence lands a visible payoff beat. It is the only subtitle pattern that puts colour on caption type, promoting the brand accent onto the tail of any group carrying an emphasis word. A weak accent is a rendering outcome here, not a reason to pick something else; an accent too close to the source's tone band still reads, because the white bloom sits under it as the legibility floor, and the pattern degrades to a two-register white caption rather than failing. Rotate to this directory's one `medium`-register pattern when the captions should stay uniform under the speaker.","preview":{"kind":"video","src":"/caption-card-tiles/v1/lead-in-flare.mp4","still":1.34},"recommended":true},{"value":"pace-adaptive","label":"Pace Adaptive","description":"Picks the reveal per phrase-group from the speaker's pace - fast lines appear whole (never lag the voice), medium lines accumulate word-by-word, and slow emphatic lines play one big word at a time. One emphasis word per line renders bold-italic-serif inline; the per-bucket animation (pop vs hard cut) is a single planner declaration. Single-line, configurable vertical position.\n\nThe rotation away from the steered default when captions should stay uniform under the speaker - a dense read, a delivery fast enough that a big tail every sentence would lag the voice, or footage busy enough to fight one. The only pattern that matches its reveal to the speaker's pace rather than holding one shape; rotate on from it when a punchier per-word emphasis or a calmer whole-line read fits the cut.","preview":{"kind":"video","src":"/caption-card-tiles/v1/pace-adaptive.mp4","still":1.18},"recommended":false},{"value":"scribble-subtitle","label":"Scribble Subtitle","description":"The whole running caption is hand-lettered in a marker face - every word writes on as it is spoken (its strokes redraw for half a second, then settle), and each phrase promotes its loudest word to a big marker register that the line split re-composes around. One or two lines per screen, never three.\n\nA whole-video caption style for a cut that wants hand-made, marker-on-paper energy rather than a clean broadcast subtitle - creator confessionals, story-time monologues, anything whose brand register is scrappy and personal. Needs a video accent to land the payload word (it degrades to white without one). Not for a formal/corporate register, not for a source with dense small on-screen text the marker face will fight, and not for CJK (the baked takes are Latin-only - the words fall back to the body sans).","preview":{"kind":"video","src":"/caption-card-tiles/v1/scribble-subtitle.mp4","still":1.38},"recommended":false},{"value":"solo-word-punch","label":"Solo Word Punch","description":"One word on screen at a time, every cue, at a single oversized heavy register. Each word replaces the previous in place - no accumulating line, no two words ever co-visible. Entry is a lateral scaleX widen from the word's own centre with no overshoot, on every word - a cadence too fast for the full widen shortens it rather than dropping it. Single word, configurable vertical position.\n\nA punchy single-word subtitle for cuts that want the caption to read as a beat rather than a line - short imperative narration, tutorial step-throughs, hype delivery. Rotate away from it for reflective or information-dense narration, where reading a whole phrase at once carries more than the cadence does.","preview":{"kind":"video","src":"/caption-card-tiles/v1/solo-word-punch.mp4","still":1.86},"recommended":false},{"value":"tilt-slam","label":"Tilt Slam","description":"A word-by-word caption where every word carries a baked TILT of a few degrees and the group's loudest word rides a solid accent slab that wipes in under it. Rows re-compose per phrase-group across six shapes (one row / two ragged rows / an oversize word hugged or hung between small ones), and every word is poster-scale - the size ladder is shallow on purpose, the contrast comes from the tilt and the row offsets.\n\nThe hand-slapped sticker voice - creator vlogs, story-time, product hot-takes, anything whose register is playful and loud rather than broadcast-clean. Needs a real video accent (the slab is where it is spent). Rotate away from it for a formal / corporate register, for a source with dense small on-screen text the tilted block will fight, and when captions should stay quiet under the speaker.","preview":{"kind":"video","src":"/caption-card-tiles/v1/tilt-slam.mp4","still":1.94},"recommended":false}],"display":{"kind":"gate","off":"no-caption","blank":"No style picked: the run chooses the one that suits the footage.","icon":"captions"}},"bgm_enabled":{"id":"bgm_enabled","label":"Background music","authority":"server","kind":"select","select":"single","narrowed":true,"selected":[],"options":[{"value":"on","label":"Add background music","description":"A music bed under the whole cut, ducked beneath the voice."},{"value":"off","label":"No background music","description":"Run no music. Nothing is added. Music already mixed into the cut stays where it is - this declines a new run rather than removing an old one."}],"display":{"kind":"switch","on":"on","off":"off","initial":"off","icon":"music"}},"sfx_enabled":{"id":"sfx_enabled","label":"Sound effects","authority":"server","kind":"select","select":"single","narrowed":true,"selected":[],"options":[{"value":"on","label":"Add sound effects","description":"Accent sounds on cuts and on the moments that land, placed where the edit calls for them and mixed in with the voice and music."},{"value":"off","label":"No sound effects","description":"Run no sound effects. Nothing is added. Effects already mixed into the cut stay where they are - this declines a new run rather than removing an old one."}],"display":{"kind":"switch","on":"on","off":"off","initial":"off","icon":"sfx"}}},"plain":{"rough_cut_boldness":{"id":"rough_cut_boldness","label":"Rough cut boldness","authority":"server","kind":"select","select":"single","narrowed":true,"selected":[],"options":[{"value":"off","label":"Keep the original video","description":"No rough cut at all. Nothing is removed - every filler word, false start, failed take and pause stays exactly where it was recorded, and the cut runs at the full source length. Pick this to keep the whole take, not to cut cautiously; conservative is the cautious one."},{"value":"conservative","label":"Conservative","description":"The most cautious. Cuts filler words, false starts and failed takes, and only clearly dead pauses - a gap has to be long before it counts as one.","recommended":false},{"value":"balanced","label":"Balanced","description":"The usual choice. The same material as conservative, with a lower bar for what counts as a trimmable pause, so the cut tightens noticeably.","recommended":true},{"value":"aggressive","label":"Aggressive","description":"Reaches furthest: a wider list of crutch words, and shorter gaps count as trimmable. Still only filler, failed takes and pauses - it never drops a point for being repeated or off topic, so it shortens the delivery rather than the content.","recommended":false}]},"caption_style":{"id":"caption_style","label":"Caption style","authority":"server","kind":"select","select":"single","narrowed":false,"narrowing_note":"Not narrowed to this project, so a pick here is a HEDGE and not a promise, and it can go wrong in two different ways. If this project's CANVAS cannot render the chosen pattern, the worker silently substitutes `pace-adaptive` and stages the substitution, so the user would believe the pattern they chose is the one that shipped. If the staged FACE leaves the chosen pattern no clear position, the pick is KEPT rather than replaced and the caption can render across the speaker's face. Both checks need the worker's canvas and staged face box, neither of which is readable here. Tell the user their pick may be replaced or may sit over the speaker. A user who would rather the run decide is asking for Auto, which is the ABSENCE of a pin rather than one of the patterns below: it is not an option on this card, and it is reached by submitting no caption style at all. `no-caption` instead declines the layer and has no canvas or face restriction.","narrowing_hint":"Previews are illustrative. If this style does not suit the footage, the run may swap it for the closest one or place it differently. Leave it unpicked to let the run choose. Choose No captions to leave subtitles off.","selected":[],"options":[{"value":"no-caption","label":"No captions","description":"Leave running subtitles off. Text already baked into the source video stays visible."},{"value":"blur-ladder","label":"Blur Ladder","description":"A rack-focus caption LADDER - every word arrives out of focus and snaps sharp, a new sentence glides up into place, and each line steps one indent further right than the one above it. Two registers (quiet lead-in / loud payload) mix on a single baseline, the payload is set ALL CAPS against the lowercase run-up, and a line that has been spoken past goes grey and racks back out of focus. Carries a deep dark shadow, not a light bloom, so it holds on bright footage.\n\nA punchy tutorial / talking-head voice where the caption should feel hand-cut per sentence - the register flip plus the caps break do the emphasis, and the focus rack gives every word a physical arrival. Needs a face outside the 50-73 band. Rotate away from it when captions should read as a quiet legibility layer, or when the source is busy enough that a two-rung size jump competes with the footage.","preview":{"kind":"video","src":"/caption-card-tiles/v1/blur-ladder.mp4","still":0.86},"recommended":false},{"value":"editorial-stack","label":"Editorial Stack","description":"A mixed-typography caption STACK - each spoken phrase breaks into 2-3 lines that each change register (bold grotesk lead / high-contrast serif / bold-italic mid / oversize hero), accumulating downward from a fixed top edge with tight-to-negative leading and a layered white bloom on the glyphs. The line layout rotates per phrase-group off the payload word's position, so the caption re-composes almost every sentence instead of holding one shape.\n\nThe loud editorial caption voice - when the running caption IS the video's design, not a legibility layer under it. Needs a dark-ish source (its identity is a white light bloom) and a face out of the 50-68% band. Rotate away from it when captions should stay quiet under the speaker or under visual moments.","preview":{"kind":"video","src":"/caption-card-tiles/v1/editorial-stack.mp4","still":1.98},"recommended":false},{"value":"inverted-stack","label":"Inverted Stack","description":"A caption whose glyphs are the photographic NEGATIVE of the footage behind them - the caption layer composites with a `difference` blend against a white fill, so a word reads near-white over a dark shoulder and flips to near-black the instant a bright frame cuts in, with nothing in the timeline changing. Two registers on one face (hero 2.95x / sub 1.58x), one split rule, and the block alternates flush-left / flush-right per phrase-group. The emphasis word is promoted to the hero line and stays inside the inversion with everything else.\n\nWhen the caption should belong to the footage rather than sit on top of it - the polarity flip is a reaction to the picture, so it reads as grade rather than as an overlay, and it is the loudest way to make a cut between a dark speaker and a bright b-roll land. Needs a source with real tonal contrast in the caption band. Rotate away from it on flat mid-tone footage, where a negative fill approaches its own backdrop and the glyphs dissolve. The inversion covers the whole caption layer - everything this host paints rides the blend.","preview":{"kind":"video","src":"/caption-card-tiles/v1/inverted-stack.mp4","still":2.38},"recommended":false},{"value":"lead-in-flare","label":"Lead In Flare","description":"A two-register phrase - the words leading up to the beat run small and light, then the phrase's TAIL lands oversize (3.1x) tucked under them with negative leading, arriving out of a blur. On a group carrying an emphasis word the tail takes `var(--caption-accent)`, with a vertical lightening ramp, a white bloom, and a one-sided left edge highlight that gives the type its dimension.\n\nThe steered default - a quiet lead-in resolving into one loud tail, so every sentence lands a visible payoff beat. It is the only subtitle pattern that puts colour on caption type, promoting the brand accent onto the tail of any group carrying an emphasis word. A weak accent is a rendering outcome here, not a reason to pick something else; an accent too close to the source's tone band still reads, because the white bloom sits under it as the legibility floor, and the pattern degrades to a two-register white caption rather than failing. Rotate to this directory's one `medium`-register pattern when the captions should stay uniform under the speaker.","preview":{"kind":"video","src":"/caption-card-tiles/v1/lead-in-flare.mp4","still":1.34},"recommended":true},{"value":"pace-adaptive","label":"Pace Adaptive","description":"Picks the reveal per phrase-group from the speaker's pace - fast lines appear whole (never lag the voice), medium lines accumulate word-by-word, and slow emphatic lines play one big word at a time. One emphasis word per line renders bold-italic-serif inline; the per-bucket animation (pop vs hard cut) is a single planner declaration. Single-line, configurable vertical position.\n\nThe rotation away from the steered default when captions should stay uniform under the speaker - a dense read, a delivery fast enough that a big tail every sentence would lag the voice, or footage busy enough to fight one. The only pattern that matches its reveal to the speaker's pace rather than holding one shape; rotate on from it when a punchier per-word emphasis or a calmer whole-line read fits the cut.","preview":{"kind":"video","src":"/caption-card-tiles/v1/pace-adaptive.mp4","still":1.18},"recommended":false},{"value":"scribble-subtitle","label":"Scribble Subtitle","description":"The whole running caption is hand-lettered in a marker face - every word writes on as it is spoken (its strokes redraw for half a second, then settle), and each phrase promotes its loudest word to a big marker register that the line split re-composes around. One or two lines per screen, never three.\n\nA whole-video caption style for a cut that wants hand-made, marker-on-paper energy rather than a clean broadcast subtitle - creator confessionals, story-time monologues, anything whose brand register is scrappy and personal. Needs a video accent to land the payload word (it degrades to white without one). Not for a formal/corporate register, not for a source with dense small on-screen text the marker face will fight, and not for CJK (the baked takes are Latin-only - the words fall back to the body sans).","preview":{"kind":"video","src":"/caption-card-tiles/v1/scribble-subtitle.mp4","still":1.38},"recommended":false},{"value":"solo-word-punch","label":"Solo Word Punch","description":"One word on screen at a time, every cue, at a single oversized heavy register. Each word replaces the previous in place - no accumulating line, no two words ever co-visible. Entry is a lateral scaleX widen from the word's own centre with no overshoot, on every word - a cadence too fast for the full widen shortens it rather than dropping it. Single word, configurable vertical position.\n\nA punchy single-word subtitle for cuts that want the caption to read as a beat rather than a line - short imperative narration, tutorial step-throughs, hype delivery. Rotate away from it for reflective or information-dense narration, where reading a whole phrase at once carries more than the cadence does.","preview":{"kind":"video","src":"/caption-card-tiles/v1/solo-word-punch.mp4","still":1.86},"recommended":false},{"value":"tilt-slam","label":"Tilt Slam","description":"A word-by-word caption where every word carries a baked TILT of a few degrees and the group's loudest word rides a solid accent slab that wipes in under it. Rows re-compose per phrase-group across six shapes (one row / two ragged rows / an oversize word hugged or hung between small ones), and every word is poster-scale - the size ladder is shallow on purpose, the contrast comes from the tilt and the row offsets.\n\nThe hand-slapped sticker voice - creator vlogs, story-time, product hot-takes, anything whose register is playful and loud rather than broadcast-clean. Needs a real video accent (the slab is where it is spent). Rotate away from it for a formal / corporate register, for a source with dense small on-screen text the tilted block will fight, and when captions should stay quiet under the speaker.","preview":{"kind":"video","src":"/caption-card-tiles/v1/tilt-slam.mp4","still":1.94},"recommended":false}]},"bgm_enabled":{"id":"bgm_enabled","label":"Background music","authority":"server","kind":"select","select":"single","narrowed":true,"selected":[],"options":[{"value":"on","label":"Add background music","description":"A music bed under the whole cut, ducked beneath the voice."},{"value":"off","label":"No background music","description":"Run no music. Nothing is added. Music already mixed into the cut stays where it is - this declines a new run rather than removing an old one."}]},"sfx_enabled":{"id":"sfx_enabled","label":"Sound effects","authority":"server","kind":"select","select":"single","narrowed":true,"selected":[],"options":[{"value":"on","label":"Add sound effects","description":"Accent sounds on cuts and on the moments that land, placed where the edit calls for them and mixed in with the voice and music."},{"value":"off","label":"No sound effects","description":"Run no sound effects. Nothing is added. Effects already mixed into the cut stay where they are - this declines a new run rather than removing an old one."}]}}};
+  var CATALOG = {"displays":{"rough_cut_boldness":{"id":"rough_cut_boldness","label":"Rough cut boldness","authority":"server","section":"Rough Cut","section_description":"Choose how much of the original footage to trim.","kind":"select","select":"single","narrowed":true,"selected":[],"options":[{"value":"off","label":"Keep the original video","description":"No rough cut at all. Nothing is removed - every filler word, false start, failed take and pause stays exactly where it was recorded, and the cut runs at the full source length. Pick this to keep the whole take, not to cut cautiously; conservative is the cautious one."},{"value":"conservative","label":"Conservative","description":"Most cautious. Removes ums, uhs, and retakes. Trims only long pauses, about a second or more. Keeps your natural rhythm.","recommended":false},{"value":"balanced","label":"Balanced","description":"Works for most videos. Removes ums, uhs, and retakes, and trims shorter pauses too. Tighter, but still natural.","recommended":true},{"value":"aggressive","label":"Aggressive","description":"The fastest pace, but it can feel jumpy. Removes filler words, and crutch words like \"like\" and \"basically\", and trims even brief pauses.","recommended":false}],"display":{"kind":"gate","off":"off","initial":"balanced","layout":"list","label":"Auto-clean my video","description":"Remove filler words, retakes and long pauses.","icon":"clean"}},"caption_style":{"id":"caption_style","label":"Caption style","authority":"server","section":"Captions, Music & Sound Effects","section_description":"Choose the best style to enhance your video.","kind":"select","select":"single","narrowed":false,"narrowing_note":"Not narrowed to this project, so a pick here is a HEDGE and not a promise, and it can go wrong in two different ways. If this project's CANVAS cannot render the chosen pattern, the worker silently substitutes `pace-adaptive` and stages the substitution, so the user would believe the pattern they chose is the one that shipped. If the staged FACE leaves the chosen pattern no clear position, the pick is KEPT rather than replaced and the caption can render across the speaker's face. Both checks need the worker's canvas and staged face box, neither of which is readable here. This is for your reasoning only: do not tell the user their pick may be swapped, replaced or placed differently, and present the style they chose as their choice. A user who would rather the run decide is asking for Auto, which is the ABSENCE of a pin rather than one of the patterns below, reached by submitting no caption style at all. `no-caption` instead declines the layer and has no canvas or face restriction.","selected":[],"options":[{"value":"no-caption","label":"No captions","description":"Leave running subtitles off. Text already baked into the source video stays visible."},{"value":"blur-ladder","label":"Focus Pull","description":"Each word arrives out of focus and snaps sharp, and every new line steps further right. The key word is set in capitals.","preview":{"kind":"video","src":"/caption-card-tiles/v1/blur-ladder.mp4","still":0.86},"recommended":false},{"value":"editorial-stack","label":"Magazine","description":"Each phrase stacks into two or three lines of mixed typefaces with a soft white glow, like a magazine layout. Best on darker footage.","preview":{"kind":"video","src":"/caption-card-tiles/v1/editorial-stack.mp4","still":1.98},"recommended":false},{"value":"inverted-stack","label":"Color Flip","description":"The letters are a photo negative of the video behind them, so they flip between light and dark as the picture changes.","preview":{"kind":"video","src":"/caption-card-tiles/v1/inverted-stack.mp4","still":2.38},"recommended":false},{"value":"lead-in-flare","label":"Key Word Emphasis","description":"A few small words lead in, then the end of the phrase lands large, in your accent colour on the key word.","preview":{"kind":"video","src":"/caption-card-tiles/v1/lead-in-flare.mp4","still":1.34},"recommended":true},{"value":"pace-adaptive","label":"Pace Match","description":"Follows the speaker's pace: fast lines appear whole, slower ones word by word. One key word per line is set in italics.","preview":{"kind":"video","src":"/caption-card-tiles/v1/pace-adaptive.mp4","still":1.18},"recommended":false},{"value":"scribble-subtitle","label":"Scribble Style","description":"Hand-lettered marker captions that write themselves on as each word is spoken. Latin text only; other scripts fall back to a plain font.","preview":{"kind":"video","src":"/caption-card-tiles/v1/scribble-subtitle.mp4","still":1.38},"recommended":false},{"value":"solo-word-punch","label":"One Word Punch","description":"One big word at a time, each replacing the last. Punchy and fast.","preview":{"kind":"video","src":"/caption-card-tiles/v1/solo-word-punch.mp4","still":1.86},"recommended":false},{"value":"tilt-slam","label":"Tilt Slam","description":"Word-by-word captions set at a slight tilt, with the loudest word on a coloured slab. Playful and loud.","preview":{"kind":"video","src":"/caption-card-tiles/v1/tilt-slam.mp4","still":1.94},"recommended":false}],"display":{"kind":"gate","off":"no-caption","blank":"No style picked: the run chooses the one that suits the footage.","label":"Auto Captions","description":"Generate captions for my video","icon":"captions"}},"bgm_enabled":{"id":"bgm_enabled","label":"Background music","authority":"server","section":"Captions, Music & Sound Effects","section_description":"Choose the best style to enhance your video.","kind":"select","select":"single","narrowed":true,"selected":[],"options":[{"value":"on","label":"Add background music","description":"A music bed under the whole cut, ducked beneath the voice."},{"value":"off","label":"No background music","description":"Run no music. Nothing is added. Music already mixed into the cut stays where it is - this declines a new run rather than removing an old one."}],"display":{"kind":"switch","on":"on","off":"off","initial":"off","icon":"music","description":"Adds a custom track that matches your video's mood, playing softly under your voice."}},"sfx_enabled":{"id":"sfx_enabled","label":"Sound effects","authority":"server","section":"Captions, Music & Sound Effects","section_description":"Choose the best style to enhance your video.","kind":"select","select":"single","narrowed":true,"selected":[],"options":[{"value":"on","label":"Add sound effects","description":"Accent sounds on cuts and on the moments that land, placed where the edit calls for them and mixed in with the voice and music."},{"value":"off","label":"No sound effects","description":"Run no sound effects. Nothing is added. Effects already mixed into the cut stay where they are - this declines a new run rather than removing an old one."}],"display":{"kind":"switch","on":"on","off":"off","initial":"off","icon":"sfx","description":"Subtle whooshes, pops and hits on key moments."}},"editing_preference":{"id":"editing_preference","label":"Anything else?","authority":"server","section":"Anything else?","kind":"text","narrowed":true,"placeholder":"Anything else about how we should edit your video?","multiline":true,"value":""}},"plain":{"rough_cut_boldness":{"id":"rough_cut_boldness","label":"Rough cut boldness","authority":"server","kind":"select","select":"single","narrowed":true,"selected":[],"options":[{"value":"off","label":"Keep the original video","description":"No rough cut at all. Nothing is removed - every filler word, false start, failed take and pause stays exactly where it was recorded, and the cut runs at the full source length. Pick this to keep the whole take, not to cut cautiously; conservative is the cautious one."},{"value":"conservative","label":"Conservative","description":"Most cautious. Removes ums, uhs, and retakes. Trims only long pauses, about a second or more. Keeps your natural rhythm.","recommended":false},{"value":"balanced","label":"Balanced","description":"Works for most videos. Removes ums, uhs, and retakes, and trims shorter pauses too. Tighter, but still natural.","recommended":true},{"value":"aggressive","label":"Aggressive","description":"The fastest pace, but it can feel jumpy. Removes filler words, and crutch words like \"like\" and \"basically\", and trims even brief pauses.","recommended":false}]},"caption_style":{"id":"caption_style","label":"Caption style","authority":"server","kind":"select","select":"single","narrowed":false,"narrowing_note":"Not narrowed to this project, so a pick here is a HEDGE and not a promise, and it can go wrong in two different ways. If this project's CANVAS cannot render the chosen pattern, the worker silently substitutes `pace-adaptive` and stages the substitution, so the user would believe the pattern they chose is the one that shipped. If the staged FACE leaves the chosen pattern no clear position, the pick is KEPT rather than replaced and the caption can render across the speaker's face. Both checks need the worker's canvas and staged face box, neither of which is readable here. This is for your reasoning only: do not tell the user their pick may be swapped, replaced or placed differently, and present the style they chose as their choice. A user who would rather the run decide is asking for Auto, which is the ABSENCE of a pin rather than one of the patterns below, reached by submitting no caption style at all. `no-caption` instead declines the layer and has no canvas or face restriction.","selected":[],"options":[{"value":"no-caption","label":"No captions","description":"Leave running subtitles off. Text already baked into the source video stays visible."},{"value":"blur-ladder","label":"Focus Pull","description":"Each word arrives out of focus and snaps sharp, and every new line steps further right. The key word is set in capitals.","preview":{"kind":"video","src":"/caption-card-tiles/v1/blur-ladder.mp4","still":0.86},"recommended":false},{"value":"editorial-stack","label":"Magazine","description":"Each phrase stacks into two or three lines of mixed typefaces with a soft white glow, like a magazine layout. Best on darker footage.","preview":{"kind":"video","src":"/caption-card-tiles/v1/editorial-stack.mp4","still":1.98},"recommended":false},{"value":"inverted-stack","label":"Color Flip","description":"The letters are a photo negative of the video behind them, so they flip between light and dark as the picture changes.","preview":{"kind":"video","src":"/caption-card-tiles/v1/inverted-stack.mp4","still":2.38},"recommended":false},{"value":"lead-in-flare","label":"Key Word Emphasis","description":"A few small words lead in, then the end of the phrase lands large, in your accent colour on the key word.","preview":{"kind":"video","src":"/caption-card-tiles/v1/lead-in-flare.mp4","still":1.34},"recommended":true},{"value":"pace-adaptive","label":"Pace Match","description":"Follows the speaker's pace: fast lines appear whole, slower ones word by word. One key word per line is set in italics.","preview":{"kind":"video","src":"/caption-card-tiles/v1/pace-adaptive.mp4","still":1.18},"recommended":false},{"value":"scribble-subtitle","label":"Scribble Style","description":"Hand-lettered marker captions that write themselves on as each word is spoken. Latin text only; other scripts fall back to a plain font.","preview":{"kind":"video","src":"/caption-card-tiles/v1/scribble-subtitle.mp4","still":1.38},"recommended":false},{"value":"solo-word-punch","label":"One Word Punch","description":"One big word at a time, each replacing the last. Punchy and fast.","preview":{"kind":"video","src":"/caption-card-tiles/v1/solo-word-punch.mp4","still":1.86},"recommended":false},{"value":"tilt-slam","label":"Tilt Slam","description":"Word-by-word captions set at a slight tilt, with the loudest word on a coloured slab. Playful and loud.","preview":{"kind":"video","src":"/caption-card-tiles/v1/tilt-slam.mp4","still":1.94},"recommended":false}]},"bgm_enabled":{"id":"bgm_enabled","label":"Background music","authority":"server","kind":"select","select":"single","narrowed":true,"selected":[],"options":[{"value":"on","label":"Add background music","description":"A music bed under the whole cut, ducked beneath the voice."},{"value":"off","label":"No background music","description":"Run no music. Nothing is added. Music already mixed into the cut stays where it is - this declines a new run rather than removing an old one."}]},"sfx_enabled":{"id":"sfx_enabled","label":"Sound effects","authority":"server","kind":"select","select":"single","narrowed":true,"selected":[],"options":[{"value":"on","label":"Add sound effects","description":"Accent sounds on cuts and on the moments that land, placed where the edit calls for them and mixed in with the voice and music."},{"value":"off","label":"No sound effects","description":"Run no sound effects. Nothing is added. Effects already mixed into the cut stay where they are - this declines a new run rather than removing an old one."}]},"editing_preference":{"id":"editing_preference","label":"Anything else?","authority":"server","kind":"text","narrowed":true,"placeholder":"Anything else about how we should edit your video?","multiline":true,"value":""}}};
+  var COPY_KEYS = ["Rough cut boldness", "Rough Cut", "Choose how much of the original footage to trim.", "Keep the original video", "No rough cut at all. Nothing is removed - every filler word, false start, failed take and pause stays exactly where it was recorded, and the cut runs at the full source length. Pick this to keep the whole take, not to cut cautiously; conservative is the cautious one.", "Conservative", "Most cautious. Removes ums, uhs, and retakes. Trims only long pauses, about a second or more. Keeps your natural rhythm.", "Balanced", "Works for most videos. Removes ums, uhs, and retakes, and trims shorter pauses too. Tighter, but still natural.", "Aggressive", "The fastest pace, but it can feel jumpy. Removes filler words, and crutch words like \"like\" and \"basically\", and trims even brief pauses.", "Auto-clean my video", "Remove filler words, retakes and long pauses.", "Caption style", "Captions, Music & Sound Effects", "Choose the best style to enhance your video.", "No captions", "Leave running subtitles off. Text already baked into the source video stays visible.", "Each word arrives out of focus and snaps sharp, and every new line steps further right. The key word is set in capitals.", "Each phrase stacks into two or three lines of mixed typefaces with a soft white glow, like a magazine layout. Best on darker footage.", "The letters are a photo negative of the video behind them, so they flip between light and dark as the picture changes.", "A few small words lead in, then the end of the phrase lands large, in your accent colour on the key word.", "Follows the speaker's pace: fast lines appear whole, slower ones word by word. One key word per line is set in italics.", "Hand-lettered marker captions that write themselves on as each word is spoken. Latin text only; other scripts fall back to a plain font.", "One big word at a time, each replacing the last. Punchy and fast.", "Word-by-word captions set at a slight tilt, with the loudest word on a coloured slab. Playful and loud.", "No style picked: the run chooses the one that suits the footage.", "Auto Captions", "Generate captions for my video", "Background music", "Add background music", "A music bed under the whole cut, ducked beneath the voice.", "No background music", "Run no music. Nothing is added. Music already mixed into the cut stays where it is - this declines a new run rather than removing an old one.", "Adds a custom track that matches your video's mood, playing softly under your voice.", "Sound effects", "Add sound effects", "Accent sounds on cuts and on the moments that land, placed where the edit calls for them and mixed in with the voice and music.", "No sound effects", "Run no sound effects. Nothing is added. Effects already mixed into the cut stay where they are - this declines a new run rather than removing an old one.", "Subtle whooshes, pops and hits on key moments.", "Anything else?", "Anything else about how we should edit your video?"];
+  var COPY = {"zh": ["粗剪力度", "粗剪", "选择要从原始素材里剪掉多少。", "保留原视频", "完全不做粗剪。什么都不删：每个语气词、口误、说砸的片段和停顿都原样保留，成片和原素材一样长。想保留整段原样才选这个；想谨慎地剪，请选「保守」。", "保守", "最谨慎。去掉嗯、啊这类语气词和重来的片段，只剪一秒左右及以上的长停顿，保留你自然的节奏。", "平衡", "适合大多数视频。去掉嗯、啊这类语气词和重来的片段，较短的停顿也会剪掉。更紧凑，但依然自然。", "激进", "节奏最快，但可能显得跳。去掉语气词，以及「就是」「然后」这类口头禅，连很短的停顿也会剪掉。", "自动清理我的视频", "去掉语气词、重来的片段和长停顿。", "字幕样式", "字幕、音乐和音效", "选择最能为视频增色的风格。", "不加字幕", "不加滚动字幕。原视频里已有的文字仍会显示。", "每个词从模糊中出现、瞬间变清晰，每一行都比上一行更往右缩进。关键词用大写字母突出。", "每句话叠成两三行、混排多种字体，带柔和的白色光晕，像杂志版式。适合偏暗的画面。", "文字是背后画面的负片，画面明暗变化时，文字也跟着在亮和暗之间翻转。", "前面几个词用小字引入，句尾用大字落下，关键词用你的主题色。", "跟着说话节奏走：语速快时整行出现，慢时一个词一个词出现。每行有一个关键词用斜体。", "马克笔手写风格，随着说话一个词一个词写出来。只支持拉丁字母，中文等其他文字会换成普通字体。", "一次只显示一个大号的词，后一个替换前一个。干脆利落，节奏快。", "逐词出现的字幕，带轻微倾斜，最响亮的词压在彩色色块上。俏皮又张扬。", "未选样式：由系统挑一个适合这段画面的。", "自动字幕", "为我的视频生成字幕", "背景音乐", "添加背景音乐", "给整条视频垫一层音乐，有人声时自动压低。", "不加背景音乐", "不配音乐，什么都不加。已经混进视频的音乐会保留：这里只是不再新加，不会删掉原有的。", "添加一段贴合视频氛围的专属配乐，在你说话时轻轻垫在下面。", "音效", "添加音效", "在剪辑点和关键时刻加点缀音效，按剪辑需要摆放，并和人声、音乐混在一起。", "不加音效", "不配音效，什么都不加。已经混进视频的音效会保留：这里只是不再新加，不会删掉原有的。", "在关键时刻加入细微的嗖声、啵声和重击声。", "还有别的吗？", "关于怎么剪你的视频，还有别的要求吗？"], "pt-BR": ["Intensidade do corte", "Corte bruto", "Escolha quanto da gravação original cortar.", "Manter o vídeo original", "Nenhum corte. Nada é removido: cada vício de linguagem, falso começo, tomada errada e pausa fica exatamente onde foi gravado, e o vídeo mantém a duração original. Escolha isto para manter a gravação inteira, não para cortar com cautela; Conservador é a opção cautelosa.", "Conservador", "A mais cautelosa. Remove \"hã\", \"hum\" e regravações. Corta só pausas longas, de cerca de um segundo ou mais. Mantém seu ritmo natural.", "Equilibrado", "Funciona para a maioria dos vídeos. Remove \"hã\", \"hum\" e regravações, e corta também pausas mais curtas. Mais enxuto, mas ainda natural.", "Agressivo", "O ritmo mais rápido, mas pode parecer picotado. Remove vícios de linguagem e muletas como \"tipo\" e \"basicamente\", e corta até pausas breves.", "Limpar meu vídeo automaticamente", "Remove vícios de linguagem, regravações e pausas longas.", "Estilo de legenda", "Legendas, música e efeitos sonoros", "Escolha o melhor estilo para valorizar seu vídeo.", "Sem legendas", "Sem legendas contínuas. Textos que já fazem parte do vídeo original continuam visíveis.", "Cada palavra surge desfocada e entra em foco de repente, e cada nova linha avança um pouco mais para a direita. A palavra-chave aparece em maiúsculas.", "Cada frase se empilha em duas ou três linhas com fontes variadas e um brilho branco suave, como numa revista. Fica melhor em imagens mais escuras.", "As letras são o negativo do vídeo por trás delas e alternam entre claro e escuro conforme a imagem muda.", "Algumas palavras pequenas abrem a frase e o final dela aparece grande, com a palavra-chave na sua cor de destaque.", "Segue o ritmo de quem fala: falas rápidas aparecem inteiras, as mais lentas palavra por palavra. Uma palavra-chave por linha fica em itálico.", "Legendas escritas à mão com marcador, que vão se escrevendo a cada palavra falada. Só para alfabeto latino; outros sistemas de escrita usam uma fonte simples.", "Uma palavra grande por vez, cada uma substituindo a anterior. Direto e rápido.", "Legendas palavra por palavra com uma leve inclinação, e a palavra mais forte sobre uma faixa colorida. Divertido e chamativo.", "Nenhum estilo escolhido: o sistema escolhe o que combina com o vídeo.", "Legendas automáticas", "Gerar legendas para meu vídeo", "Música de fundo", "Adicionar música de fundo", "Uma trilha sob todo o vídeo, abaixada quando há voz.", "Sem música de fundo", "Nenhuma música é adicionada. A música que já está no vídeo continua onde está: isto só evita adicionar uma nova, não remove a anterior.", "Adiciona uma trilha feita para o clima do seu vídeo, tocando baixinho sob a sua voz.", "Efeitos sonoros", "Adicionar efeitos sonoros", "Sons de destaque nos cortes e nos momentos marcantes, posicionados onde a edição pede e mixados com a voz e a música.", "Sem efeitos sonoros", "Nenhum efeito é adicionado. Os efeitos que já estão no vídeo continuam onde estão: isto só evita adicionar novos, não remove os anteriores.", "Whooshes, estalos e impactos sutis nos momentos-chave.", "Mais alguma coisa?", "Mais alguma coisa sobre como devemos editar seu vídeo?"], "es-ES": ["Intensidad del corte", "Corte en bruto", "Elige cuánto recortar de la grabación original.", "Mantener el vídeo original", "Sin corte. No se quita nada: cada muletilla, arranque en falso, toma fallida y pausa se queda exactamente donde se grabó, y el vídeo conserva toda su duración. Elige esto para mantener la grabación entera, no para cortar con prudencia; Conservador es la opción prudente.", "Conservador", "La más prudente. Quita los \"eh\", los \"mmm\" y las tomas repetidas. Solo recorta pausas largas, de un segundo o más. Mantiene tu ritmo natural.", "Equilibrado", "Funciona para la mayoría de los vídeos. Quita los \"eh\", los \"mmm\" y las tomas repetidas, y también recorta pausas más cortas. Más ágil, pero natural.", "Agresivo", "El ritmo más rápido, aunque puede sentirse a saltos. Quita muletillas y coletillas como \"o sea\" y \"básicamente\", y recorta hasta las pausas breves.", "Limpiar mi vídeo automáticamente", "Quita muletillas, tomas repetidas y pausas largas.", "Estilo de subtítulos", "Subtítulos, música y efectos de sonido", "Elige el mejor estilo para realzar tu vídeo.", "Sin subtítulos", "Sin subtítulos continuos. El texto que ya forma parte del vídeo original sigue visible.", "Cada palabra aparece desenfocada y se enfoca de golpe, y cada línea nueva avanza un poco más a la derecha. La palabra clave va en mayúsculas.", "Cada frase se apila en dos o tres líneas con tipografías mezcladas y un suave brillo blanco, como en una revista. Queda mejor en imágenes oscuras.", "Las letras son el negativo del vídeo que tienen detrás, así que pasan de claras a oscuras cuando cambia la imagen.", "Unas pocas palabras pequeñas abren la frase y el final aparece en grande, con la palabra clave en tu color de acento.", "Sigue el ritmo de quien habla: las frases rápidas aparecen enteras y las lentas palabra a palabra. Una palabra clave por línea va en cursiva.", "Subtítulos rotulados a mano con rotulador que se van escribiendo a medida que se dice cada palabra. Solo alfabeto latino; otras escrituras usan una fuente sencilla.", "Una palabra grande cada vez, y cada una sustituye a la anterior. Directo y rápido.", "Subtítulos palabra a palabra con una ligera inclinación, y la palabra más fuerte sobre una franja de color. Desenfadado y llamativo.", "Ningún estilo elegido: el sistema elige el que mejor encaja con el vídeo.", "Subtítulos automáticos", "Generar subtítulos para mi vídeo", "Música de fondo", "Añadir música de fondo", "Una base musical bajo todo el vídeo, que baja cuando hay voz.", "Sin música de fondo", "No se añade música. La música que ya está en el vídeo se queda donde está: esto solo evita añadir una nueva, no quita la anterior.", "Añade una pista a medida que encaja con el ambiente de tu vídeo y suena suave bajo tu voz.", "Efectos de sonido", "Añadir efectos de sonido", "Sonidos de acento en los cortes y en los momentos clave, colocados donde lo pide el montaje y mezclados con la voz y la música.", "Sin efectos de sonido", "No se añaden efectos. Los efectos que ya están en el vídeo se quedan donde están: esto solo evita añadir nuevos, no quita los anteriores.", "Barridos, chasquidos y golpes sutiles en los momentos clave.", "¿Algo más?", "¿Algo más sobre cómo debemos editar tu vídeo?"], "de-DE": ["Schnittintensität", "Rohschnitt", "Wähle, wie viel vom Originalmaterial gekürzt wird.", "Originalvideo behalten", "Kein Rohschnitt. Nichts wird entfernt: Jedes Füllwort, jeder Fehlstart, jeder missglückte Take und jede Pause bleibt genau dort, wo sie aufgenommen wurde, und das Video behält seine volle Länge. Wähle das, um die ganze Aufnahme zu behalten, nicht um vorsichtig zu schneiden; Konservativ ist die vorsichtige Option.", "Konservativ", "Am vorsichtigsten. Entfernt \"äh\", \"ähm\" und Neuansätze. Kürzt nur lange Pausen ab etwa einer Sekunde. Dein natürlicher Rhythmus bleibt erhalten.", "Ausgewogen", "Passt für die meisten Videos. Entfernt \"äh\", \"ähm\" und Neuansätze und kürzt auch kürzere Pausen. Straffer, aber noch natürlich.", "Aggressiv", "Das schnellste Tempo, kann aber sprunghaft wirken. Entfernt Füllwörter und Floskeln wie \"halt\" und \"quasi\" und kürzt selbst kurze Pausen.", "Mein Video automatisch bereinigen", "Entfernt Füllwörter, Neuansätze und lange Pausen.", "Untertitelstil", "Untertitel, Musik und Soundeffekte", "Wähle den Stil, der dein Video am besten zur Geltung bringt.", "Keine Untertitel", "Keine laufenden Untertitel. Text, der bereits im Originalvideo steht, bleibt sichtbar.", "Jedes Wort erscheint unscharf und wird schlagartig scharf, jede neue Zeile rückt weiter nach rechts. Das Schlüsselwort steht in Großbuchstaben.", "Jede Phrase stapelt sich in zwei oder drei Zeilen aus gemischten Schriften mit weichem weißem Leuchten, wie im Magazinlayout. Am besten auf dunklerem Material.", "Die Buchstaben sind ein Fotonegativ des Videos dahinter und wechseln zwischen hell und dunkel, wenn sich das Bild ändert.", "Ein paar kleine Wörter leiten ein, dann landet das Ende der Phrase groß, mit dem Schlüsselwort in deiner Akzentfarbe.", "Folgt dem Sprechtempo: Schnelle Zeilen erscheinen ganz, langsamere Wort für Wort. Ein Schlüsselwort pro Zeile steht kursiv.", "Handgeschriebene Marker-Untertitel, die sich beim Sprechen Wort für Wort aufschreiben. Nur lateinische Schrift; andere Schriften erscheinen in einer schlichten Schrift.", "Immer nur ein großes Wort, das jeweils das vorige ersetzt. Knackig und schnell.", "Untertitel Wort für Wort, leicht schräg gestellt, das lauteste Wort auf einem farbigen Balken. Verspielt und laut.", "Kein Stil gewählt: Das System wählt den, der zum Material passt.", "Automatische Untertitel", "Untertitel für mein Video erstellen", "Hintergrundmusik", "Hintergrundmusik hinzufügen", "Ein Musikbett unter dem ganzen Video, das unter der Stimme leiser wird.", "Keine Hintergrundmusik", "Es wird keine Musik hinzugefügt. Musik, die bereits im Video ist, bleibt erhalten: Das verzichtet nur auf neue Musik und entfernt keine vorhandene.", "Fügt einen eigenen Track hinzu, der zur Stimmung deines Videos passt und leise unter deiner Stimme läuft.", "Soundeffekte", "Soundeffekte hinzufügen", "Akzentsounds an Schnitten und starken Momenten, dort platziert, wo der Schnitt es verlangt, und mit Stimme und Musik abgemischt.", "Keine Soundeffekte", "Es werden keine Soundeffekte hinzugefügt. Effekte, die bereits im Video sind, bleiben erhalten: Das verzichtet nur auf neue und entfernt keine vorhandenen.", "Dezente Whooshes, Pops und Hits an wichtigen Stellen.", "Sonst noch etwas?", "Sonst noch etwas dazu, wie wir dein Video schneiden sollen?"], "fr-FR": ["Intensité du dérushage", "Dérushage", "Choisissez la part des rushs d'origine à couper.", "Garder la vidéo d'origine", "Aucun dérushage. Rien n'est supprimé : chaque tic de langage, faux départ, prise ratée et pause reste exactement là où il a été enregistré, et la vidéo garde toute sa durée. Choisissez cette option pour garder la prise entière, pas pour couper prudemment ; Conservateur est l'option prudente.", "Conservateur", "Le plus prudent. Supprime les \"euh\", les \"hum\" et les reprises. Ne coupe que les longues pauses, d'environ une seconde ou plus. Garde votre rythme naturel.", "Équilibré", "Convient à la plupart des vidéos. Supprime les \"euh\", les \"hum\" et les reprises, et coupe aussi les pauses plus courtes. Plus serré, mais toujours naturel.", "Agressif", "Le rythme le plus rapide, mais le résultat peut sembler saccadé. Supprime les tics de langage et les mots béquilles comme \"genre\" et \"en fait\", et coupe même les pauses brèves.", "Nettoyer ma vidéo automatiquement", "Supprime les tics de langage, les reprises et les longues pauses.", "Style de sous-titres", "Sous-titres, musique et effets sonores", "Choisissez le style qui mettra le mieux votre vidéo en valeur.", "Sans sous-titres", "Pas de sous-titres continus. Le texte déjà présent dans la vidéo d'origine reste visible.", "Chaque mot arrive flou puis devient net d'un coup, et chaque nouvelle ligne se décale un peu plus vers la droite. Le mot clé est en majuscules.", "Chaque phrase s'empile sur deux ou trois lignes aux polices mélangées, avec une douce lueur blanche, comme une mise en page de magazine. Idéal sur des images plutôt sombres.", "Les lettres sont le négatif de la vidéo derrière elles et passent du clair au sombre quand l'image change.", "Quelques petits mots introduisent la phrase, puis sa fin arrive en grand, avec le mot clé dans votre couleur d'accent.", "Suit le rythme de la personne qui parle : les phrases rapides apparaissent en entier, les plus lentes mot par mot. Un mot clé par ligne est en italique.", "Des sous-titres manuscrits au marqueur qui s'écrivent à mesure que chaque mot est prononcé. Alphabet latin uniquement ; les autres écritures passent à une police simple.", "Un seul grand mot à la fois, chacun remplaçant le précédent. Percutant et rapide.", "Des sous-titres mot à mot légèrement inclinés, avec le mot le plus fort sur un bandeau de couleur. Ludique et percutant.", "Aucun style choisi : le système choisit celui qui convient à la vidéo.", "Sous-titres automatiques", "Générer des sous-titres pour ma vidéo", "Musique de fond", "Ajouter une musique de fond", "Un fond musical sous toute la vidéo, atténué sous la voix.", "Pas de musique de fond", "Aucune musique n'est ajoutée. La musique déjà mixée dans la vidéo reste en place : cela évite d'en ajouter une nouvelle, sans retirer l'ancienne.", "Ajoute une piste sur mesure, accordée à l'ambiance de votre vidéo, jouée en douceur sous votre voix.", "Effets sonores", "Ajouter des effets sonores", "Des sons d'accent sur les coupes et les moments forts, placés là où le montage les demande et mixés avec la voix et la musique.", "Pas d'effets sonores", "Aucun effet n'est ajouté. Les effets déjà mixés dans la vidéo restent en place : cela évite d'en ajouter de nouveaux, sans retirer les anciens.", "Des whooshs, pops et impacts discrets sur les moments clés.", "Autre chose ?", "Autre chose sur la façon de monter votre vidéo ?"], "it-IT": ["Intensità del taglio", "Premontaggio", "Scegli quanto tagliare del girato originale.", "Mantieni il video originale", "Nessun taglio. Non viene rimosso nulla: ogni intercalare, falsa partenza, ripresa sbagliata e pausa resta esattamente dove è stata registrata, e il video mantiene tutta la sua durata. Sceglilo per tenere la registrazione intera, non per tagliare con cautela; Conservativo è l'opzione cauta.", "Conservativo", "Il più cauto. Rimuove \"ehm\", \"uhm\" e ripetizioni. Taglia solo le pause lunghe, da circa un secondo in su. Mantiene il tuo ritmo naturale.", "Bilanciato", "Va bene per la maggior parte dei video. Rimuove \"ehm\", \"uhm\" e ripetizioni, e taglia anche le pause più brevi. Più serrato, ma sempre naturale.", "Aggressivo", "Il ritmo più veloce, ma può risultare a scatti. Rimuove intercalari e parole riempitive come \"tipo\" e \"praticamente\", e taglia anche le pause brevi.", "Pulisci il mio video in automatico", "Rimuove intercalari, ripetizioni e pause lunghe.", "Stile dei sottotitoli", "Sottotitoli, musica ed effetti sonori", "Scegli lo stile migliore per valorizzare il tuo video.", "Nessun sottotitolo", "Nessun sottotitolo continuo. Il testo già presente nel video originale resta visibile.", "Ogni parola arriva sfocata e torna nitida di colpo, e ogni nuova riga si sposta un po' più a destra. La parola chiave è in maiuscolo.", "Ogni frase si impila su due o tre righe con caratteri misti e un morbido bagliore bianco, come un'impaginazione da rivista. Rende meglio su immagini scure.", "Le lettere sono il negativo del video dietro di loro e passano da chiare a scure quando l'immagine cambia.", "Alcune piccole parole introducono la frase, poi la parte finale arriva in grande, con la parola chiave nel tuo colore di accento.", "Segue il ritmo di chi parla: le frasi veloci compaiono intere, quelle più lente parola per parola. Una parola chiave per riga è in corsivo.", "Sottotitoli scritti a mano con il pennarello, che si scrivono man mano che ogni parola viene pronunciata. Solo alfabeto latino; le altre scritture usano un carattere semplice.", "Una sola parola grande alla volta, ognuna sostituisce la precedente. Incisivo e veloce.", "Sottotitoli parola per parola leggermente inclinati, con la parola più forte su una fascia colorata. Giocoso e vivace.", "Nessuno stile scelto: il sistema sceglie quello più adatto al video.", "Sottotitoli automatici", "Genera i sottotitoli per il mio video", "Musica di sottofondo", "Aggiungi musica di sottofondo", "Un tappeto musicale sotto tutto il video, abbassato sotto la voce.", "Nessuna musica di sottofondo", "Non viene aggiunta musica. La musica già presente nel video resta dov'è: questo evita solo di aggiungerne di nuova, non rimuove quella esistente.", "Aggiunge una traccia su misura, in linea con l'atmosfera del video, che suona leggera sotto la tua voce.", "Effetti sonori", "Aggiungi effetti sonori", "Suoni d'accento sui tagli e sui momenti chiave, posizionati dove il montaggio li richiede e mixati con voce e musica.", "Nessun effetto sonoro", "Non vengono aggiunti effetti. Gli effetti già presenti nel video restano dove sono: questo evita solo di aggiungerne di nuovi, non rimuove quelli esistenti.", "Whoosh, pop e colpi discreti nei momenti chiave.", "Altro?", "Altro su come dovremmo montare il tuo video?"], "nl-NL": ["Intensiteit van de montage", "Ruwe montage", "Kies hoeveel van het originele materiaal eruit gaat.", "Originele video behouden", "Geen ruwe montage. Er wordt niets verwijderd: elk stopwoord, elke valse start, mislukte take en pauze blijft precies waar die is opgenomen, en de video houdt zijn volledige lengte. Kies dit om de hele opname te houden, niet om voorzichtig te knippen; Behoudend is de voorzichtige optie.", "Behoudend", "Het voorzichtigst. Verwijdert \"eh\", \"ehm\" en herhaalde takes. Knipt alleen lange pauzes weg, van ongeveer een seconde of meer. Je natuurlijke ritme blijft behouden.", "Gebalanceerd", "Werkt voor de meeste video's. Verwijdert \"eh\", \"ehm\" en herhaalde takes, en knipt ook kortere pauzes weg. Strakker, maar nog steeds natuurlijk.", "Agressief", "Het snelste tempo, maar het kan springerig aanvoelen. Verwijdert opvulwoorden en stopwoorden als \"zeg maar\" en \"eigenlijk\", en knipt zelfs korte pauzes weg.", "Mijn video automatisch opschonen", "Verwijdert stopwoorden, herhaalde takes en lange pauzes.", "Ondertitelstijl", "Ondertitels, muziek en geluidseffecten", "Kies de stijl die je video het beste laat uitkomen.", "Geen ondertitels", "Geen doorlopende ondertitels. Tekst die al in de originele video staat, blijft zichtbaar.", "Elk woord komt onscherp binnen en springt dan scherp, en elke nieuwe regel schuift iets verder naar rechts. Het kernwoord staat in hoofdletters.", "Elke zin stapelt zich in twee of drie regels met gemengde lettertypes en een zachte witte gloed, zoals een tijdschriftlayout. Het mooist op donkere beelden.", "De letters zijn een fotonegatief van de video erachter en wisselen tussen licht en donker als het beeld verandert.", "Een paar kleine woorden leiden in, daarna landt het einde van de zin groot, met het kernwoord in je accentkleur.", "Volgt het spreektempo: snelle zinnen verschijnen in één keer, langzamere woord voor woord. Per regel staat één kernwoord cursief.", "Handgeschreven ondertitels in stiftletters die zichzelf uitschrijven terwijl elk woord wordt uitgesproken. Alleen Latijns schrift; andere schriften krijgen een eenvoudig lettertype.", "Telkens één groot woord, dat het vorige vervangt. Krachtig en snel.", "Ondertitels woord voor woord met een lichte kanteling, het luidste woord op een gekleurde balk. Speels en luid.", "Geen stijl gekozen: het systeem kiest de stijl die bij de beelden past.", "Automatische ondertitels", "Ondertitels voor mijn video maken", "Achtergrondmuziek", "Achtergrondmuziek toevoegen", "Een muziekbed onder de hele video, zachter gezet onder de stem.", "Geen achtergrondmuziek", "Er wordt geen muziek toegevoegd. Muziek die al in de video zit, blijft staan: dit slaat alleen nieuwe muziek over en verwijdert geen bestaande.", "Voegt een eigen track toe die past bij de sfeer van je video en zacht onder je stem speelt.", "Geluidseffecten", "Geluidseffecten toevoegen", "Accentgeluiden op de overgangen en de sterke momenten, geplaatst waar de montage erom vraagt en gemixt met stem en muziek.", "Geen geluidseffecten", "Er worden geen effecten toegevoegd. Effecten die al in de video zitten, blijven staan: dit slaat alleen nieuwe over en verwijdert geen bestaande.", "Subtiele whooshes, pops en hits op de belangrijke momenten.", "Nog iets?", "Nog iets over hoe we je video moeten monteren?"], "pl-PL": ["Intensywność cięcia", "Wstępny montaż", "Wybierz, ile oryginalnego materiału wyciąć.", "Zachowaj oryginalne wideo", "Bez wstępnego montażu. Nic nie jest usuwane: każde wtrącenie, falstart, nieudane ujęcie i pauza zostaje dokładnie tam, gdzie je nagrano, a wideo zachowuje pełną długość. Wybierz to, aby zachować całe nagranie, a nie po to, by ciąć ostrożnie; ostrożną opcją jest Zachowawczy.", "Zachowawczy", "Najostrożniejszy. Usuwa \"yyy\", \"eee\" i powtórzone ujęcia. Wycina tylko długie pauzy, od około sekundy wzwyż. Zachowuje Twój naturalny rytm.", "Zrównoważony", "Sprawdza się w większości filmów. Usuwa \"yyy\", \"eee\" i powtórzone ujęcia, a także krótsze pauzy. Bardziej zwarty, ale wciąż naturalny.", "Agresywny", "Najszybsze tempo, ale może sprawiać wrażenie poszarpanego. Usuwa wtrącenia i wypełniacze jak \"jakby\" i \"generalnie\" oraz wycina nawet krótkie pauzy.", "Automatycznie oczyść moje wideo", "Usuwa wtrącenia, powtórzone ujęcia i długie pauzy.", "Styl napisów", "Napisy, muzyka i efekty dźwiękowe", "Wybierz styl, który najlepiej podkreśli Twoje wideo.", "Bez napisów", "Bez ciągłych napisów. Tekst, który jest już w oryginalnym wideo, pozostaje widoczny.", "Każde słowo pojawia się rozmyte i nagle się wyostrza, a każda nowa linia przesuwa się nieco bardziej w prawo. Słowo kluczowe jest pisane wielkimi literami.", "Każda fraza układa się w dwie lub trzy linie z różnych krojów pisma z delikatną białą poświatą, jak w magazynie. Najlepiej na ciemniejszym obrazie.", "Litery są negatywem obrazu za nimi, więc zmieniają się z jasnych na ciemne, gdy zmienia się obraz.", "Kilka małych słów wprowadza frazę, a jej koniec pojawia się w dużym rozmiarze, ze słowem kluczowym w Twoim kolorze akcentu.", "Podąża za tempem mówiącego: szybkie kwestie pojawiają się w całości, wolniejsze słowo po słowie. Jedno słowo kluczowe w linii jest pisane kursywą.", "Odręczne napisy flamastrem, które wypisują się w miarę wypowiadania kolejnych słów. Tylko alfabet łaciński; inne pisma przechodzą na zwykły krój.", "Jedno duże słowo naraz, każde zastępuje poprzednie. Dynamicznie i szybko.", "Napisy słowo po słowie z lekkim przechyleniem, a najmocniejsze słowo na kolorowym pasku. Zabawnie i głośno.", "Nie wybrano stylu: system wybierze ten, który pasuje do nagrania.", "Automatyczne napisy", "Wygeneruj napisy do mojego wideo", "Muzyka w tle", "Dodaj muzykę w tle", "Podkład muzyczny pod całym wideo, ściszany pod głosem.", "Bez muzyki w tle", "Muzyka nie zostanie dodana. Muzyka, która już jest w wideo, zostaje na miejscu: to tylko rezygnacja z nowej, a nie usunięcie dotychczasowej.", "Dodaje własny utwór dopasowany do nastroju wideo, grający cicho pod Twoim głosem.", "Efekty dźwiękowe", "Dodaj efekty dźwiękowe", "Akcenty dźwiękowe na cięciach i w mocnych momentach, umieszczone tam, gdzie wymaga tego montaż, i zmiksowane z głosem i muzyką.", "Bez efektów dźwiękowych", "Efekty nie zostaną dodane. Efekty, które już są w wideo, zostają na miejscu: to tylko rezygnacja z nowych, a nie usunięcie dotychczasowych.", "Subtelne świsty, pyknięcia i uderzenia w kluczowych momentach.", "Coś jeszcze?", "Coś jeszcze o tym, jak mamy zmontować Twoje wideo?"], "ko-KR": ["러프 컷 강도", "러프 컷", "원본 영상에서 얼마나 잘라낼지 선택하세요.", "원본 영상 유지", "러프 컷을 하지 않습니다. 아무것도 지우지 않으며, 군말, 말실수, 실패한 테이크, 쉼이 모두 녹화된 그대로 남고 영상은 원본 길이를 유지합니다. 테이크 전체를 그대로 두려면 이 옵션을 고르세요. 신중하게 자르고 싶다면 보수적을 고르세요.", "보수적", "가장 신중합니다. 음, 어 같은 군말과 다시 말한 부분을 지우고, 1초 정도 이상의 긴 쉼만 잘라냅니다. 자연스러운 리듬을 유지합니다.", "균형", "대부분의 영상에 잘 맞습니다. 음, 어 같은 군말과 다시 말한 부분을 지우고, 더 짧은 쉼도 잘라냅니다. 더 촘촘하지만 여전히 자연스럽습니다.", "적극적", "템포가 가장 빠르지만 툭툭 끊기는 느낌이 들 수 있습니다. 군말과 \"그니까\", \"약간\" 같은 말버릇을 지우고, 아주 짧은 쉼까지 잘라냅니다.", "내 영상 자동 정리", "군말, 다시 말한 부분, 긴 쉼을 제거합니다.", "자막 스타일", "자막, 음악 및 효과음", "영상을 가장 돋보이게 할 스타일을 선택하세요.", "자막 없음", "자막을 넣지 않습니다. 원본 영상에 이미 있는 글자는 그대로 보입니다.", "단어가 흐릿하게 나타났다가 순간 선명해지고, 새 줄마다 조금씩 더 오른쪽으로 들어갑니다. 핵심 단어는 대문자로 표시됩니다.", "문장마다 여러 서체가 섞인 두세 줄로 쌓이고 부드러운 흰색 빛이 감돕니다. 잡지 레이아웃 같은 느낌이며 어두운 화면에 잘 어울립니다.", "글자가 뒤 화면의 네거티브로 표시되어, 화면이 바뀌면 글자도 밝게 또는 어둡게 바뀝니다.", "작은 단어 몇 개로 시작해 문장 끝이 크게 등장하고, 핵심 단어는 강조 색상으로 표시됩니다.", "말하는 속도에 맞춥니다. 빠른 말은 한 줄 전체가, 느린 말은 단어 단위로 나타납니다. 줄마다 핵심 단어 하나가 이탤릭으로 표시됩니다.", "마커로 손글씨처럼 쓴 자막이 말하는 단어마다 써지듯 나타납니다. 라틴 문자 전용이며, 한글 등 다른 문자는 기본 서체로 표시됩니다.", "한 번에 큰 단어 하나씩, 이전 단어를 바꿔 가며 보여줍니다. 강렬하고 빠릅니다.", "단어 단위 자막이 살짝 기울어져 나오고, 가장 강한 단어는 색 띠 위에 놓입니다. 경쾌하고 눈에 띕니다.", "선택한 스타일 없음: 영상에 맞는 스타일을 자동으로 고릅니다.", "자동 자막", "내 영상에 자막 생성", "배경 음악", "배경 음악 추가", "영상 전체에 음악을 깔고, 목소리가 나올 때는 음악을 낮춥니다.", "배경 음악 없음", "음악을 추가하지 않습니다. 이미 영상에 들어간 음악은 그대로 둡니다. 새 음악을 넣지 않을 뿐 기존 음악을 지우지는 않습니다.", "영상 분위기에 맞는 맞춤 음악을 목소리 아래에 잔잔하게 깔아 줍니다.", "효과음", "효과음 추가", "컷 전환과 중요한 순간에 강조 효과음을 넣고, 편집에 맞게 배치해 목소리, 음악과 함께 믹스합니다.", "효과음 없음", "효과음을 추가하지 않습니다. 이미 영상에 들어간 효과음은 그대로 둡니다. 새 효과음을 넣지 않을 뿐 기존 효과음을 지우지는 않습니다.", "중요한 순간에 휙, 뿅, 쿵 같은 은은한 효과음을 넣습니다.", "그 밖에 원하는 점이 있나요?", "영상 편집에 대해 더 원하는 점이 있나요?"]};
+
+  /** The rounds' components in a locale: English, with each copy string swapped for its translation. */
+  function served(locale, mode) {
+    var english = CATALOG[mode];
+    var values = Object.prototype.hasOwnProperty.call(COPY, locale) ? COPY[locale] : null;
+    if (!values) { return english; }
+    var table = {};
+    COPY_KEYS.forEach(function (key, index) { if (values[index] !== null) { table[key] = values[index]; } });
+    function swap(node) {
+      if (typeof node === "string") { return Object.prototype.hasOwnProperty.call(table, node) ? table[node] : node; }
+      if (Array.isArray(node)) { return node.map(swap); }
+      if (node && typeof node === "object") {
+        var out = {};
+        Object.keys(node).forEach(function (key) { out[key] = swap(node[key]); });
+        return out;
+      }
+      return node;
+    }
+    var out = {};
+    Object.keys(english).forEach(function (id) {
+      var component = swap(english[id]);
+      // A name the locale keeps as the catalogue spells it is English, said so for a screen reader.
+      (component.options || []).forEach(function (option, index) {
+        if (option.label === english[id].options[index].label) { option.label_locale = "en"; }
+      });
+      out[id] = component;
+    });
+    return out;
+  }
 
   // A widget may name the rounds' components by id; the bundle supplies what present_choices
-  // would serve for them, so the agent never copies their options into the widget.
+  // would serve for them, in the card's language, so the agent never copies their options.
   function expand(output) {
     var data = output && output.structuredContent && typeof output.structuredContent === "object" ? output.structuredContent : output;
     if (!data || typeof data !== "object" || data.card) { return output; }
-    var served = CATALOG[data.displays === true ? "displays" : "plain"];
+    var locale = typeof data.locale === "string" && (data.locale === "en" || Object.prototype.hasOwnProperty.call(COPY, data.locale)) ? data.locale : "en";
+    var components_ = served(locale, data.displays === true ? "displays" : "plain");
     var components = (Array.isArray(data.components) ? data.components : []).map(function (component) {
       if (!component || typeof component.id !== "string") { return null; }
       if (component.options || component.kind === "text" || component.kind === "color") { return component; }
-      var base = served[component.id];
+      var base = Object.prototype.hasOwnProperty.call(components_, component.id) ? components_[component.id] : null;
       if (!base) { return null; }
       var copy = JSON.parse(JSON.stringify(base));
       if (Array.isArray(component.selected)) { copy.selected = component.selected.slice(); }
       return copy;
     }).filter(Boolean);
-    var card = { components: components };
+    var card = { locale: locale, components: components };
     if (typeof data.title === "string") { card.title = data.title; }
     if (typeof data.note === "string") { card.note = data.note; }
     return { card: card, rejected: [] };
   }
 
-  // The fine cut is not a round, so its components never reach the card.
-  var FINE_CUT = ["editing_preference_example", "editing_preference", "reference_image", "visual_preference_prompt"];
+  // The fine cut is not a round, so its components never reach the card. The free-text
+  // "Anything else?" box (editing_preference) is the one exception: the single card asks it.
+  var FINE_CUT = ["editing_preference_example", "reference_image", "visual_preference_prompt"];
   var mounted = false;
 
   // Caption previews ship beside this file, so the widget's media policy admits them.
@@ -294,92 +328,9 @@
     });
   }
 
-  function renderOption(group, option) {
-    var picked = state[group.id] || [];
-    var cell = el("div", "opt");
-    cell.setAttribute("data-on", picked.indexOf(option.value) >= 0 ? "1" : "0");
-    var label = el("label", null);
-    var preview = option.preview;
-    // Set by a chrome-free preview, which is a reach for the option rather than for a player.
-    var selectOnClick = null;
-    if (preview && preview.kind === "svg" && typeof preview.src === "string") {
-      var img = document.createElement("img");
-      img.src = preview.src;
-      img.alt = "";
-      // Not interactive content, so it stays INSIDE the label: for a visual style the
-      // picture IS the option, and clicking it has always chosen it.
-      label.appendChild(img);
-    } else if (preview && preview.kind === "video" && typeof preview.src === "string") {
-      var video = document.createElement("video");
-      // Load a still preview, then play only when the user selects this option.
-      video.preload = "auto";
-      video.src = preview.src;
-      video.muted = true;
-      video.loop = true;
-      video.playsInline = true;
-      video.controls = false;
-      video.autoplay = false;
-      if (typeof preview.still === "number" && preview.still >= 0) { video.setAttribute("data-still", String(preview.still)); }
-      // Clicking the preview selects and plays it. Keep it outside the label so native
-      // controls, restored if playback is refused, cannot also select the option.
-      video.setAttribute("data-select-on-click", "1");
-      selectOnClick = function (input, adoptPick) {
-        video.addEventListener("click", function () {
-          if (video.getAttribute("data-select-on-click") !== "1" || releaseHeld(group, input, option.value)) { return; }
-          input.checked = true;
-          adoptPick();
-        });
-      };
-      playInView(video);
-      cell.appendChild(video);
-    }
-    var input = document.createElement("input");
-    input.type = group.select === "multi" ? "checkbox" : "radio";
-    input.name = inputName(group);
-    input.checked = picked.indexOf(option.value) >= 0;
-    /** Write whatever the control now reads back into the answer. Shared, because a chrome-
-     *  free preview is a second way to reach the same option and must not be a second rule. */
-    function adoptPick() {
-      if (input.disabled) { return; }
-      view.interacted = true;
-      if (group.select === "multi") {
-        var next = (state[group.id] || []).filter(function (v) { return v !== option.value; });
-        if (input.checked) { next.push(option.value); }
-        state[group.id] = next;
-      } else {
-        state[group.id] = input.checked ? [option.value] : [];
-      }
-      save();
-      syncPicked();
-      if (input.checked && cell.parentNode.querySelector("video")) { playSelectedPreview(video || null); }
-    }
-    input.addEventListener("change", adoptPick);
-    releaseOnRepress(group, input, option.value);
-    if (selectOnClick) { selectOnClick(input, adoptPick); }
-    var name = el("span", "name", option.label || option.value);
-    var head = el("div", null);
-    head.appendChild(input);
-    head.appendChild(name);
-    if (option.recommended === true) { head.appendChild(el("span", "tag", "recommended")); }
-    label.appendChild(head);
-    if (option.description) {
-      // The copy a host renders in place of the text result carries the suitability
-      // guidance that separates one option from the next, so it has to be reachable.
-      var why = el("div", "why", option.description);
-      var more = el("button", "more", "More");
-      more.addEventListener("click", function (event) {
-        event.preventDefault();
-        var open = why.getAttribute("data-open") === "1";
-        why.setAttribute("data-open", open ? "0" : "1");
-        more.textContent = open ? "More" : "Less";
-      });
-      label.appendChild(why);
-      label.appendChild(more);
-      mores.push({ why: why, more: more });
-    }
-    cell.appendChild(label);
-    picks.push({ group: group, value: option.value, cell: cell, input: input });
-    return cell;
+  /** The heading a component sits under, or null for one drawn on its own. */
+  function sectionOf(group) {
+    return typeof group.section === "string" && group.section !== "" ? group.section : null;
   }
 
   /** Whether the card cannot be sent as it stands: mid-submission, or short an answer. */
@@ -390,7 +341,9 @@
   /** Update selections in place so buffered and playing previews survive a pick. */
   function syncPicked() {
     picks.forEach(function (pick) {
-      var on = (state[pick.group.id] || []).indexOf(pick.value) >= 0;
+      // An empty value is the Auto tile, which holds while nothing is picked.
+      var holding = state[pick.group.id] || [];
+      var on = pick.value === "" ? holding.length === 0 : holding.indexOf(pick.value) >= 0;
       pick.cell.setAttribute("data-on", on ? "1" : "0");
       pick.input.checked = on;
     });
@@ -418,12 +371,8 @@
     if (tabsOf(shown, group)) { return renderTabsGroup(group); }
     if (isImage(group)) { return renderImage(group); }
     if (isInput(group)) {
-      var row = renderInput(group);
-      if (group.narrowed !== false || !group.narrowing_hint) { return row; }
-      var held = el("div", null);
-      held.appendChild(row);
-      held.appendChild(el("div", "warn", group.narrowing_hint));
-      return held;
+      // Under a heading the heading names the field, so it is drawn full width without a label.
+      return renderInput(group, sectionOf(group) !== null);
     }
     var display = displayOf(group);
     if (display && display.kind === "switch") { return renderSwitchGroup(group, display); }
@@ -432,11 +381,6 @@
     if (display && display.kind === "chips") { return renderChipsGroup(group, display); }
     var box = el("div", "group");
     box.appendChild(el("h2", null, group.label || group.id));
-    // The HINT, never the note: the note names a canvas, a face box and a worker, which is
-    // what the agent needs to describe the risk and is nothing a user can act on.
-    if (group.narrowed === false && group.narrowing_hint) {
-      box.appendChild(el("div", "warn", group.narrowing_hint));
-    }
     var opts = el("div", "opts");
     (group.options || []).forEach(function (option) {
       if (option && typeof option.value === "string") { opts.appendChild(renderOption(group, option)); }
@@ -446,46 +390,6 @@
     return box;
   }
 
-  /** An answered card in words. An empty MULTI-select is stated as an empty list, never
-   *  as "no answer": the receiving contracts read an omitted feature list as EVERY toggle
-   *  on, so a silent nothing would turn on exactly what the user just turned off. */
-  function selectionMessage(card) {
-    var lines = ["I picked:"];
-    (card.components || []).forEach(function (group) {
-      if (!group || typeof group.id !== "string") { return; }
-      var picked = state[group.id] || [];
-      if (isChipRow(group)) { return; } // It only typed into its field, which answers for it.
-      if (isImage(group)) {
-        lines.push("- " + (group.label || group.id) + " (" + group.id + "): " + imageAnswer(group));
-        return;
-      }
-      if (isInput(group)) {
-        // A hidden conditional field was never asked, so it answers nothing even when the
-        // user typed into it before moving the picker off the option that revealed it.
-        if (!revealShown(card, group)) { picked = []; }
-        // Quoted, and said to be verbatim, because nothing downstream vets a typed
-        // answer: whatever reaches the agent here is what the user gets.
-        lines.push("- " + (group.label || group.id) + " (" + group.id + "): " + (picked.length > 0
-          ? "typed VERBATIM, use exactly as written: \"" + picked[0] + "\""
-          : "left blank - no answer"));
-        return;
-      }
-      var answer;
-      if (picked.length > 0) {
-        answer = picked.map(function (value) {
-          var option = (group.options || []).find(function (item) { return item.value === value; });
-          return option && option.label && option.label !== value ? value + " (" + option.label + ")" : value;
-        }).join(", ");
-      } else if (group.select === "multi") {
-        answer = "none of them - submit this as an EMPTY LIST, not as an omitted field";
-      } else {
-        answer = blankAnswer(group);
-      }
-      lines.push("- " + (group.label || group.id) + " (" + group.id + "): " + answer);
-    });
-    return lines.join("\n");
-  }
-
   /** Every exit from draw() leaves a different height, so the report hangs off the wrapper. */
   function render() { draw(); scheduleSize(); }
 
@@ -493,8 +397,9 @@
     var data = payload();
     var card = data && data.card;
     root.textContent = "";
+    adoptLocale(card);
     if (!card || !Array.isArray(card.components)) {
-      root.appendChild(el("p", "note", "This card could not read its contents. The tool's text result carries the same choices."));
+      root.appendChild(el("p", "note", COPY.unreadable));
       return;
     }
     restore(card);
@@ -507,22 +412,42 @@
     forgetPreviews();
     var sent = view.submission && view.submission.status === "sent";
     var submitting = view.submission && view.submission.status === "pending";
-    root.appendChild(el("h1", null, card.title || "Your choices"));
+    var sectioned = card.components.some(function (group) { return group && sectionOf(group) !== null; });
+    // A card drawn in sections is titled by its headings; one without a title of its own
+    // draws none rather than a generic one over them.
+    if (card.title || !sectioned) { root.appendChild(el("h1", null, card.title || COPY.fallbackTitle)); }
     if (card.note) { root.appendChild(el("p", "note", card.note)); }
     // A conditional field carries the sentence itself, beside the box it describes, so the
-    // card's foot speaks only for the fields that are always on screen.
+    // card's foot speaks only for the fields that are always on screen. A field under a
+    // heading is the design's free-text box, which carries no such line.
     var typed = card.components.filter(function (group) {
-      return group && isInput(group) && !revealedElsewhere(group) && !tabsOf(card, group);
+      return group && isInput(group) && !revealedElsewhere(group) && !tabsOf(card, group) && sectionOf(group) === null;
     });
+    var section = null;
+    var sectionName = null;
     card.components.forEach(function (group) {
-      if (group && typeof group.id === "string" && !revealedElsewhere(group)) {
+      if (!group || typeof group.id !== "string" || revealedElsewhere(group)) { return; }
+      var name = sectionOf(group);
+      if (name === null) {
+        section = null;
         root.appendChild(renderGroup(group));
+        return;
       }
+      if (section === null || sectionName !== name) {
+        section = el("div", "section");
+        section.appendChild(el("h2", "sectionhead", name));
+        if (typeof group.section_description === "string" && group.section_description !== "") {
+          section.appendChild(el("p", "sectiondesc", group.section_description));
+        }
+        root.appendChild(section);
+        sectionName = name;
+      }
+      section.appendChild(renderGroup(group));
     });
     // One sentence for the whole card: repeated per question it was five of the same line.
     if (typed.length > 0) {
-      root.appendChild(el("p", "hint", TYPED_HINT +
-        (typed.some(function (group) { return group.kind === "color"; }) ? " Write a colour as #rrggbb." : "")));
+      root.appendChild(el("p", "hint", typedHint(false) +
+        (typed.some(function (group) { return group.kind === "color"; }) ? " " + COPY.colourHint : "")));
     }
     // Saving the image is part of sending: the answer is read when the save returns.
     if (sent || submitting || imageBusy()) {
@@ -534,12 +459,14 @@
     // document taller than the height the host measured before the click, and the overflow
     // is what scrolls inside the frame.
     var actions = el("div", "actions");
-    var send = el("button", "go", "Send my preference");
+    // A host whose send only fills the message box gets a button that says so.
+    var filling = fillsComposer();
+    var send = el("button", "go", filling ? COPY.addToChat : COPY.send);
     send.disabled = sendBlocked(card);
-    var status = el("span", "sub", sent ? "Added to your message. Press Enter to send it." :
-      submitting ? "Waiting for the chat to confirm receipt..." :
+    var status = el("span", "sub", sent ? (filling ? COPY.filled : COPY.sent) :
+      submitting ? COPY.waiting :
       imageBusy() && !picking ? "Saving the image..." :
-      view.submission ? "Not added to your message. Press Send again, or type your choices in the chat." : "");
+      view.submission ? (filling ? COPY.notFilled : COPY.rejected) : "");
     send.addEventListener("click", function () {
       if (send.disabled || (view.submission && view.submission.status !== "failed")) { return; }
       var submittedView = view;
@@ -559,10 +486,92 @@
     // An answered card drops the button rather than disabling it: the row then costs one
     // line of status text, which is never taller than the button it replaces.
     sendButton = sent ? null : send;
-    if (!sent) { actions.appendChild(send); } else { var change = el("button", "change", "Change"); change.addEventListener("click", function () { view.submission = null; save(); render(); }); actions.appendChild(change); }
+    if (!sent) { actions.appendChild(send); }
     actions.appendChild(status);
     root.appendChild(actions);
     if (submitting) { root.appendChild(fallback(view.submission.text, actions)); }
+  }
+
+
+  var CHROME = {"en":{"fallbackTitle":"Your choices","unreadable":"This card could not read its contents. The tool's text result carries the same choices.","recommended":"recommended","more":"More","less":"Less","send":"Send my preference","sent":"Sent. Your choices are recorded in the chat.","waiting":"Waiting for the chat to confirm receipt...","rejected":"The chat rejected this selection. Retry or type your choices in the chat.","filled":"Added to your message. Press Enter to send it.","notFilled":"Not added to your message. Press Add to chat again, or type your choices in the chat.","addToChat":"Add to chat","auto":"Auto","showMessage":"Show the message","hideMessage":"Hide the message","checkChat":"If this answer does not appear in the chat, check there before sending it manually.","typedHint":"Typed answers are used exactly as written; leave any blank if you have none.","lineBreakHint":"A line break becomes a space.","colourHint":"Write a colour as #rrggbb.","colourPicker":"{} colour picker","answerPrefix":"I picked:","answerTyped":"typed VERBATIM, use exactly as written:","answerBlank":"left blank - no answer","answerNone":"none of them - submit this as an EMPTY LIST, not as an omitted field","answerAuto":"nothing picked - Auto: leave {} unset so the run chooses","answerMissing":"no answer"},"zh":{"fallbackTitle":"你的选择","unreadable":"这张卡片读不到内容。工具返回的文字结果里有同样的选项。","recommended":"推荐","more":"展开","less":"收起","send":"发送我的选择","sent":"已发送，你的选择已记录在对话里。","waiting":"正在等待对话确认收到...","rejected":"对话没有接收这次选择。请重试，或直接在对话里输入你的选择。","filled":"已填入输入框，按回车发送。","notFilled":"没有填入输入框。请再点一次「添加到对话」，或直接在对话里输入你的选择。","addToChat":"添加到对话","auto":"自动","showMessage":"显示消息","hideMessage":"隐藏消息","checkChat":"如果对话里没有出现这条回答，请先在对话里确认，再手动发送。","typedHint":"输入的回答会原样使用；没有可以留空。","lineBreakHint":"换行会变成空格。","colourHint":"颜色请写成 #rrggbb。","colourPicker":"{} 取色器","answerPrefix":"我选了：","answerTyped":"原文输入，请一字不改地使用：","answerBlank":"留空，没有回答","answerNone":"一个都没选：请以空列表提交，不要省略这个字段","answerAuto":"未选择，自动：不要设置 {}，由系统来挑","answerMissing":"没有回答"},"pt-BR":{"fallbackTitle":"Suas escolhas","unreadable":"Não foi possível ler o conteúdo deste cartão. O resultado em texto da ferramenta traz as mesmas opções.","recommended":"recomendado","more":"Mais","less":"Menos","send":"Enviar minha escolha","sent":"Enviado. Suas escolhas estão registradas no chat.","waiting":"Aguardando o chat confirmar o recebimento...","rejected":"O chat recusou esta seleção. Tente de novo ou digite suas escolhas no chat.","filled":"Adicionado à sua mensagem. Pressione Enter para enviar.","notFilled":"Não foi adicionado à sua mensagem. Clique em Adicionar ao chat de novo ou digite suas escolhas no chat.","addToChat":"Adicionar ao chat","auto":"Automático","showMessage":"Mostrar a mensagem","hideMessage":"Ocultar a mensagem","checkChat":"Se esta resposta não aparecer no chat, confira lá antes de enviá-la manualmente.","typedHint":"Respostas digitadas são usadas exatamente como escritas; deixe em branco se não tiver nenhuma.","lineBreakHint":"Uma quebra de linha vira um espaço.","colourHint":"Escreva a cor como #rrggbb.","colourPicker":"Seletor de cor de {}","answerPrefix":"Escolhi:","answerTyped":"digitado LITERALMENTE, use exatamente como escrito:","answerBlank":"deixado em branco - sem resposta","answerNone":"nenhuma - envie como LISTA VAZIA, não como campo omitido","answerAuto":"nada escolhido - Automático: deixe {} sem valor para o sistema escolher","answerMissing":"sem resposta"},"es-ES":{"fallbackTitle":"Tus elecciones","unreadable":"Esta tarjeta no ha podido leer su contenido. El resultado en texto de la herramienta tiene las mismas opciones.","recommended":"recomendado","more":"Más","less":"Menos","send":"Enviar mi preferencia","sent":"Enviado. Tus elecciones quedan registradas en el chat.","waiting":"Esperando a que el chat confirme la recepción...","rejected":"El chat ha rechazado esta selección. Inténtalo de nuevo o escribe tus elecciones en el chat.","filled":"Añadido a tu mensaje. Pulsa Intro para enviarlo.","notFilled":"No se ha añadido a tu mensaje. Pulsa Añadir al chat otra vez o escribe tus elecciones en el chat.","addToChat":"Añadir al chat","auto":"Automático","showMessage":"Mostrar el mensaje","hideMessage":"Ocultar el mensaje","checkChat":"Si esta respuesta no aparece en el chat, compruébalo allí antes de enviarla a mano.","typedHint":"Las respuestas escritas se usan tal cual; deja en blanco las que no tengas.","lineBreakHint":"Un salto de línea se convierte en un espacio.","colourHint":"Escribe el color como #rrggbb.","colourPicker":"Selector de color de {}","answerPrefix":"He elegido:","answerTyped":"escrito LITERALMENTE, úsalo tal cual:","answerBlank":"en blanco - sin respuesta","answerNone":"ninguna - envíalo como LISTA VACÍA, no como campo omitido","answerAuto":"nada elegido - Automático: deja {} sin valor para que elija el sistema","answerMissing":"sin respuesta"},"de-DE":{"fallbackTitle":"Deine Auswahl","unreadable":"Diese Karte konnte ihren Inhalt nicht lesen. Das Textergebnis des Tools enthält dieselben Optionen.","recommended":"empfohlen","more":"Mehr","less":"Weniger","send":"Auswahl senden","sent":"Gesendet. Deine Auswahl ist im Chat festgehalten.","waiting":"Warte auf die Empfangsbestätigung des Chats...","rejected":"Der Chat hat diese Auswahl abgelehnt. Versuche es erneut oder schreibe deine Auswahl in den Chat.","filled":"Zu deiner Nachricht hinzugefügt. Drücke Enter zum Senden.","notFilled":"Nicht zu deiner Nachricht hinzugefügt. Klicke erneut auf Zum Chat hinzufügen oder schreibe deine Auswahl in den Chat.","addToChat":"Zum Chat hinzufügen","auto":"Automatisch","showMessage":"Nachricht anzeigen","hideMessage":"Nachricht ausblenden","checkChat":"Wenn diese Antwort nicht im Chat erscheint, prüfe das dort, bevor du sie manuell sendest.","typedHint":"Eingetippte Antworten werden genau so verwendet, wie sie geschrieben sind; lass leer, was du nicht beantworten willst.","lineBreakHint":"Ein Zeilenumbruch wird zu einem Leerzeichen.","colourHint":"Schreibe eine Farbe als #rrggbb.","colourPicker":"Farbwähler für {}","answerPrefix":"Meine Auswahl:","answerTyped":"WÖRTLICH eingegeben, genau so verwenden:","answerBlank":"leer gelassen - keine Antwort","answerNone":"keine davon - als LEERE LISTE senden, nicht als weggelassenes Feld","answerAuto":"nichts gewählt - Automatisch: {} nicht setzen, damit das System wählt","answerMissing":"keine Antwort"},"fr-FR":{"fallbackTitle":"Vos choix","unreadable":"Cette carte n'a pas pu lire son contenu. Le résultat texte de l'outil contient les mêmes choix.","recommended":"recommandé","more":"Plus","less":"Moins","send":"Envoyer mon choix","sent":"Envoyé. Vos choix sont enregistrés dans la conversation.","waiting":"En attente de la confirmation de réception...","rejected":"La conversation a refusé cette sélection. Réessayez ou tapez vos choix dans la conversation.","filled":"Ajouté à votre message. Appuyez sur Entrée pour l'envoyer.","notFilled":"Pas ajouté à votre message. Cliquez de nouveau sur Ajouter à la conversation, ou tapez vos choix dans la conversation.","addToChat":"Ajouter à la conversation","auto":"Automatique","showMessage":"Afficher le message","hideMessage":"Masquer le message","checkChat":"Si cette réponse n'apparaît pas dans la conversation, vérifiez-y avant de l'envoyer à la main.","typedHint":"Les réponses saisies sont utilisées telles quelles ; laissez vide si vous n'en avez pas.","lineBreakHint":"Un retour à la ligne devient une espace.","colourHint":"Écrivez une couleur sous la forme #rrggbb.","colourPicker":"Sélecteur de couleur pour {}","answerPrefix":"J'ai choisi :","answerTyped":"saisi MOT POUR MOT, à utiliser exactement tel quel :","answerBlank":"laissé vide - pas de réponse","answerNone":"aucune - envoyer comme LISTE VIDE, pas comme champ omis","answerAuto":"rien choisi - Automatique : laisser {} non défini pour que le système choisisse","answerMissing":"pas de réponse"},"it-IT":{"fallbackTitle":"Le tue scelte","unreadable":"Questa scheda non è riuscita a leggere il suo contenuto. Il risultato testuale dello strumento riporta le stesse opzioni.","recommended":"consigliato","more":"Altro","less":"Meno","send":"Invia la mia scelta","sent":"Inviato. Le tue scelte sono registrate nella chat.","waiting":"In attesa che la chat confermi la ricezione...","rejected":"La chat ha rifiutato questa selezione. Riprova o scrivi le tue scelte nella chat.","filled":"Aggiunto al tuo messaggio. Premi Invio per inviarlo.","notFilled":"Non aggiunto al tuo messaggio. Premi di nuovo Aggiungi alla chat, oppure scrivi le tue scelte nella chat.","addToChat":"Aggiungi alla chat","auto":"Automatico","showMessage":"Mostra il messaggio","hideMessage":"Nascondi il messaggio","checkChat":"Se questa risposta non compare nella chat, controlla lì prima di inviarla a mano.","typedHint":"Le risposte digitate vengono usate esattamente come scritte; lascia vuoto se non ne hai.","lineBreakHint":"Un a capo diventa uno spazio.","colourHint":"Scrivi un colore come #rrggbb.","colourPicker":"Selettore colore per {}","answerPrefix":"Ho scelto:","answerTyped":"digitato ALLA LETTERA, usalo esattamente così:","answerBlank":"lasciato vuoto - nessuna risposta","answerNone":"nessuna - inviala come LISTA VUOTA, non come campo omesso","answerAuto":"niente scelto - Automatico: lascia {} non impostato perché scelga il sistema","answerMissing":"nessuna risposta"},"nl-NL":{"fallbackTitle":"Je keuzes","unreadable":"Deze kaart kon de inhoud niet lezen. Het tekstresultaat van de tool bevat dezelfde keuzes.","recommended":"aanbevolen","more":"Meer","less":"Minder","send":"Mijn keuze versturen","sent":"Verstuurd. Je keuzes staan in de chat.","waiting":"Wachten tot de chat de ontvangst bevestigt...","rejected":"De chat heeft deze selectie geweigerd. Probeer het opnieuw of typ je keuzes in de chat.","filled":"Toegevoegd aan je bericht. Druk op Enter om het te versturen.","notFilled":"Niet toegevoegd aan je bericht. Klik nogmaals op Toevoegen aan chat, of typ je keuzes in de chat.","addToChat":"Toevoegen aan chat","auto":"Automatisch","showMessage":"Bericht tonen","hideMessage":"Bericht verbergen","checkChat":"Als dit antwoord niet in de chat verschijnt, controleer het daar voordat je het handmatig verstuurt.","typedHint":"Getypte antwoorden worden precies zo gebruikt als ze geschreven zijn; laat leeg wat je niet hebt.","lineBreakHint":"Een regeleinde wordt een spatie.","colourHint":"Schrijf een kleur als #rrggbb.","colourPicker":"Kleurkiezer voor {}","answerPrefix":"Mijn keuze:","answerTyped":"LETTERLIJK getypt, gebruik het precies zo:","answerBlank":"leeg gelaten - geen antwoord","answerNone":"geen van alle - verstuur dit als LEGE LIJST, niet als weggelaten veld","answerAuto":"niets gekozen - Automatisch: laat {} leeg zodat het systeem kiest","answerMissing":"geen antwoord"},"pl-PL":{"fallbackTitle":"Twoje wybory","unreadable":"Ta karta nie mogła odczytać swojej zawartości. Tekstowy wynik narzędzia zawiera te same opcje.","recommended":"polecane","more":"Więcej","less":"Mniej","send":"Wyślij mój wybór","sent":"Wysłano. Twoje wybory są zapisane w czacie.","waiting":"Czekam, aż czat potwierdzi odbiór...","rejected":"Czat odrzucił ten wybór. Spróbuj ponownie albo wpisz swoje wybory w czacie.","filled":"Dodano do Twojej wiadomości. Naciśnij Enter, aby ją wysłać.","notFilled":"Nie dodano do Twojej wiadomości. Kliknij ponownie Dodaj do czatu albo wpisz swoje wybory w czacie.","addToChat":"Dodaj do czatu","auto":"Automatycznie","showMessage":"Pokaż wiadomość","hideMessage":"Ukryj wiadomość","checkChat":"Jeśli ta odpowiedź nie pojawi się w czacie, sprawdź to tam, zanim wyślesz ją ręcznie.","typedHint":"Wpisane odpowiedzi są używane dokładnie tak, jak je napisano; zostaw puste, jeśli nie masz odpowiedzi.","lineBreakHint":"Podział wiersza zamienia się w spację.","colourHint":"Wpisz kolor jako #rrggbb.","colourPicker":"Próbnik koloru: {}","answerPrefix":"Mój wybór:","answerTyped":"wpisane DOSŁOWNIE, użyj dokładnie w tej postaci:","answerBlank":"pozostawione puste - brak odpowiedzi","answerNone":"żadne - wyślij jako PUSTĄ LISTĘ, nie jako pominięte pole","answerAuto":"nic nie wybrano - Automatycznie: zostaw {} nieustawione, aby system wybrał","answerMissing":"brak odpowiedzi"},"ko-KR":{"fallbackTitle":"내 선택","unreadable":"이 카드의 내용을 읽을 수 없습니다. 도구의 텍스트 결과에 같은 선택지가 있습니다.","recommended":"추천","more":"더 보기","less":"접기","send":"선택 보내기","sent":"보냈습니다. 선택이 대화에 기록되었습니다.","waiting":"대화에서 수신을 확인하는 중...","rejected":"대화에서 이 선택을 받지 않았습니다. 다시 시도하거나 대화에 직접 입력해 주세요.","filled":"메시지 입력창에 추가했습니다. Enter 키를 눌러 보내세요.","notFilled":"메시지 입력창에 추가하지 못했습니다. 대화에 추가를 다시 누르거나 대화에 직접 입력해 주세요.","addToChat":"대화에 추가","auto":"자동","showMessage":"메시지 보기","hideMessage":"메시지 숨기기","checkChat":"이 답변이 대화에 나타나지 않으면, 직접 보내기 전에 대화에서 먼저 확인해 주세요.","typedHint":"입력한 답변은 쓴 그대로 사용됩니다. 없으면 비워 두세요.","lineBreakHint":"줄바꿈은 공백으로 바뀝니다.","colourHint":"색상은 #rrggbb 형식으로 입력하세요.","colourPicker":"{} 색상 선택기","answerPrefix":"내 선택:","answerTyped":"그대로 입력함, 쓴 그대로 사용할 것:","answerBlank":"비워 둠 - 답변 없음","answerNone":"선택 없음 - 필드를 생략하지 말고 빈 목록으로 제출할 것","answerAuto":"선택 없음 - 자동: {}을(를) 설정하지 말고 시스템이 고르게 할 것","answerMissing":"답변 없음"}};
+  /** The strings of the card on screen. Set by every draw, before anything is written. */
+  var COPY = CHROME.en;
+
+  /** Take the card's language, and say it on the shell so a script's fonts are chosen for it. */
+  function adoptLocale(card) {
+    var locale = card && typeof card.locale === "string" &&
+      Object.prototype.hasOwnProperty.call(CHROME, card.locale) ? card.locale : "en";
+    COPY = CHROME[locale];
+    var shell = root && root.parentNode;
+    if (shell && typeof shell.setAttribute === "function") { shell.setAttribute("lang", locale); }
+  }
+
+  /** A string with the value put where it says {}. */
+  function fill(template, value) { return String(template).split("{}").join(String(value)); }
+
+  /** The card's one sentence about typed answers. A multi-line box also says a break does not
+   *  survive: an answer travels as one line of the submitted message. */
+  function typedHint(multiline) { return multiline ? COPY.typedHint + " " + COPY.lineBreakHint : COPY.typedHint; }
+
+  /**
+   * Whether this host's send only puts the answer in the person's message box. Such a host
+   * (an agent-authored widget, which hands over sendPrompt) never says whether the message
+   * was then sent, so the card says where the answer went rather than that it was sent.
+   */
+  function fillsComposer() {
+    var host = bridge();
+    return !!(host && host.fillsComposer === true);
+  }
+
+  /** An answered card in words. An empty MULTI-select is stated as an empty list, never
+   *  as "no answer": the receiving contracts read an omitted feature list as EVERY toggle
+   *  on, so a silent nothing would turn on exactly what the user just turned off. A server
+   *  pick is named by its label alone and answered by its tokens, which stay verbatim
+   *  whatever language is around them; a typed field, an image, a question the caller wrote
+   *  and the Fine cut example beside its typed field keep their id. The "Anything else?"
+   *  words close the message raw, after a blank line, with no bullet or label: the user
+   *  reads them as they typed them, and the server's guidance for "editing_preference" is
+   *  what tells the agent the trailing text is that answer. */
+  function selectionMessage(card) {
+    var lines = [COPY.answerPrefix];
+    var anythingElse = "";
+    (card.components || []).forEach(function (group) {
+      if (!group || typeof group.id !== "string") { return; }
+      var picked = state[group.id] || [];
+      if (isChipRow(group)) { return; } // It only typed into its field, which answers for it.
+      var head = "- " + (group.label || group.id) + " (" + group.id + "): ";
+      if (isImage(group)) {
+        lines.push(head + imageAnswer(group));
+        return;
+      }
+      if (isInput(group)) {
+        // A hidden conditional field was never asked, so it answers nothing even when the
+        // user typed into it before moving the picker off the option that revealed it.
+        if (!revealShown(card, group)) { picked = []; }
+        if (group.id === "editing_preference") {
+          anythingElse = picked.length > 0 ? picked[0] : "";
+          return;
+        }
+        // Quoted, and said to be verbatim, because nothing downstream vets a typed
+        // answer: whatever reaches the agent here is what the user gets.
+        lines.push(head + (picked.length > 0 ? COPY.answerTyped + " \"" + picked[0] + "\"" : COPY.answerBlank));
+        return;
+      }
+      var answer;
+      if (picked.length > 0) {
+        answer = picked.map(function (value) {
+          var option = (group.options || []).find(function (item) { return item.value === value; });
+          return group.authority !== "server" && option && option.label && option.label !== value ? value + " (" + option.label + ")" : value;
+        }).join(", ");
+      } else if (group.select === "multi") {
+        answer = COPY.answerNone;
+      } else {
+        answer = blankAnswer(group);
+      }
+      lines.push("- " + (group.label || group.id) +
+        (group.authority === "server" && group.id !== "editing_preference_example" ? "" : " (" + group.id + ")") + ": " + answer);
+    });
+    return lines.join("\n") + (anythingElse === "" ? "" : "\n\n" + anythingElse);
   }
 
 
@@ -610,7 +619,7 @@
       swatch = document.createElement("input");
       swatch.type = "color";
       swatch.name = "s_" + group.id;
-      swatch.setAttribute("aria-label", String(group.label || group.id) + " colour picker");
+      swatch.setAttribute("aria-label", fill(COPY.colourPicker, group.label || group.id));
       swatch.value = COLOR_RE.test(current) ? current : "#000000";
       wrap.appendChild(swatch);
     }
@@ -650,15 +659,15 @@
    *  scrolls inside the frame the host already sized. The opener joins the action row; the
    *  message itself is returned hidden, for the caller to place. */
   function fallback(text, row) {
-    var reveal = el("button", "link", "Show the message");
+    var reveal = el("button", "link", COPY.showMessage);
     var held = el("div", null);
     held.hidden = true;
-    held.appendChild(el("p", "note", "If this answer does not appear in the chat, check there before sending it manually."));
+    held.appendChild(el("p", "note", COPY.checkChat));
     held.appendChild(el("pre", "done", text));
     reveal.addEventListener("click", function (event) {
       event.preventDefault();
       held.hidden = !held.hidden;
-      reveal.textContent = held.hidden ? "Show the message" : "Hide the message";
+      reveal.textContent = held.hidden ? COPY.showMessage : COPY.hideMessage;
       scheduleSize();
     });
     row.appendChild(reveal);
@@ -1037,7 +1046,8 @@
   // The preset the user picked: { id, status, path, task }, status as for the picture.
   var chosenPreset = null;
   var PRESET_TOOL = "use_reference_preset";
-  var CHECK_ICON = "M5 12.5l4.5 4.5L19 7.5";
+  // The design's check mark (Figma 3032-360978): a filled 16-unit shape.
+  var CHECK_ICON = "M12.1957 4.53246C12.4561 4.26715 12.8781 4.26712 13.1385 4.53246C13.3987 4.79781 13.3987 5.22797 13.1385 5.4933L7.37399 11.3685C7.00791 11.7416 6.42884 11.7646 6.03607 11.4382L5.95989 11.3685L2.86215 8.21127L2.81658 8.15951C2.60301 7.89262 2.61807 7.49919 2.86215 7.25042C3.10624 7.0017 3.49227 6.98631 3.7541 7.20397L3.80489 7.25042L6.5491 10.0474C6.6142 10.1136 6.71973 10.1137 6.78478 10.0474L12.1957 4.53246Z";
 
   /** The well-formed presets this image component offers, in the server's order. */
   function presetsOf(group) {
@@ -1118,7 +1128,7 @@
 
   function checkIcon() {
     var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("viewBox", "0 0 16 16");
     svg.setAttribute("aria-hidden", "true");
     svg.setAttribute("class", "check");
     var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -1154,12 +1164,6 @@
     });
   }
 
-
-  /** One sentence for every typed question on screen, wherever it is shown. */
-  var TYPED_HINT = "Typed answers are used exactly as written; leave any blank if you have none.";
-  /** The same promise, kept honest where a break cannot survive: an answer travels as one
-   *  line of the submitted message, so the box says so rather than folding in silence. */
-  var MULTILINE_HINT = TYPED_HINT + " A line break becomes a space.";
 
   /** The revealed fields currently drawn, so a pick flips them without a redraw. */
   var reveals = [];
@@ -1197,7 +1201,7 @@
       held.appendChild(renderInput(other, true));
       // The card's one sentence about typed answers, moved to the field it now describes:
       // at the card's foot it would be a promise about a box nobody can see.
-      held.appendChild(el("p", "hint", other.multiline === true ? MULTILINE_HINT : TYPED_HINT));
+      held.appendChild(el("p", "hint", typedHint(other.multiline === true)));
       held.hidden = !revealShown(card, other);
       reveals.push({ group: other, node: held });
       box.appendChild(held);
@@ -1237,7 +1241,7 @@
     if (started && typeof started.catch === "function") {
       started.catch(function (err) {
         // Switching selections or leaving the viewport intentionally interrupts buffering.
-        if (!err || err.name !== "AbortError") { restoreControls(video); }
+        if ((!err || err.name !== "AbortError") && !playsUnpicked(video)) { restoreControls(video); }
       });
     }
   }
@@ -1255,20 +1259,34 @@
     }
   }
 
-  /** Resume only the selected preview on screen; keep every unselected preview paused. */
+  /** Whether this preview plays whenever it is on screen, picked or not. A tile grid is
+   *  read by watching the styles move, so its clips all play; an older tile plays only once
+   *  picked. */
+  function playsUnpicked(video) { return video.getAttribute("data-autoplay") === "1"; }
+
+  /** Play the selected preview, and every autoplaying one, while on screen; keep the rest
+   *  paused on their still. */
   function playInView(video) {
     video.addEventListener("loadedmetadata", function () {
-      if (selectedPreview !== video) { pauseAtPreviewFrame(video); }
+      if (selectedPreview !== video && !(playsUnpicked(video) && !stillPreferred())) { pauseAtPreviewFrame(video); }
     });
     // A viewer who asked the system for less motion is asking for this too. They get the
-    // controls back, so the style is still inspectable - just not moving unasked.
-    if (stillPreferred()) { video.autoplay = false; restoreControls(video); return; }
-    if (typeof window.IntersectionObserver !== "function") { return; }
+    // controls back, so the style is still inspectable - just not moving unasked. A tile in
+    // a grid has no room for controls and rests on its still.
+    if (stillPreferred()) {
+      video.autoplay = false;
+      if (!playsUnpicked(video)) { restoreControls(video); }
+      return;
+    }
+    if (typeof window.IntersectionObserver !== "function") {
+      if (playsUnpicked(video)) { playPreview(video); }
+      return;
+    }
     if (!inView) {
       inView = new window.IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           var clip = entry.target;
-          if (entry.isIntersecting && selectedPreview === clip) {
+          if (entry.isIntersecting && (selectedPreview === clip || playsUnpicked(clip))) {
             playPreview(clip);
           } else if (typeof clip.pause === "function") {
             clip.pause();
@@ -1387,7 +1405,7 @@
     box.appendChild(bar);
     if (openTab(field) === "self") {
       box.appendChild(renderInput(field, true));
-      box.appendChild(el("p", "hint", field.multiline === true ? MULTILINE_HINT : TYPED_HINT));
+      box.appendChild(el("p", "hint", typedHint(field.multiline === true)));
       return box;
     }
     var other = pairedWith(shown, tabs);
@@ -1420,13 +1438,14 @@
     if (!display) { return []; }
     if (display.kind === "switch") { return [display.initial]; }
     if (display.kind === "rows" && typeof display.initial === "string") { return [display.initial]; }
+    if (display.kind === "gate" && typeof display.initial === "string") { return [display.initial]; }
     return [];
   }
 
   /** Whether nothing picked is itself an answer for this picker rather than a missing one. */
   function blankAllowed(group) {
     var display = displayOf(group);
-    return !!display && (display.kind === "gate" || display.kind === "chips");
+    return !!display && ((display.kind === "gate" && typeof display.initial !== "string") || display.kind === "chips");
   }
 
   /** On a picker where nothing picked is itself an answer, a second press on the picked tile
@@ -1467,23 +1486,22 @@
    *  line has to say in words that the field is to be left unset rather than filled. */
   function blankAnswer(group) {
     var display = displayOf(group);
-    return blankAllowed(group)
-      ? "nothing picked - Auto: leave " + group.id + " unset so the run chooses"
-      : "no answer";
+    return blankAllowed(group) ? fill(COPY.answerAuto, group.id) : COPY.answerMissing;
   }
 
   /** The pictograms a row may wear, as 24-unit paths: stroked, or filled where SOLID names
-   *  them (the Rough cut pair, which the design draws as filled shapes). A name on the wire, a drawing
+   *  them (every pictogram the decision card design draws, Figma 3032-360788, is a filled shape). A name on the wire, a drawing
    *  only here: model-authored copy reaches this document and a name cannot carry markup. */
   var ICONS = {
     clean: "M19 7.05859C18.9999 5.90325 18.0863 5 17 5H7C5.91373 5 5.00013 5.90325 5 7.05859V13.917C5 15.0725 5.91365 15.9766 7 15.9766H9.5L9.62012 15.9834C9.89684 16.0168 10.1492 16.1649 10.3135 16.3945L11.9316 18.6582L13.71 16.3643L13.7852 16.2773C13.9721 16.0861 14.2293 15.9766 14.5 15.9766H17C18.0863 15.9766 19 15.0725 19 13.917V7.05859ZM21 13.917C21 16.1402 19.2274 17.9766 17 17.9766H14.9902L13.0986 20.418C12.5211 21.1636 11.4296 21.1888 10.8145 20.5156L10.6982 20.3721L8.98633 17.9766H7C4.77264 17.9766 3 16.1402 3 13.917V7.05859C3.00013 4.83547 4.77272 3 7 3H17C19.2273 3 20.9999 4.83547 21 7.05859V13.917ZM11 8C11 7.44772 11.4477 7 12 7C12.5523 7 13 7.44772 13 8V13C13 13.5523 12.5523 14 12 14C11.4477 14 11 13.5523 11 13V8ZM7 9.5C7 8.94772 7.44772 8.5 8 8.5C8.55228 8.5 9 8.94772 9 9.5V11.5C9 12.0523 8.55228 12.5 8 12.5C7.44772 12.5 7 12.0523 7 11.5V9.5ZM15 9.5C15 8.94772 15.4477 8.5 16 8.5C16.5523 8.5 17 8.94772 17 9.5V11.5C17 12.0523 16.5523 12.5 16 12.5C15.4477 12.5 15 12.0523 15 11.5V9.5Z",
     keep: "M11.1289 10.002C11.3546 9.98218 11.6289 10.1509 12.1768 10.4883L13.0938 11.0527C13.602 11.3657 13.8565 11.5222 13.9434 11.7236C14.0191 11.8997 14.0191 12.1003 13.9434 12.2764C13.8565 12.4778 13.602 12.6343 13.0938 12.9473L12.1768 13.5117C11.6289 13.8491 11.3546 14.0178 11.1289 13.998C10.9321 13.9807 10.7521 13.8789 10.6348 13.7188C10.5003 13.535 10.5 13.2114 10.5 12.5645V11.4355C10.5 10.7886 10.5003 10.465 10.6348 10.2812C10.7521 10.1211 10.9321 10.0193 11.1289 10.002ZM13.5996 2C15.8398 2 16.9608 1.99957 17.8164 2.43555L18.0918 2.58984C18.7183 2.97413 19.2289 3.52512 19.5645 4.18359L19.6406 4.34766C19.9999 5.18397 20 6.30006 20 8.40039V15.5996L19.9932 17.084C19.9744 18.2757 19.9041 19.0391 19.6406 19.6523L19.5645 19.8164C19.2289 20.4749 18.7183 21.0259 18.0918 21.4102L17.8164 21.5645C16.9608 22.0004 15.8398 22 13.5996 22H10.4004C8.16018 22 7.03924 22.0004 6.18359 21.5645C5.43109 21.181 4.81902 20.5689 4.43555 19.8164C4.10861 19.1747 4.02728 18.3839 4.00684 17.084L4 15.5996V8.40039C4 6.16018 3.99957 5.03924 4.43555 4.18359C4.81902 3.43109 5.43109 2.81902 6.18359 2.43555C7.03924 1.99957 8.16018 2 10.4004 2H13.5996ZM10.4004 4C9.24728 4 8.50222 4.00155 7.93555 4.04785C7.39231 4.09224 7.19068 4.16739 7.0918 4.21777C6.71554 4.40951 6.40951 4.71554 6.21777 5.0918C6.16739 5.19068 6.09224 5.39231 6.04785 5.93555C6.00155 6.50222 6 7.24728 6 8.40039V15.5996C6 16.7527 6.00155 17.4978 6.04785 18.0645C6.09224 18.6077 6.16739 18.8093 6.21777 18.9082C6.40951 19.2845 6.71554 19.5905 7.0918 19.7822C7.19068 19.8326 7.39231 19.9078 7.93555 19.9521C8.50222 19.9984 9.24728 20 10.4004 20H13.5996C14.7527 20 15.4978 19.9984 16.0645 19.9521C16.6077 19.9078 16.8093 19.8326 16.9082 19.7822C17.2845 19.5905 17.5905 19.2845 17.7822 18.9082C17.8326 18.8093 17.9078 18.6077 17.9521 18.0645C17.9984 17.4978 18 16.7527 18 15.5996V8.40039C18 7.24728 17.9984 6.50222 17.9521 5.93555C17.9078 5.39231 17.8326 5.19068 17.7822 5.0918C17.5905 4.71554 17.2845 4.40951 16.9082 4.21777C16.8093 4.16739 16.6077 4.09224 16.0645 4.04785C15.4978 4.00155 14.7527 4 13.5996 4H10.4004Z",
-    captions: "M3 6.5A2.5 2.5 0 0 1 5.5 4h13A2.5 2.5 0 0 1 21 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5zM10 10.2a2.2 2.2 0 1 0 0 3.6M17 10.2a2.2 2.2 0 1 0 0 3.6",
-    music: "M9 18V6l10-2v11M9 18a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0zM19 15a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z",
-    sfx: "M4 9.5v5h3.5L12 18.5v-13L7.5 9.5zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"
+    captions: "M17.084 4.00684C18.3839 4.02728 19.1747 4.10861 19.8164 4.43555C20.5689 4.81902 21.181 5.43109 21.5645 6.18359C22.0004 7.03924 22 8.16018 22 10.4004V13.5996L21.9932 15.084C21.9727 16.3839 21.8914 17.1747 21.5645 17.8164L21.4102 18.0918C21.0259 18.7183 20.4749 19.2289 19.8164 19.5645L19.6523 19.6406C19.0391 19.9041 18.2757 19.9744 17.084 19.9932L15.5996 20H8.40039L6.91602 19.9932C5.72431 19.9744 4.96088 19.9041 4.34766 19.6406L4.18359 19.5645C3.52512 19.2289 2.97413 18.7183 2.58984 18.0918L2.43555 17.8164C2.10861 17.1747 2.02728 16.3839 2.00684 15.084L2 13.5996V10.4004C2 8.30006 2.00008 7.18397 2.35938 6.34766L2.43555 6.18359C2.7711 5.52512 3.2817 4.97413 3.9082 4.58984L4.18359 4.43555C4.82525 4.10861 5.61607 4.02728 6.91602 4.00684L8.40039 4H15.5996L17.084 4.00684ZM8.40039 6C7.24728 6 6.50222 6.00155 5.93555 6.04785C5.39231 6.09224 5.19068 6.16739 5.0918 6.21777C4.71554 6.40951 4.40951 6.71554 4.21777 7.0918C4.16739 7.19068 4.09224 7.39231 4.04785 7.93555C4.00155 8.50222 4 9.24728 4 10.4004V13.5996C4 14.7527 4.00155 15.4978 4.04785 16.0645C4.09224 16.6077 4.16739 16.8093 4.21777 16.9082C4.40951 17.2845 4.71554 17.5905 5.0918 17.7822L5.18945 17.8232C5.31331 17.8678 5.5283 17.9189 5.93555 17.9521C6.50222 17.9984 7.24728 18 8.40039 18H15.5996C16.7527 18 17.4978 17.9984 18.0645 17.9521C18.6077 17.9078 18.8093 17.8326 18.9082 17.7822L19.0459 17.7051C19.3592 17.5129 19.6145 17.2374 19.7822 16.9082L19.8232 16.8105C19.8678 16.6867 19.9189 16.4717 19.9521 16.0645C19.9984 15.4978 20 14.7527 20 13.5996V10.4004C20 9.24728 19.9984 8.50222 19.9521 7.93555C19.9189 7.5283 19.8678 7.31331 19.8232 7.18945L19.7822 7.0918C19.5905 6.71554 19.2845 6.40951 18.9082 6.21777C18.8093 6.16739 18.6077 6.09224 18.0645 6.04785C17.4978 6.00155 16.7527 6 15.5996 6H8.40039ZM8.98828 8.5C9.8941 8.50008 10.7201 8.84755 11.3389 9.41406L11.46 9.53125L11.5283 9.60742C11.8469 10.0015 11.8216 10.5807 11.4541 10.9453C11.0865 11.3097 10.5076 11.3296 10.1162 11.0078L10.04 10.9395L9.93359 10.8418C9.67565 10.6273 9.34712 10.5001 8.98828 10.5C8.17105 10.5 7.5 11.167 7.5 12C7.5 12.833 8.17105 13.5 8.98828 13.5C9.39761 13.4999 9.76742 13.3344 10.0381 13.0625L10.1143 12.9932C10.5061 12.6722 11.0852 12.6938 11.4521 13.0586C11.8436 13.4482 11.8456 14.0822 11.4561 14.4736L11.335 14.5889C10.7166 15.1534 9.89234 15.4999 8.98828 15.5C7.05739 15.5 5.5 13.9284 5.5 12C5.5 10.0716 7.05739 8.5 8.98828 8.5ZM15.7383 8.5C16.6441 8.50008 17.4701 8.84755 18.0889 9.41406L18.21 9.53125L18.2783 9.60742C18.5969 10.0015 18.5716 10.5807 18.2041 10.9453C17.8365 11.3097 17.2576 11.3296 16.8662 11.0078L16.79 10.9395L16.6836 10.8418C16.4256 10.6273 16.0971 10.5001 15.7383 10.5C14.9211 10.5 14.25 11.167 14.25 12C14.25 12.833 14.9211 13.5 15.7383 13.5C16.1476 13.4999 16.5174 13.3344 16.7881 13.0625L16.8643 12.9932C17.2561 12.6722 17.8352 12.6938 18.2021 13.0586C18.5936 13.4482 18.5956 14.0822 18.2061 14.4736L18.085 14.5889C17.4666 15.1534 16.6423 15.4999 15.7383 15.5C13.8074 15.5 12.25 13.9284 12.25 12C12.25 10.0716 13.8074 8.5 15.7383 8.5Z",
+    music: "M15.7471 3.0771C16.4495 2.97651 17.0932 2.95516 17.7158 3.12983C18.8866 3.4585 19.875 4.24755 20.4551 5.31636C20.7636 5.88494 20.8858 6.51804 20.9434 7.22554C21.0004 7.92615 21 8.80346 21 9.89253V15.5C21 17.4329 19.433 19 17.5 19C15.567 19 14 17.4329 14 15.5C14 13.567 15.567 12 17.5 12C18.0367 12 18.5455 12.12 19 12.3359V9.89253C19 8.76988 18.9991 7.98817 18.9502 7.38765C18.9019 6.79399 18.8124 6.48267 18.6973 6.27046C18.375 5.67666 17.8262 5.23822 17.1758 5.05562C16.9433 4.99037 16.6199 4.97214 16.0303 5.05659C15.4338 5.14203 14.671 5.3146 13.5762 5.56343C12.0144 5.91839 11.5065 6.05085 11.1387 6.30073C10.7048 6.59551 10.37 7.01546 10.1787 7.50386C10.0167 7.91789 10 8.44262 10 10.0439V17.5C10 19.4329 8.433 21 6.5 21C4.567 21 3 19.4329 3 17.5C3.00003 15.567 4.56702 14 6.5 14C7.03666 14 7.54546 14.12 8 14.3359V10.0439C8 8.61667 7.9829 7.62617 8.31641 6.77437C8.65488 5.91025 9.24702 5.16798 10.0146 4.64644C10.7715 4.13226 11.7417 3.92961 13.1338 3.61323C14.1958 3.37187 15.0513 3.17676 15.7471 3.0771ZM6.5 16C5.67159 16 5.00003 16.6715 5 17.5C5 18.3284 5.67157 19 6.5 19C7.32843 19 8 18.3284 8 17.5C7.99997 16.6715 7.32841 16 6.5 16ZM17.5 14C16.6716 14 16 14.6715 16 15.5C16 16.3284 16.6716 17 17.5 17C18.3284 17 19 16.3284 19 15.5C19 14.6715 18.3284 14 17.5 14Z",
+    sfx: "M12.3213 3.99978C12.8356 4.01087 13.3185 4.26144 13.6357 4.68143C14.0001 5.16424 14 6.08032 14 7.91092V16.0887L13.9941 17.2976C13.9771 18.3501 13.909 18.956 13.6357 19.3181L13.5088 19.4676C13.1969 19.797 12.7714 19.9901 12.3213 19.9998L12.209 19.9949C11.7911 19.9554 11.3015 19.6507 10.5479 19.0847L9.61133 18.364L7.50879 16.7283C7.37331 16.6229 7.3051 16.5704 7.23047 16.533C7.1642 16.4998 7.09372 16.4754 7.02148 16.4607C6.98081 16.4525 6.93923 16.4481 6.88672 16.4461L6.68555 16.4441H6.11426L5.16016 16.4402C4.39447 16.4277 3.90387 16.3803 3.50977 16.2049L3.4043 16.1541C2.98097 15.9304 2.62693 15.5894 2.37988 15.1717L2.28027 14.9881C2.07024 14.5603 2.01704 14.0332 2.00391 13.1668L2 12.1775V11.8221C2 10.4226 1.99977 9.67831 2.23047 9.12088L2.28027 9.0115C2.52681 8.50987 2.92055 8.1011 3.4043 7.84549C3.81667 7.62778 4.32492 7.57299 5.16016 7.55936L6.11426 7.55545H6.68555L6.88672 7.5535L7.02148 7.53885C7.05752 7.53154 7.09316 7.52156 7.12793 7.50955L7.23047 7.46658C7.26773 7.44787 7.30351 7.42532 7.34668 7.39432L7.50879 7.27127L9.61133 5.63553C11.0236 4.53706 11.7302 3.98709 12.3213 3.99978ZM11.748 6.51346L10.8389 7.21365L8.73633 8.84939C8.6808 8.89258 8.52979 9.01667 8.33496 9.13748L8.12695 9.25467C7.95957 9.33861 7.78373 9.40535 7.60254 9.45486L7.41895 9.49881C7.09549 9.56438 6.77652 9.55545 6.68555 9.55545H6.11426C5.36002 9.55545 4.91852 9.55723 4.59375 9.58475C4.43466 9.59825 4.35531 9.61412 4.3252 9.62186C4.25356 9.66236 4.18461 9.72218 4.12891 9.80154L4.0752 9.89334C4.09312 9.85669 4.05496 9.90214 4.0293 10.2273C4.00189 10.5752 4 11.0437 4 11.8221V12.1775C4 12.9559 4.00191 13.4244 4.0293 13.7722C4.05503 14.0986 4.09346 14.1434 4.0752 14.1062L4.12891 14.198C4.1845 14.2773 4.25369 14.3362 4.3252 14.3767C4.35507 14.3844 4.43411 14.4013 4.59375 14.4148C4.91853 14.4423 5.36 14.4441 6.11426 14.4441H6.68555C6.75376 14.4441 6.95029 14.4396 7.18066 14.4646L7.41895 14.5008L7.60254 14.5447C7.72339 14.5777 7.84196 14.6183 7.95703 14.6668L8.12695 14.7449L8.33496 14.8621C8.52971 14.9828 8.68067 15.1069 8.73633 15.1502L10.8389 16.7859L11.748 17.4861C11.8319 17.5492 11.9106 17.6061 11.9834 17.659C11.9979 17.2818 12 16.784 12 16.0887V7.91092C12 7.21506 11.9979 6.71692 11.9834 6.33963C11.9105 6.3926 11.8321 6.45029 11.748 6.51346ZM18.2295 4.69998C18.6436 4.38924 19.2208 4.44845 19.5645 4.82107L19.6299 4.8992L19.917 5.29861C22.6913 9.33108 22.6912 14.6684 19.917 18.701L19.6299 19.1004C19.2983 19.5419 18.6711 19.6311 18.2295 19.2996C17.788 18.968 17.6988 18.3408 18.0303 17.8992L18.2686 17.5681C20.5738 14.2175 20.5739 9.78202 18.2686 6.43143L18.0303 6.10037L17.9727 6.01541C17.7111 5.58146 17.8156 5.01079 18.2295 4.69998ZM15.8994 7.19998C16.3135 6.8891 16.8907 6.94841 17.2344 7.32107L17.2998 7.3992L17.4854 7.65799C19.2845 10.2714 19.2845 13.7281 17.4854 16.3416L17.2998 16.6004C16.9682 17.042 16.341 17.1312 15.8994 16.7996C15.4579 16.4679 15.3686 15.8408 15.7002 15.3992L15.8379 15.2078C17.1671 13.2767 17.1671 10.7228 15.8379 8.79178L15.7002 8.60037L15.6436 8.51541C15.3817 8.08146 15.4854 7.51092 15.8994 7.19998Z",
+    ai: "M9.02322 8.00893C9.65788 6.1504 9.97522 5.22113 10.4464 4.96574C10.8541 4.74475 11.3459 4.74475 11.7536 4.96574C12.2248 5.22113 12.5421 6.1504 13.1768 8.00893L13.545 9.08736C13.6728 9.46143 13.7367 9.64847 13.8438 9.80411C13.9387 9.94197 14.058 10.0613 14.1959 10.1562C14.3515 10.2633 14.5386 10.3272 14.9126 10.455L15.9911 10.8232C17.8496 11.4579 18.7789 11.7752 19.0343 12.2464C19.2552 12.6541 19.2552 13.1459 19.0343 13.5536C18.7789 14.0248 17.8496 14.3421 15.9911 14.9768L14.9126 15.345C14.5386 15.4728 14.3515 15.5367 14.1959 15.6438C14.058 15.7387 13.9387 15.858 13.8438 15.9959C13.7367 16.1515 13.6728 16.3386 13.545 16.7126L13.1768 17.7911C12.5421 19.6496 12.2248 20.5789 11.7536 20.8343C11.3459 21.0552 10.8541 21.0552 10.4464 20.8343C9.97522 20.5789 9.65788 19.6496 9.02322 17.7911L8.65495 16.7126C8.52721 16.3386 8.46334 16.1515 8.3562 15.9959C8.2613 15.858 8.14197 15.7387 8.00411 15.6438C7.84847 15.5367 7.66143 15.4728 7.28736 15.345L6.20893 14.9768C4.3504 14.3421 3.42113 14.0248 3.16574 13.5536C2.94475 13.1459 2.94475 12.6541 3.16574 12.2464C3.42113 11.7752 4.3504 11.4579 6.20893 10.8232L7.28736 10.455C7.66143 10.3272 7.84847 10.2633 8.00411 10.1562C8.14197 10.0613 8.2613 9.94197 8.3562 9.80411C8.46334 9.64847 8.52721 9.46143 8.65495 9.08736L9.02322 8.00893ZM16.9178 4.53759C17.139 3.71921 17.2497 3.31002 17.3935 3.17785C17.6516 2.94072 18.0484 2.94072 18.3065 3.17785C18.4503 3.31002 18.561 3.71921 18.7822 4.53759C18.8246 4.69418 18.8457 4.77248 18.8815 4.83973C18.9446 4.95832 19.0417 5.05538 19.1603 5.11847C19.2275 5.15425 19.3058 5.17542 19.4624 5.21776C20.2808 5.43904 20.69 5.54968 20.8221 5.69353C21.0593 5.95165 21.0593 6.34835 20.8221 6.60647C20.69 6.75031 20.2808 6.86096 19.4624 7.08224C19.3058 7.12458 19.2275 7.14575 19.1603 7.18153C19.0417 7.24462 18.9446 7.34168 18.8815 7.46027C18.8457 7.52752 18.8246 7.60582 18.7822 7.76241C18.561 8.58079 18.4503 8.98998 18.3065 9.12214C18.0484 9.35928 17.6516 9.35928 17.3935 9.12214C17.2497 8.98998 17.139 8.58079 16.9178 7.76241C16.8754 7.60582 16.8543 7.52752 16.8185 7.46027C16.7554 7.34168 16.6583 7.24462 16.5397 7.18153C16.4725 7.14575 16.3942 7.12458 16.2376 7.08224C15.4192 6.86096 15.01 6.75031 14.8779 6.60647C14.6407 6.34835 14.6407 5.95165 14.8779 5.69353C15.01 5.54968 15.4192 5.43904 16.2376 5.21776C16.3942 5.17542 16.4725 5.15425 16.5397 5.11847C16.6583 5.05538 16.7554 4.95832 16.8185 4.83973C16.8543 4.77248 16.8754 4.69418 16.9178 4.53759Z"
   };
 
-  var SOLID = { clean: true, keep: true };
+  var SOLID = { clean: true, keep: true, captions: true, music: true, sfx: true, ai: true };
 
   function icon(name) {
     if (!Object.prototype.hasOwnProperty.call(ICONS, name)) { return null; }
@@ -1599,7 +1617,8 @@
     bindRow(line, control, group.id);
     function describe() {
       var option = optionOf(group, held(group));
-      line.desc.textContent = option && option.description ? option.description : "";
+      line.desc.textContent = typeof display.description === "string" ? display.description :
+        option && option.description ? option.description : "";
       line.node.setAttribute("data-on", held(group) === display.on ? "1" : "0");
       // A card may carry the same question twice; each copy reads the one answer.
       control.input.checked = held(group) === display.on;
@@ -1612,27 +1631,28 @@
 
   function held(group) { return (state[group.id] || [])[0]; }
 
-  /** A toggle over a tile grid. Off submits the one token; on shows the grid, and on with
-   *  no tile picked is Auto - an answer the component names in words, not a missing one.
-   *  Opening always lands on Auto: the gate keeps no tile from before it closed, so a pick
-   *  cannot outlive the card or the options it was made against. */
+  /** A toggle over the options. Off submits the one token; on shows the options, drawn as
+   *  preview tiles or as a list (see decision-card-pick-script.ts). Without an initial, on
+   *  with nothing picked is Auto - an answer the component names in words, not a missing
+   *  one. Switching off remembers the pick and switching back on returns it, so a user who
+   *  looks at the off position does not lose what they chose; the memory belongs to this
+   *  card's view and is forgotten with it. */
   function renderGateGroup(group, display) {
     var box = el("div", "group rowgroup gategroup");
-    var grid = el("div", "opts");
+    var label = typeof display.label === "string" ? display.label : group.label || group.id;
     // The hint and the tiles fold away under the row rather than leaving the document, so
     // the card can ease between its two heights instead of jumping. See .fold in the style.
     var fold = el("div", "fold");
     var folded = el("div", "foldin");
     fold.appendChild(folded);
-    var control = switchControl("t_" + group.id, group.label || group.id, held(group) !== display.off, function (checked) {
+    var control = switchControl("t_" + group.id, label, held(group) !== display.off, function (checked) {
       view.interacted = true;
-      state[group.id] = checked ? [] : [display.off];
+      if (!checked) { rememberPick(group); }
+      state[group.id] = checked ? gateOpening(group, display) : [display.off];
       save();
       syncPicked();
-      // Neither position holds a pick, and a pick is what plays a preview.
-      playSelectedPreview(null);
     });
-    var line = row(display.icon, group.label || group.id, control.node);
+    var line = row(display.icon, label, control.node);
     bindRow(line, control, group.id);
     function open(isOpen) {
       fold.setAttribute("data-open", isOpen ? "1" : "0");
@@ -1653,20 +1673,14 @@
       control.input.checked = isOpen;
       open(isOpen);
       line.node.setAttribute("data-on", isOpen ? "1" : "0");
-      var text = isOpen ? (option ? (option.label || value) : display.blank) : (option && option.description ? option.description : "");
+      var text = typeof display.description === "string" ? display.description :
+        isOpen ? (option ? (option.label || value) : display.blank || "") : (option && option.description ? option.description : "");
       if (flipping) { easeLine(line.desc, text); } else { line.desc.textContent = text; }
     }
     box.appendChild(line.node);
-    // The HINT, never the note: the note is the agent's copy of what was not checked.
-    if (group.narrowed === false && group.narrowing_hint) {
-      folded.appendChild(el("div", "warn", group.narrowing_hint));
-    }
-    (group.options || []).forEach(function (option) {
-      if (option && typeof option.value === "string" && option.value !== display.off) {
-        grid.appendChild(renderOption(group, option));
-      }
-    });
-    folded.appendChild(grid);
+    // No narrowing hint: the design carries none, and the Auto tile is the answer it pointed
+    // to. The agent still reads the narrowing note in the text result.
+    folded.appendChild(renderGateOptions(group, display));
     box.appendChild(fold);
     attachReveals(box, group);
     describe();
@@ -1894,8 +1908,236 @@
     });
     box.appendChild(line);
     // The promise the card's foot makes for a typed answer, kept where this field is drawn.
-    if (field) { box.appendChild(el("p", "hint", field.multiline === true ? MULTILINE_HINT : TYPED_HINT)); }
+    if (field) { box.appendChild(el("p", "hint", typedHint(field.multiline === true))); }
     return box;
+  }
+
+
+  /** What the gate held before it was switched off, by component id, so switching it back on
+   *  returns the user's last pick instead of the gate's default. Kept on the view, so it is
+   *  forgotten with the card it was made against. */
+  function rememberedPick(group) {
+    var memory = (view && view.memory) || {};
+    var values = memory[group.id];
+    return Array.isArray(values) && values.every(function (value) { return !!optionOf(group, value); }) ? values.slice() : null;
+  }
+
+  function rememberPick(group) {
+    if (!view.memory) { view.memory = {}; }
+    view.memory[group.id] = (state[group.id] || []).slice();
+  }
+
+  /** The answer a gate opens on: the last pick it held, else its own initial, else Auto. */
+  function gateOpening(group, display) {
+    var remembered = rememberedPick(group);
+    if (remembered !== null && (remembered.length > 0 || typeof display.initial !== "string")) { return remembered; }
+    return typeof display.initial === "string" && optionOf(group, display.initial) ? [display.initial] : [];
+  }
+
+  /** A hidden radio carrying one option, for the answer, the disabled lock and the keyboard. */
+  function pickInput(group, value) {
+    var input = document.createElement("input");
+    input.type = "radio";
+    input.className = "pickinput";
+    input.name = inputName(group);
+    input.value = value;
+    input.checked = held(group) === value || (value === "" && (state[group.id] || []).length === 0);
+    return input;
+  }
+
+  /** Make a whole cell pick its option, through the same write every picker uses. */
+  function bindPick(group, cell, input, value) {
+    cell.setAttribute("data-on", input.checked ? "1" : "0");
+    function choose() {
+      if (input.disabled) { return; }
+      view.interacted = true;
+      state[group.id] = value === "" ? [] : [value];
+      save();
+      syncPicked();
+    }
+    input.addEventListener("change", function () { if (input.checked) { choose(); } });
+    cell.addEventListener("click", function (event) {
+      // A sent card's radio stays as it was read: checking a disabled one would tell a
+      // screen reader a pick the card never recorded.
+      if (event.target === input || input.disabled) { return; }
+      input.checked = true;
+      choose();
+    });
+  }
+
+  /** One preview tile: the clip, the check when picked, and the name under it. */
+  function renderTile(group, option) {
+    var value = option ? option.value : "";
+    var cell = el("div", "tile");
+    var frame = el("div", "frame");
+    // The screen is what the outline of a picked tile insets: it keeps the tile's black
+    // ground under a clip and under the Auto tile, which has none.
+    var screen = el("div", "screen");
+    frame.appendChild(screen);
+    var preview = option && option.preview;
+    if (preview && preview.kind === "video" && typeof preview.src === "string") {
+      var video = document.createElement("video");
+      video.preload = "auto";
+      video.src = preview.src;
+      video.muted = true;
+      video.loop = true;
+      video.playsInline = true;
+      video.controls = false;
+      video.setAttribute("data-autoplay", "1");
+      if (typeof preview.still === "number" && preview.still >= 0) { video.setAttribute("data-still", String(preview.still)); }
+      screen.appendChild(video);
+      playInView(video);
+    } else if (preview && preview.kind === "svg" && typeof preview.src === "string") {
+      var img = document.createElement("img");
+      img.src = preview.src;
+      img.alt = "";
+      screen.appendChild(img);
+    }
+    // Auto has no clip of its own: the design marks it with the sparkle on the tile's ground.
+    if (!option) { screen.appendChild(icon("ai")); }
+    frame.appendChild(checkIcon());
+    var input = pickInput(group, value);
+    input.setAttribute("aria-label", option ? String(option.label || value) : COPY.auto);
+    cell.appendChild(input);
+    cell.appendChild(frame);
+    var tname = el("div", "tname", option ? option.label || value : COPY.auto);
+    // A kept English name is English on the radio that announces it as much as on screen.
+    if (option && option.label_locale === "en") { tname.setAttribute("lang", "en"); input.setAttribute("lang", "en"); }
+    cell.appendChild(tname);
+    bindPick(group, cell, input, value);
+    picks.push({ group: group, value: value, cell: cell, input: input });
+    return cell;
+  }
+
+  /** One list row: the name, the description while picked, and the check at the right. */
+  function renderListRow(group, option) {
+    var cell = el("div", "lrow");
+    var input = pickInput(group, option.value);
+    input.setAttribute("aria-label", String(option.label || option.value));
+    var text = el("div", "ltext");
+    text.appendChild(el("div", "lname", option.label || option.value));
+    if (option.description) {
+      // Folded rather than hidden, so moving the pick eases one description shut and the
+      // next open over the same frames instead of jumping the card by their line counts.
+      var desc = el("div", "ldesc");
+      var descText = el("div", "ldescin", option.description);
+      // Read with its radio whether or not the row is picked: a description referenced this
+      // way is announced even while folded and hidden. The input's name is unique per copy
+      // of the question, so a repeated card never shares an id.
+      descText.id = input.name + "-" + option.value + "-desc";
+      input.setAttribute("aria-describedby", descText.id);
+      desc.appendChild(descText);
+      text.appendChild(desc);
+    }
+    cell.appendChild(input);
+    cell.appendChild(text);
+    cell.appendChild(checkIcon());
+    bindPick(group, cell, input, option.value);
+    picks.push({ group: group, value: option.value, cell: cell, input: input });
+    return cell;
+  }
+
+  /** The options an open gate shows, in the shape its display names. */
+  function renderGateOptions(group, display) {
+    var list = display.layout === "list";
+    var box = el("div", list ? "lrows" : "tiles");
+    // A gate that may rest open on no pick draws that answer as the first tile.
+    if (!list && typeof display.initial !== "string") { box.appendChild(renderTile(group, null)); }
+    (group.options || []).forEach(function (option) {
+      if (!option || typeof option.value !== "string" || option.value === display.off) { return; }
+      box.appendChild(list ? renderListRow(group, option) : renderTile(group, option));
+    });
+    return box;
+  }
+
+
+  function renderOption(group, option) {
+    var picked = state[group.id] || [];
+    var cell = el("div", "opt");
+    cell.setAttribute("data-on", picked.indexOf(option.value) >= 0 ? "1" : "0");
+    var label = el("label", null);
+    var preview = option.preview;
+    // Set by a chrome-free preview, which is a reach for the option rather than for a player.
+    var selectOnClick = null;
+    if (preview && preview.kind === "svg" && typeof preview.src === "string") {
+      var img = document.createElement("img");
+      img.src = preview.src;
+      img.alt = "";
+      // Not interactive content, so it stays INSIDE the label: for a visual style the
+      // picture IS the option, and clicking it has always chosen it.
+      label.appendChild(img);
+    } else if (preview && preview.kind === "video" && typeof preview.src === "string") {
+      var video = document.createElement("video");
+      // Load a still preview, then play only when the user selects this option.
+      video.preload = "auto";
+      video.src = preview.src;
+      video.muted = true;
+      video.loop = true;
+      video.playsInline = true;
+      video.controls = false;
+      video.autoplay = false;
+      if (typeof preview.still === "number" && preview.still >= 0) { video.setAttribute("data-still", String(preview.still)); }
+      // Clicking the preview selects and plays it. Keep it outside the label so native
+      // controls, restored if playback is refused, cannot also select the option.
+      video.setAttribute("data-select-on-click", "1");
+      selectOnClick = function (input, adoptPick) {
+        video.addEventListener("click", function () {
+          if (input.disabled || video.getAttribute("data-select-on-click") !== "1" || releaseHeld(group, input, option.value)) { return; }
+          input.checked = true;
+          adoptPick();
+        });
+      };
+      playInView(video);
+      cell.appendChild(video);
+    }
+    var input = document.createElement("input");
+    input.type = group.select === "multi" ? "checkbox" : "radio";
+    input.name = inputName(group);
+    input.checked = picked.indexOf(option.value) >= 0;
+    /** Write whatever the control now reads back into the answer. Shared, because a chrome-
+     *  free preview is a second way to reach the same option and must not be a second rule. */
+    function adoptPick() {
+      if (input.disabled) { return; }
+      view.interacted = true;
+      if (group.select === "multi") {
+        var next = (state[group.id] || []).filter(function (v) { return v !== option.value; });
+        if (input.checked) { next.push(option.value); }
+        state[group.id] = next;
+      } else {
+        state[group.id] = input.checked ? [option.value] : [];
+      }
+      save();
+      syncPicked();
+      if (input.checked && cell.parentNode.querySelector("video")) { playSelectedPreview(video || null); }
+    }
+    input.addEventListener("change", adoptPick);
+    releaseOnRepress(group, input, option.value);
+    if (selectOnClick) { selectOnClick(input, adoptPick); }
+    var name = el("span", "name", option.label || option.value);
+    if (option.label_locale === "en") { name.setAttribute("lang", "en"); }
+    var head = el("div", null);
+    head.appendChild(input);
+    head.appendChild(name);
+    if (option.recommended === true) { head.appendChild(el("span", "tag", COPY.recommended)); }
+    label.appendChild(head);
+    if (option.description) {
+      // The copy a host renders in place of the text result carries the suitability
+      // guidance that separates one option from the next, so it has to be reachable.
+      var why = el("div", "why", option.description);
+      var more = el("button", "more", COPY.more);
+      more.addEventListener("click", function (event) {
+        event.preventDefault();
+        var open = why.getAttribute("data-open") === "1";
+        why.setAttribute("data-open", open ? "0" : "1");
+        more.textContent = open ? COPY.more : COPY.less;
+      });
+      label.appendChild(why);
+      label.appendChild(more);
+      mores.push({ why: why, more: more });
+    }
+    cell.appendChild(label);
+    picks.push({ group: group, value: option.value, cell: cell, input: input });
+    return cell;
   }
 
 
@@ -2117,7 +2359,7 @@
   }
 
   window.AIPDecisionCard = {
-    version: "29",
+    version: "36",
     render: function (output, options) {
       if (mounted) { throw new Error("AIPDecisionCard renders one card per widget"); }
       mounted = true;
@@ -2133,8 +2375,10 @@
       if (options && typeof options.key === "string" && options.key) {
         data._meta = Object.assign({}, data._meta, { viewUUID: options.key });
       }
+      // sendPrompt only fills the person's message box and says nothing when they send it.
       window.openai = {
         toolOutput: data,
+        fillsComposer: true,
         sendFollowUpMessage: function (args) { return send(args && args.prompt); }
       };
       runCard();
