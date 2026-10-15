@@ -10,13 +10,13 @@ Python 3.9 or newer is sufficient for the offline checks:
 python3 scripts/test.py
 ```
 
-The suite validates both manifests, marketplace entries, MCP version headers, skill structure, package-relative Markdown links, and the absence of lifecycle hooks. No authentication or hosted processing is performed.
+The suite validates both manifests, marketplace entries, MCP version headers, skill structure, package-relative Markdown links, the absence of lifecycle hooks, and the release rules. No authentication or hosted processing is performed.
 
 For packaging changes, validate the marketplace and bundle with Claude Code and test marketplace discovery in an isolated Codex profile. Report client versions and distinguish static validation from authenticated integration checks. CI runs on GitHub-hosted runners without service credentials; private integration checks are maintained separately.
 
 ## Ownership and compatibility
 
-This repository owns the public client plugin. Keep shared editing knowledge under `plugins/aip/skills/` and keep the Codex and Claude manifests separate. Do not introduce employee environments, private fixtures, internal notification integrations, or organization-specific release orchestration.
+This repository publishes the client plugin. Its package (`plugins/aip/`) and both marketplace manifests are generated from OpusClip's plugin source, which also runs the package's behavioral tests, and reach this repository as reviewed pull requests; an edit made here directly is replaced by the next one. Report a problem with the package as an issue. Release history, release tooling, and this repository's documentation are edited here. Do not introduce employee environments, private fixtures, internal notification integrations, or organization-specific release orchestration.
 
 Preserve the `ai-producer-plugins` marketplace identifier, `aip` plugin name, and `ai-producer` MCP server name unless a change includes an explicit migration. The plugin contains no lifecycle hooks or self-update commands. Users manage installation and updates through their client.
 

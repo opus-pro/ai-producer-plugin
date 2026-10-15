@@ -1,14 +1,14 @@
 # AI Producer Plugin
 
-This repository owns the public OpusClip AI Producer plugin for Codex and Claude Code. Read README.md and CONTRIBUTING.md before changing the package.
+This repository publishes the OpusClip AI Producer plugin for Codex and Claude Code. Read README.md and CONTRIBUTING.md before changing anything.
 
-- Keep public plugin content in `plugins/aip/`; retain both host manifests and both marketplaces as separate files.
+- `plugins/aip/` and both marketplace manifests are generated from OpusClip's plugin source and arrive as generated pull requests. Do not edit them by hand here: the next generated pull request replaces them. Review a generated pull request as the release content it is.
 - Preserve marketplace `ai-producer-plugins`, plugin `aip`, and server `ai-producer` unless a coordinated migration is requested.
 - Keep the production MCP URL and OAuth resource aligned.
 - Ship only skills, MCP configuration, and the decision card widget bundle: no lifecycle hooks, no self-update commands. Installation and updates belong to the host client.
 - `plugins/aip/assets/decision-card/` holds the decision card that hosts rendering agent-authored HTML widgets load from the public CDN at a pinned release, with its caption previews. The plugin host never executes it. The bundle is generated from the service's decision card resource and never edited by hand; a changed preview ships under a new versioned directory.
 - Skills teach capabilities; tool descriptions own service procedures and refusals. Keep each SKILL.md at most 500 lines, with its linked references and helper scripts.
-- Run `python3 scripts/test.py` after changes; validate packaging changes with both host parsers. State which checks actually ran.
+- Run `python3 scripts/test.py` after changes; validate packaging changes with both host parsers. State which checks actually ran. The package's behavioral tests run where it is authored, before a generated pull request opens.
 - Keep CI runnable without service credentials or private runners. Employee environments, private integration tests, internal notifications, and internal release orchestration belong outside this repository. Codex and Claude Code publish releases locally using the user's authenticated GitHub identity; CI only validates and never publishes.
 - Never add personal data, private transcripts, credentials, internal tickets, private infrastructure addresses, or developer-specific paths; inspect the full public diff and metadata before publishing.
 - Preserve third-party notices. Use ASCII punctuation in agent instructions and English repository prose, with one source line per prose block.
