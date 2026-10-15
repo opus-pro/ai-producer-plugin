@@ -350,8 +350,11 @@ class ProgressCheckpoint:
             raise ValueError("publication_receipt_mismatch")
         accepted_paths = {service_path(path) for path in accepted}
         expected_paths = {row["path"] for row in self.pending["files"]}
+        # A file already on the service, such as a framed speaker clip registered at init,
+        # may come back in the receipt when a commit binds it; it is not a new file.
+        remote_paths = {service_path(path) for path in self.remote}
         if not expected_paths.issubset(accepted_paths) or accepted_paths.difference(
-                expected_paths, SERVER_RUNTIME_PATHS):
+                expected_paths, SERVER_RUNTIME_PATHS, remote_paths):
             raise ValueError("publication_receipt_mismatch")
         for row in self.pending["files"]:
             relative = relative_path(row["path"])
