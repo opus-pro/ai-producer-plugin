@@ -1,6 +1,6 @@
 /*
  * AI Producer decision card, packaged for hosts that render agent-authored HTML widgets.
- * Generated from the AI Producer service's decision card resource ui://aip/decision-card/v33.
+ * Generated from the AI Producer service's decision card resource ui://aip/decision-card/v34.
  * Do not edit by hand: regenerate it from the service.
  *
  * Load it with a <script src> pinned to a release, then call
@@ -359,9 +359,13 @@
 
   /** An answered card in words. An empty MULTI-select is stated as an empty list, never
    *  as "no answer": the receiving contracts read an omitted feature list as EVERY toggle
-   *  on, so a silent nothing would turn on exactly what the user just turned off. */
+   *  on, so a silent nothing would turn on exactly what the user just turned off.
+   *  The "Anything else?" words close the message raw, after a blank line, with no bullet
+   *  or label: the user reads them as they typed them, and the server's guidance for
+   *  "editing_preference" is what tells the agent the trailing text is that answer. */
   function selectionMessage(card) {
     var lines = ["I picked:"];
+    var anythingElse = "";
     (card.components || []).forEach(function (group) {
       if (!group || typeof group.id !== "string") { return; }
       var picked = state[group.id] || [];
@@ -374,6 +378,10 @@
         // A hidden conditional field was never asked, so it answers nothing even when the
         // user typed into it before moving the picker off the option that revealed it.
         if (!revealShown(card, group)) { picked = []; }
+        if (group.id === "editing_preference") {
+          anythingElse = picked.length > 0 ? picked[0] : "";
+          return;
+        }
         // Quoted, and said to be verbatim, because nothing downstream vets a typed
         // answer: whatever reaches the agent here is what the user gets.
         lines.push("- " + (group.label || group.id) + " (" + group.id + "): " + (picked.length > 0
@@ -394,7 +402,7 @@
       }
       lines.push("- " + (group.label || group.id) + (group.authority === "server" && group.id !== "editing_preference_example" ? "" : " (" + group.id + ")") + ": " + answer);
     });
-    return lines.join("\n");
+    return lines.join("\n") + (anythingElse === "" ? "" : "\n\n" + anythingElse);
   }
 
   /** Every exit from draw() leaves a different height, so the report hangs off the wrapper. */
@@ -2285,7 +2293,7 @@
   }
 
   window.AIPDecisionCard = {
-    version: "33",
+    version: "34",
     render: function (output, options) {
       if (mounted) { throw new Error("AIPDecisionCard renders one card per widget"); }
       mounted = true;

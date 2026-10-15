@@ -85,6 +85,11 @@ class RoundsSkillContractTests(unittest.TestCase):
         fine_cut = section(self.skill, "**Fine cut.**")
         self.assertIn("the optional \"Anything else?\" box at the foot of the card: the card sends without it, and a blank box is never followed up", fine_cut)
         self.assertIn("`editing_preference=<text>`", fine_cut)
+        # The card sends the words raw, so the skill is where the agent learns what they are.
+        self.assertIn("after the `I picked:` list comes a blank line, then the user's text exactly as they typed it", fine_cut)
+        self.assertIn("All text after that blank line is `editing_preference=<text>`", fine_cut)
+        self.assertIn("use it verbatim", fine_cut)
+        self.assertIn("No text after the list means the box was left blank.", fine_cut)
         self.assertIn("record no `branding` entry for it", fine_cut)
 
     def test_tool_availability_does_not_imply_a_visible_card(self):

@@ -66,6 +66,14 @@ class DecisionCardBundleTest(unittest.TestCase):
         self.assertIn('el("button", "go", "Add to chat")', self.source)
         self.assertNotIn('"Send my preference"', self.source)
 
+    def test_anything_else_words_close_the_answer_raw(self) -> None:
+        # The "Anything else?" words end the message as typed, after a blank line, with no
+        # bullet or label, and an empty box adds nothing; the skill tells the agent what they are.
+        self.assertIn('if (group.id === "editing_preference") {', self.source)
+        self.assertIn('return lines.join("\\n") + (anythingElse === "" ? "" : "\\n\\n" + anythingElse);', self.source)
+        # Every other typed field keeps its labelled, quoted line.
+        self.assertIn('typed VERBATIM, use exactly as written: \\"', self.source)
+
     def test_a_refused_card_asks_for_another_press(self) -> None:
         # The host refuses a message that does not follow a recent click; a new press is one.
         self.assertIn('"Not added to your message. Press Send again, or type your choices in the chat."', self.source)
