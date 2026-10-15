@@ -530,7 +530,8 @@
    *  whatever language is around them; a typed field, an image, a question the caller wrote
    *  and the Fine cut example beside its typed field keep their id. The "Anything else?"
    *  words close the message raw, after a blank line, with no bullet or label: the user
-   *  reads them as typed, and the "editing_preference" guidance tells the agent what they are. */
+   *  reads them as they typed them, and the server's guidance for "editing_preference" is
+   *  what tells the agent the trailing text is that answer. */
   function selectionMessage(card) {
     var lines = [COPY.answerPrefix];
     var anythingElse = "";
