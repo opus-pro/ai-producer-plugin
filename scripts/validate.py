@@ -85,12 +85,14 @@ def validate_manifests(root: Path) -> str:
 
     interface = codex_manifest["interface"]
     assert isinstance(interface, dict)
-    assert interface["composerIcon"] == interface["logo"] == "./assets/icon.png"
     for field in ("composerIcon", "logo"):
+        assert interface[field] == "./assets/icon.png", "default plugin icons must be visible without theme switching"
+    assert interface["composerIconDark"] == interface["logoDark"] == "./assets/icon-dark.png"
+    for field in ("composerIcon", "logo", "composerIconDark", "logoDark"):
         asset = interface[field]
         assert isinstance(asset, str) and (plugin / asset).is_file()
-    icon_width, icon_height = png_dimensions(plugin / "assets" / "icon.png")
-    assert icon_width == icon_height >= 512, "plugin icon must be square and at least 512px"
+        icon_width, icon_height = png_dimensions(plugin / asset)
+        assert icon_width == icon_height >= 512, "plugin icon must be square and at least 512px"
     return version
 
 
