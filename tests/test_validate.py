@@ -55,6 +55,16 @@ class ValidateFixtureTest(unittest.TestCase):
                 with self.assertRaisesRegex(AssertionError, "visible without theme switching"):
                     validate.validate_manifests(self.root)
 
+    def test_onboarding_skill_must_be_packaged(self) -> None:
+        path = self.root / "plugins/aip/.codex-plugin/plugin.json"
+        original = validate.load_json(path)
+        for target in ("./skills/aip-missing/SKILL.md", "../outside/SKILL.md", "./skills/aip-setup/"):
+            with self.subTest(target=target):
+                changed = {**original, "extensions": {"com.openai": {"onboardingSkill": target}}}
+                path.write_text(json.dumps(changed), encoding="utf-8")
+                with self.assertRaisesRegex(AssertionError, "onboarding skill"):
+                    validate.validate_manifests(self.root)
+
     def test_missing_dark_icon_fails(self) -> None:
         (self.root / "plugins/aip/assets/icon-dark.png").unlink()
         with self.assertRaises(AssertionError):
