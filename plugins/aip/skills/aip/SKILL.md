@@ -192,6 +192,14 @@ These rules govern extra authored copy; spoken captions remain a separate layer 
 - Sourced B-roll or images may carry one short source or example label, only when the material could be mistaken for the speaker's own footage or demonstration. Authored graphics carry no provenance labels, "illustration" disclaimers, or explanatory footnotes.
 - Before publishing each effect, apply a deletion test to its local composition source: if removing an extra label preserves the meaning in the context of the speech, remove it. This is a source-text check before submission, not inspection of the generated preview.
 
+### A video with no speech
+
+When `start_transcribe_project` or `get_project` carries `speechless_source`, the video has no spoken words - only music or other sound, or no audio track - so it has no transcript. Its `instruction` is the contract; in short:
+
+- Rough cut, captions, background music and voice enhancement do not apply, and `build_captions`, `add_music` and `enhance_voice` refuse the project. Whatever the card answered for them, tell the user once, in plain words, that those choices do not apply to this video; sound effects they chose still apply. Answers are held and recorded exactly as in [the rounds](#the-rounds), whichever arrives first, the card's answer or the note, and nothing is asked again.
+- Design the fine cut from the picture and the sound instead of speech: an opening title, 2 to 4 visual moments or stylized treatments placed on what happens on screen and on the music's beats, and an end card. Write the title and every on-screen line from the user's own words, including the card's "Anything else?" box, and never invent a script. Direction above that is about the speaker, speech or captions does not apply; its palette, motion and layout rules do.
+- Deliver at least the title and the visual moments, never an empty project, and publish as for any other project.
+
 ## Make, submit, stop
 
 Inspect the supplied media and plan once. When the user ties a visual to an on-screen cue such as a gesture, a prop, or an action, locate that moment from representative source frames as well as the transcript; this is input-media analysis, not output inspection. Batch independent metadata reads and material downloads in one script. Fetch a transcription only after its task completes; do not repeatedly fetch an unfinished transcript. When the available tool schema supports `wait_seconds`, use it with the supported limit; otherwise obey the returned polling interval. Waiting is not a reason to load more skills or inspect backend code.
