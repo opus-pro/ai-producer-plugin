@@ -1,7 +1,7 @@
 /*
  * AI Producer decision card, packaged for hosts that render agent-authored HTML widgets.
- * Generated from the AI Producer service's decision card resource ui://aip/decision-card/v36.
- * Do not edit by hand: regenerate it from the service.
+ * Generated from the AI Producer service's decision card resource ui://aip/decision-card/v37.
+ * Do not edit by hand: run make gen-decision-card.
  *
  * Load it with a <script src> pinned to a release, then call
  * AIPDecisionCard.render(card, { mount: "<element id>", key: "<unique id>" }), where card is
@@ -116,7 +116,7 @@
   var root = document.getElementById("card");
   var hosted = null;
   var nextId = 1;
-  var pending = {};
+  var pending = new Map();
   var initialized = false;
   var canMessage = false;
   var view = null;
@@ -163,9 +163,9 @@
       adoptResult(data.params);
       return;
     }
-    if (data.id !== undefined && Object.prototype.hasOwnProperty.call(pending, data.id)) {
-      var settle = pending[data.id];
-      delete pending[data.id];
+    if (typeof data.id === "string" && pending.has(data.id)) {
+      var settle = pending.get(data.id);
+      pending.delete(data.id);
       settle(!data.error && !(data.result && data.result.isError), data.result, data.error);
       adoptResult(data.result);
       return;
@@ -191,7 +191,7 @@
     var content = [{ type: "text", text: text }];
     if (image) { content.unshift(image); }
     var id = rpc("ui/message", { role: "user", content: content });
-    pending[id] = done;
+    pending.set(id, done);
   }
 
   var state = Object.create(null);
@@ -575,6 +575,30 @@
   }
 
 
+  var MEDIA_PREFIXES = BASE ? [BASE] : [];
+  var MEDIA_BASE = BASE || document.baseURI;
+
+  /** Previews stay on the resource's admitted origins; only images may carry inline SVG. */
+  function mediaSource(value, image) {
+    if (typeof value !== "string") { return null; }
+    var svg = image && /^data:image\/svg\+xml((?:;charset=utf-8)?(?:;base64)?),/i.exec(value);
+    if (svg) { return "data:image/svg+xml" + svg[1] + "," + value.slice(svg[0].length); }
+    if (/[\u0000-\u0020\u007f\\]/.test(value)) { return null; }
+    try {
+      var url = new URL(value, MEDIA_BASE || undefined);
+      if (url.protocol !== "https:" && url.protocol !== "http:") { return null; }
+      if (url.username || url.password) { return null; }
+      var source = url.href;
+      for (var i = 0; i < MEDIA_PREFIXES.length; i++) {
+        var prefix = MEDIA_PREFIXES[i];
+        // The configured prefix owns the scheme and host; the card supplies only its suffix.
+        if (source.startsWith(prefix)) { return prefix + source.slice(prefix.length); }
+      }
+      return null;
+    } catch (err) { return null; }
+  }
+
+
   /** A component the user types into rather than picks from. */
   function isInput(group) { return group.kind === "text" || group.kind === "color"; }
 
@@ -917,7 +941,7 @@
       name: IMAGE_UPLOAD_TOOL,
       arguments: { project_id: card.project_id, mime_type: held.mime, data: held.data, sha256: held.sha256 }
     });
-    pending[id] = function (ok, result, error) {
+    pending.set(id, function (ok, result, error) {
       if (picture !== held) { return; }
       var saved = ok ? uploadedImage(result) : null;
       if (!saved) {
@@ -929,7 +953,7 @@
       held.path = saved.path;
       held.task = saved.task_id;
       proceed();
-    };
+    });
   }
 
   /** The image block that travels with the answer, where the chat can show one. */
@@ -1089,7 +1113,7 @@
     held.status = "saving";
     render();
     var id = rpc("tools/call", { name: PRESET_TOOL, arguments: { project_id: card.project_id, preset_id: held.id } });
-    pending[id] = function (ok, result, error) {
+    pending.set(id, function (ok, result, error) {
       if (chosenPreset !== held) { return; }
       var saved = ok ? copiedPreset(result) : null;
       if (!saved) {
@@ -1101,7 +1125,7 @@
       held.path = saved.path;
       held.task = saved.task_id;
       proceed();
-    };
+    });
   }
 
   /** A refused copy: kept for a retry where the server says one can succeed, else dropped. */
@@ -1141,6 +1165,8 @@
   function renderPresets(group, grid) {
     var picked = presetPick(group);
     presetsOf(group).forEach(function (preset) {
+      var src = mediaSource(preset.thumb_url, false);
+      if (!src) { return; }
       var on = !!picked && picked.id === preset.id;
       var tile = el("button", "preset");
       tile.type = "button";
@@ -1150,7 +1176,7 @@
       tile.setAttribute("data-preset", preset.id);
       if (on) { tile.setAttribute("data-status", picked.status); }
       var thumb = document.createElement("img");
-      thumb.src = preset.thumb_url;
+      thumb.src = src;
       thumb.alt = "";
       thumb.decoding = "async";
       tile.appendChild(thumb);
@@ -1975,10 +2001,11 @@
     var screen = el("div", "screen");
     frame.appendChild(screen);
     var preview = option && option.preview;
-    if (preview && preview.kind === "video" && typeof preview.src === "string") {
+    var src = preview && mediaSource(preview.src, preview.kind === "svg");
+    if (src && preview.kind === "video") {
       var video = document.createElement("video");
       video.preload = "auto";
-      video.src = preview.src;
+      video.src = src;
       video.muted = true;
       video.loop = true;
       video.playsInline = true;
@@ -1987,9 +2014,9 @@
       if (typeof preview.still === "number" && preview.still >= 0) { video.setAttribute("data-still", String(preview.still)); }
       screen.appendChild(video);
       playInView(video);
-    } else if (preview && preview.kind === "svg" && typeof preview.src === "string") {
+    } else if (src && preview.kind === "svg") {
       var img = document.createElement("img");
-      img.src = preview.src;
+      img.src = src;
       img.alt = "";
       screen.appendChild(img);
     }
@@ -2057,20 +2084,21 @@
     cell.setAttribute("data-on", picked.indexOf(option.value) >= 0 ? "1" : "0");
     var label = el("label", null);
     var preview = option.preview;
+    var src = preview && mediaSource(preview.src, preview.kind === "svg");
     // Set by a chrome-free preview, which is a reach for the option rather than for a player.
     var selectOnClick = null;
-    if (preview && preview.kind === "svg" && typeof preview.src === "string") {
+    if (src && preview.kind === "svg") {
       var img = document.createElement("img");
-      img.src = preview.src;
+      img.src = src;
       img.alt = "";
       // Not interactive content, so it stays INSIDE the label: for a visual style the
       // picture IS the option, and clicking it has always chosen it.
       label.appendChild(img);
-    } else if (preview && preview.kind === "video" && typeof preview.src === "string") {
+    } else if (src && preview.kind === "video") {
       var video = document.createElement("video");
       // Load a still preview, then play only when the user selects this option.
       video.preload = "auto";
-      video.src = preview.src;
+      video.src = src;
       video.muted = true;
       video.loop = true;
       video.playsInline = true;
@@ -2333,7 +2361,7 @@
     appCapabilities: {},
     protocolVersion: "2026-01-26"
   });
-  pending[initId] = function (ok, result) {
+  pending.set(initId, function (ok, result) {
     initialized = ok;
     var caps = (ok && result && result.hostCapabilities) || {};
     canMessage = !!caps.message;
@@ -2352,14 +2380,14 @@
       window.parent.postMessage({ jsonrpc: "2.0", method: "ui/notifications/initialized", params: {} }, "*");
       resendSize();
     }
-  };
+  });
   render();
 })();
 
   }
 
   window.AIPDecisionCard = {
-    version: "36",
+    version: "37",
     render: function (output, options) {
       if (mounted) { throw new Error("AIPDecisionCard renders one card per widget"); }
       mounted = true;
