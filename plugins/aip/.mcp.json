@@ -5,10 +5,12 @@
       "url": "https://producer.opus.pro/api/mcp",
       "oauth_resource": "https://producer.opus.pro/api/mcp",
       "headers": {
-        "X-AIP-Plugin-Version": "1.2.11"
+        "X-AIP-Plugin-Version": "1.2.11",
+        "X-AIP-Plugin-Capabilities": "feedback,sfx-library"
       },
       "http_headers": {
-        "X-AIP-Plugin-Version": "1.2.11"
+        "X-AIP-Plugin-Version": "1.2.11",
+        "X-AIP-Plugin-Capabilities": "feedback,sfx-library"
       }
     }
   }
