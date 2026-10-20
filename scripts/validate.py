@@ -28,7 +28,7 @@ PLUGIN_DIRNAME = "aip"
 MCP_SERVER_NAME = "ai-producer"
 EXPECTED_REPOSITORY = "https://github.com/opus-pro/ai-producer-plugin"
 EXPECTED_ENDPOINT = "https://producer.opus.pro/api/mcp"
-EXPECTED_SKILLS = {"aip", "aip-composition", "aip-dynamic-caption", "aip-framing"}
+EXPECTED_SKILLS = {"aip", "aip-composition", "aip-dynamic-caption", "aip-framing", "aip-setup"}
 
 
 # The service needs the plugin version on each tool call.
@@ -93,7 +93,23 @@ def validate_manifests(root: Path) -> str:
         assert isinstance(asset, str) and (plugin / asset).is_file()
         icon_width, icon_height = png_dimensions(plugin / asset)
         assert icon_width == icon_height >= 512, "plugin icon must be square and at least 512px"
+    validate_onboarding_skill(plugin, codex_manifest)
     return version
+
+
+def validate_onboarding_skill(plugin: Path, codex_manifest: dict[str, object]) -> None:
+    """ChatGPT's Set up runs this skill, so it must resolve to one the package ships."""
+    extensions = codex_manifest.get("extensions", {})
+    assert isinstance(extensions, dict)
+    openai = extensions.get("com.openai", {})
+    assert isinstance(openai, dict)
+    onboarding = openai.get("onboardingSkill")
+    if onboarding is None:
+        return
+    assert isinstance(onboarding, str) and re.fullmatch(r"\./skills/[a-z0-9-]+/SKILL\.md", onboarding), (
+        f"onboarding skill must be a packaged ./skills/<name>/SKILL.md path: {onboarding}"
+    )
+    assert (plugin / onboarding).is_file(), f"onboarding skill is not in the package: {onboarding}"
 
 
 def validate_marketplaces(root: Path, version: str) -> None:
