@@ -96,10 +96,81 @@ class ReleasePRTest(unittest.TestCase):
         self.write_document(path, document)
         self.assertIn("ordinary PR", self.check("fix: clarify the plugin"))
 
-    def add_reissue_record(self) -> None:
+    def remove_cursor_metadata(self, paths: frozenset[str] = policy.CURSOR_VERSION_FILES) -> dict[str, bytes]:
+        originals = {}
+        for relative in paths:
+            path = self.root / relative
+            originals[relative] = path.read_bytes()
+            path.unlink()
+        return originals
+
+    def restore_cursor_metadata(self, originals: dict[str, bytes]) -> None:
+        for relative, contents in originals.items():
+            path = self.root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(contents)
+
+    def test_ordinary_pr_can_add_cursor_to_legacy_base_and_merge_base(self) -> None:
+        originals = self.remove_cursor_metadata()
+        ancestor = self.commit()
+        (self.root / "README.md").write_text("New base content.\n", encoding="utf-8")
+        base_tip = self.commit()
+        self.git("checkout", "--detach", ancestor)
+        self.restore_cursor_metadata(originals)
+        self.assertIn("ordinary PR", self.check("feat: support Cursor", base=base_tip))
+
+    def test_ordinary_pr_can_read_legacy_merge_base_after_base_adopts_cursor(self) -> None:
+        originals = self.remove_cursor_metadata()
+        ancestor = self.commit()
+        self.restore_cursor_metadata(originals)
+        base_tip = self.commit()
+        self.git("checkout", "--detach", ancestor)
+        self.restore_cursor_metadata(originals)
+        (self.root / "README.md").write_text("Updated fixture.\n", encoding="utf-8")
+        self.assertIn("ordinary PR", self.check("feat: support Cursor", base=base_tip))
+
+    def test_cursor_files_are_required_at_current_head(self) -> None:
+        for relative in policy.CURSOR_VERSION_FILES:
+            with self.subTest(path=relative):
+                self.git("reset", "--hard", self.base)
+                (self.root / relative).unlink()
+                with self.assertRaisesRegex(ValueError, "must exist"):
+                    self.check("fix: remove Cursor metadata")
+
+    def test_release_cannot_introduce_cursor_metadata(self) -> None:
+        originals = self.remove_cursor_metadata()
+        self.base = self.commit()
+        self.restore_cursor_metadata(originals)
+        self.set_version("0.8.34")
+        with self.assertRaisesRegex(ValueError, "ordinary PR before a release"):
+            self.check()
+
+    def test_legacy_cursor_metadata_still_must_have_matching_versions(self) -> None:
+        path = "plugins/aip/.cursor-plugin/plugin.json"
+        document = self.document(path)
+        document["version"] = "0.8.32"
+        self.write_document(path, document)
+        self.base = self.commit()
+        document["version"] = "0.8.33"
+        self.write_document(path, document)
+        with self.assertRaisesRegex(ValueError, "version fields must match"):
+            self.check("fix: align Cursor metadata")
+
+    def test_legacy_snapshots_reject_partial_cursor_metadata(self) -> None:
+        for relative in policy.CURSOR_VERSION_FILES:
+            with self.subTest(path=relative):
+                self.git("reset", "--hard", self.base)
+                self.remove_cursor_metadata(frozenset({relative}))
+                historical = self.commit()
+                with self.assertRaisesRegex(ValueError, "Historical Cursor metadata must include both"):
+                    policy.snapshot(self.root, historical, allow_legacy=True)
+
+    def add_reissue_record(self, *, missing_cursor_files: frozenset[str] = frozenset()) -> None:
         self.set_version("1.2.8")
         shutil.copyfile(REPO / "releases/v1.2.8.md", self.root / "releases/v1.2.8.md")
+        originals = self.remove_cursor_metadata(missing_cursor_files)
         source_commit = self.commit()
+        self.restore_cursor_metadata(originals)
         self.base = source_commit
         record_path = self.root / policy.REISSUES_FILE
         record = json.loads((REPO / policy.REISSUES_FILE).read_text())
@@ -110,6 +181,20 @@ class ReleasePRTest(unittest.TestCase):
     def test_ordinary_pr_can_record_reissue_without_version_change(self) -> None:
         self.add_reissue_record()
         self.assertIn("ordinary PR", self.check("chore: document reissue"))
+
+    def test_reissue_source_can_predate_cursor_support(self) -> None:
+        self.add_reissue_record(missing_cursor_files=policy.CURSOR_VERSION_FILES)
+        self.assertIn("ordinary PR", self.check("chore: document reissue"))
+
+    def test_reissue_source_rejects_partial_cursor_metadata(self) -> None:
+        original_base = self.base
+        for relative in policy.CURSOR_VERSION_FILES:
+            with self.subTest(path=relative):
+                self.git("reset", "--hard", original_base)
+                self.add_reissue_record(missing_cursor_files=frozenset({relative}))
+                head = self.commit()
+                with self.assertRaisesRegex(ValueError, "Historical Cursor metadata must include both"):
+                    policy.reissues_at_ref(self.root, head)
 
     def test_invalid_reissue_record_fails_ordinary_pr(self) -> None:
         self.add_reissue_record()
@@ -188,7 +273,7 @@ class ReleasePRTest(unittest.TestCase):
         document = self.document(path)
         document["mcpServers"]["ai-producer"]["http_headers"]["X-AIP-Plugin-Version"] = "0.8.32"
         self.write_document(path, document)
-        with self.assertRaisesRegex(ValueError, "six version fields must match"):
+        with self.assertRaisesRegex(ValueError, "version fields must match"):
             self.check("fix: migrate production identity")
 
     def test_version_change_requires_exact_title(self) -> None:
@@ -255,7 +340,7 @@ class ReleasePRTest(unittest.TestCase):
                         parent = parent[key]
                     parent[field[-1]] = "0.8.33"
                     self.write_document(path, document)
-                    with self.assertRaisesRegex(ValueError, "six version fields must match"):
+                    with self.assertRaisesRegex(ValueError, "version fields must match"):
                         self.check("fix: no release title")
 
     def test_removed_version_field_fails(self) -> None:

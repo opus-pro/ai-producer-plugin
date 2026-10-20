@@ -13,7 +13,7 @@ Talk to the user as the aip skill's Talk to the user section says: in their lang
 
 ## Which conversation you are in
 
-Decide this once, before step 1. A conversation has a computer behind it when you can run a command or write a file there: ChatGPT Work, Codex, and Claude Code always do. A ChatGPT Chat conversation does not: a video the user attaches there is something the host holds, not a file you have.
+Decide this once, before step 1. A conversation has a computer behind it when you can run a command or write a file there: ChatGPT Work, Codex, Claude Code, and Cursor do when their command or file tools are available. A ChatGPT Chat conversation does not: a video the user attaches there is something the host holds, not a file you have.
 
 - **With a computer**, steps 1 to 3 run as written. Then hand over: carry the user's video and goal straight into the aip skill's new-project flow, which uploads the video, starts the project, and goes on to edit it. Steps 4 to 6 below do not apply; do not use the attachment tool there.
 - **Without a computer**, all six steps apply. The video reaches AI Producer only as an attachment the server downloads, through `start_project_from_attachment`. Never ask the user to run a command, open a terminal, or upload from a computer of yours, and do not sign an upload.
@@ -28,13 +28,14 @@ Call `get_pricing` with no arguments. It is free, reads nothing from any project
 
 ### Connect the account
 
-Connecting this client to AI Producer is its own step. Being signed in on the AI Producer website does not connect ChatGPT, Codex, or Claude Code, and connecting them does not need the website first: the connection opens an AI Producer sign-in page of its own. A user who already has an account signs in there; a new user creates one there.
+Connecting this client to AI Producer is its own step. Being signed in on the AI Producer website does not connect ChatGPT, Codex, Claude Code, or Cursor, and connecting them does not need the website first: the connection opens an AI Producer sign-in page of its own. A user who already has an account signs in there; a new user creates one there.
 
 The connection is something only the user can complete, in their own client. Name the step for the client they are on:
 
 - **ChatGPT (Chat or Work):** when ChatGPT offers to connect AI Producer, choose Connect and finish signing in. If it does not offer, connect or reconnect AI Producer from Settings > Apps & Connectors and finish signing in there.
 - **Codex:** run `codex mcp login ai-producer` in their own terminal and finish signing in. This holds in the Codex desktop app too, which has no sign-in control of its own for a plugin's connection; the commands you run reach no network, so you cannot do it for them.
 - **Claude Code:** run `/mcp`, select `plugin:aip:ai-producer`, and finish signing in.
+- **Cursor:** open Customize > MCPs > ai-producer > Authenticate and finish signing in. Use Cursor's own connection control, not a Codex or Claude Code command.
 
 When a refusal carries its own recovery sentence, pass its meaning on in plain words alongside this step, since it is written for the client that called. Do not build an authorization link, do not suggest reinstalling the plugin, and do not change any MCP configuration: none of these connects the account, and each can break a working install. Then ask the user to tell you when they have finished, and wait.
 
@@ -86,6 +87,6 @@ Once the answer carries a project, tell the user, in this order:
 
 1. Their project is in AI Producer and the video is being prepared. It is not edited yet: preparing the footage is the first step before the cut.
 2. The project link, `page_url` from the answer, exactly as returned. It is theirs to keep and works from any browser. Never give out `agent_page_url`.
-3. Where to continue. Cutting, captions, and motion graphics need a conversation with a computer: a ChatGPT Work chat or a Codex task. They start it, mention AI Producer, and paste the project link; the footage is already in AI Producer, so they do not attach it again.
+3. Where to continue. Cutting, captions, and motion graphics need a conversation with a computer: a ChatGPT Work chat, a Codex task, or a Claude Code or Cursor chat with command and file tools. They start it, mention AI Producer, and paste the project link; the footage is already in AI Producer, so they do not attach it again.
 
 Then setup is done. Do not call this skill again in the conversation. If the user asks how preparation is going, read it with `get_task` and answer from what it says.

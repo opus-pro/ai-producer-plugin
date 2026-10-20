@@ -18,11 +18,20 @@ REISSUES_FILE = "releases/reissues.json"
 LOG_SECTIONS = ("Changes", "Compatibility", "Validation")
 REPOSITORY_URL = "https://github.com/opus-pro/ai-producer-plugin"
 PR_LINK = re.compile(r"\[#([1-9][0-9]*)\]\(" + re.escape(REPOSITORY_URL) + r"/pull/\1\)")
+CURSOR_VERSION_FILES = frozenset({
+    "plugins/aip/.cursor-plugin/plugin.json",
+    ".cursor-plugin/marketplace.json",
+})
+# Historical commits can predate version tracking or Cursor packaging. HEAD
+# must always contain the complete current metadata set.
+LEGACY_OPTIONAL_FILES = CURSOR_VERSION_FILES | {LATEST_VERSION_FILE}
 VERSION_FIELDS = {
     LATEST_VERSION_FILE: (("version",),),
     "plugins/aip/.codex-plugin/plugin.json": (("version",),),
     "plugins/aip/.claude-plugin/plugin.json": (("version",),),
+    "plugins/aip/.cursor-plugin/plugin.json": (("version",),),
     ".claude-plugin/marketplace.json": (("plugins", 0, "version"),),
+    ".cursor-plugin/marketplace.json": (("plugins", 0, "version"),),
     "plugins/aip/.mcp.json": (
         ("mcpServers", "ai-producer", "headers", "X-AIP-Plugin-Version"),
         ("mcpServers", "ai-producer", "http_headers", "X-AIP-Plugin-Version"),
@@ -92,9 +101,12 @@ def version_fields_for(path: str, document: dict) -> tuple:
 
 def version_from_documents(documents: dict, *, allow_legacy: bool = False) -> str:
     """Check the canonical version and every host-specific copy."""
+    cursor_files = CURSOR_VERSION_FILES & documents.keys()
+    if allow_legacy and cursor_files and cursor_files != CURSOR_VERSION_FILES:
+        raise ValueError("Historical Cursor metadata must include both the plugin manifest and marketplace, or neither")
     versions = []
     for path in VERSION_FIELDS:
-        if allow_legacy and path == LATEST_VERSION_FILE and path not in documents:
+        if allow_legacy and path in LEGACY_OPTIONAL_FILES and path not in documents:
             continue
         try:
             document = documents[path]
@@ -111,7 +123,7 @@ def version_from_documents(documents: dict, *, allow_legacy: bool = False) -> st
         except (ValueError, KeyError, IndexError, TypeError, UnicodeError) as error:
             raise ValueError(f"Invalid version file {path}: {error}") from error
     if len(set(versions)) != 1:
-        raise ValueError("All six version fields must match across the five version files")
+        raise ValueError("All version fields must match across the version files")
     return versions[0]
 
 
@@ -124,8 +136,7 @@ def regular_blob(repo: Path, ref: str, path: str) -> bytes:
 def snapshot(repo: Path, ref: str, *, allow_legacy: bool = False) -> tuple[dict, str]:
     documents = {}
     for path in VERSION_FIELDS:
-        # A merge base may predate the introduction of the release directory.
-        if allow_legacy and path == LATEST_VERSION_FILE and not git(repo, "ls-tree", ref, "--", path):
+        if allow_legacy and path in LEGACY_OPTIONAL_FILES and not git(repo, "ls-tree", ref, "--", path):
             continue
         try:
             documents[path] = json.loads(
@@ -219,7 +230,7 @@ def reissues_at_ref(repo: Path, ref: str) -> dict:
         original = regular_blob(repo, record["source_commit"], release_log_path(version)).decode("utf-8")
         validate_reissue_notes(regular_blob(repo, ref, record["notes"]).decode("utf-8"), version, record, original)
         git(repo, "merge-base", "--is-ancestor", record["source_commit"], ref)
-        _, source_version = snapshot(repo, record["source_commit"])
+        _, source_version = snapshot(repo, record["source_commit"], allow_legacy=True)
         if source_version != version:
             raise ValueError(f"Reissue source commit does not declare {version}")
     return records
@@ -329,8 +340,10 @@ def check_release_pr(repo: Path, base: str, head: str, title: str) -> str:
 
     unexpected = changed - (VERSION_FIELDS.keys() | {log_path})
     if unexpected:
-        raise ValueError(f"Release PRs may only change the five version files and the new release log; unexpected paths: {sorted(unexpected)!r}")
+        raise ValueError(f"Release PRs may only change the version files and the new release log; unexpected paths: {sorted(unexpected)!r}")
     for path in VERSION_FIELDS:
+        if path in CURSOR_VERSION_FILES and path not in before:
+            raise ValueError(f"New host metadata must land in an ordinary PR before a release: {path}")
         original = before.get(path, {"version": old_version})
         original_content = without_versions(original, version_fields_for(path, original))
         updated_content = without_versions(after[path], version_fields_for(path, after[path]))
@@ -343,7 +356,7 @@ def check_release_pr(repo: Path, base: str, head: str, title: str) -> str:
         raise ValueError(f"Release PR must add a new release log: {log_path}")
     comparison_base = comparison_base_version(base_version, reissues_at_ref(repo, base))
     validate_release_log(regular_blob(repo, head, log_path).decode("utf-8"), new_version, previous_version=comparison_base)
-    return f"OK: release {old_version} -> {new_version}; title, file scope, all six version fields, and release log match"
+    return f"OK: release {old_version} -> {new_version}; title, file scope, all version fields, and release log match"
 
 
 def main() -> int:

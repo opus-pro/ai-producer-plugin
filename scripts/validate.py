@@ -74,14 +74,20 @@ def validate_manifests(root: Path) -> str:
     plugin = plugin_dir(root)
     codex_manifest = load_json(plugin / ".codex-plugin" / "plugin.json")
     claude_manifest = load_json(plugin / ".claude-plugin" / "plugin.json")
+    cursor_manifest = load_json(plugin / ".cursor-plugin" / "plugin.json")
 
-    assert codex_manifest["name"] == claude_manifest["name"] == PLUGIN_DIRNAME
+    assert codex_manifest["name"] == claude_manifest["name"] == cursor_manifest["name"] == PLUGIN_DIRNAME
     version = codex_manifest["version"]
-    assert version == claude_manifest["version"], "manifest versions must match"
+    assert version == claude_manifest["version"] == cursor_manifest["version"], "manifest versions must match"
     assert isinstance(version, str) and SEMVER.fullmatch(version)
-    assert codex_manifest["repository"] == claude_manifest["repository"] == EXPECTED_REPOSITORY
+    assert codex_manifest["repository"] == claude_manifest["repository"] == cursor_manifest["repository"] == EXPECTED_REPOSITORY
     assert (plugin / str(codex_manifest["skills"])).is_dir()
     assert (plugin / str(codex_manifest["mcpServers"])).is_file()
+    for field, expected in (("skills", "./skills/"), ("mcpServers", "./.mcp.json"), ("logo", "./assets/icon.png")):
+        assert cursor_manifest[field] == expected, f"Cursor {field} must use the packaged path {expected}"
+        target = plugin / expected
+        assert target.resolve().is_relative_to(plugin.resolve()), f"Cursor {field} must stay within the package"
+        assert target.is_dir() if field == "skills" else target.is_file(), f"missing Cursor {field}: {expected}"
 
     interface = codex_manifest["interface"]
     assert isinstance(interface, dict)
@@ -115,14 +121,19 @@ def validate_onboarding_skill(plugin: Path, codex_manifest: dict[str, object]) -
 def validate_marketplaces(root: Path, version: str) -> None:
     codex_marketplace = load_json(root / ".agents" / "plugins" / "marketplace.json")
     claude_marketplace = load_json(root / ".claude-plugin" / "marketplace.json")
+    cursor_marketplace = load_json(root / ".cursor-plugin" / "marketplace.json")
 
-    assert codex_marketplace["name"] == claude_marketplace["name"] == "ai-producer-plugins"
+    assert codex_marketplace["name"] == claude_marketplace["name"] == cursor_marketplace["name"] == "ai-producer-plugins"
     codex_entry = codex_marketplace["plugins"][0]  # type: ignore[index]
     claude_entry = claude_marketplace["plugins"][0]  # type: ignore[index]
-    assert codex_entry["name"] == claude_entry["name"] == PLUGIN_DIRNAME  # type: ignore[index]
+    cursor_entries = cursor_marketplace["plugins"]
+    assert isinstance(cursor_entries, list) and len(cursor_entries) == 1, "Cursor marketplace must list exactly one plugin"
+    cursor_entry = cursor_entries[0]
+    assert codex_entry["name"] == claude_entry["name"] == cursor_entry["name"] == PLUGIN_DIRNAME  # type: ignore[index]
     assert codex_entry["source"]["path"] == f"./plugins/{PLUGIN_DIRNAME}"  # type: ignore[index]
-    assert claude_entry["source"] == f"./plugins/{PLUGIN_DIRNAME}"  # type: ignore[index]
-    assert claude_entry["version"] == version  # type: ignore[index]
+    assert claude_entry["source"] == cursor_entry["source"] == f"./plugins/{PLUGIN_DIRNAME}"  # type: ignore[index]
+    assert claude_entry["version"] == cursor_entry["version"] == version  # type: ignore[index]
+    assert "hooks" not in cursor_entry, "Cursor marketplace must not declare lifecycle hooks"
 
 
 def validate_mcp(root: Path, version: str) -> None:
@@ -140,7 +151,7 @@ def validate_mcp(root: Path, version: str) -> None:
         headers = server.get(key)  # type: ignore[union-attr]
         assert isinstance(headers, dict) and headers, (
             f".mcp.json must set {key!r}; without it the "
-            f"{'Claude Code' if key == 'headers' else 'Codex'} bundle sends no "
+            f"{'Claude Code/Cursor' if key == 'headers' else 'Codex'} bundle sends no "
             f"{PLUGIN_VERSION_HEADER} and the service cannot tell which plugin called"
         )
         declared = headers.get(PLUGIN_VERSION_HEADER)
@@ -188,7 +199,7 @@ def validate_skill_structure(root: Path) -> None:
 def validate_host_hooks(root: Path) -> None:
     """The client plugin must not run code through lifecycle hooks."""
     plugin = plugin_dir(root)
-    for directory in (".codex-plugin", ".claude-plugin"):
+    for directory in (".codex-plugin", ".claude-plugin", ".cursor-plugin"):
         manifest = load_json(plugin / directory / "plugin.json")
         assert "hooks" not in manifest, f"{directory} must not declare lifecycle hooks"
     hooks = sorted(str(path.relative_to(plugin)) for path in plugin.rglob("hooks*.json"))
@@ -223,7 +234,7 @@ def main(root: Path = ROOT) -> None:
     validate_host_hooks(root)
     validate_relative_links(root)
     validate_notices(root)
-    print(f"Validated {PLUGIN_DIRNAME} {version} for Codex and Claude Code")
+    print(f"Validated {PLUGIN_DIRNAME} {version} for Codex, Claude Code, and Cursor")
 
 
 if __name__ == "__main__":
