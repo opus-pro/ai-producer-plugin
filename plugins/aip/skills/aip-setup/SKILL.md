@@ -13,10 +13,11 @@ Talk to the user as the aip skill's Talk to the user section says: in their lang
 
 ## Which conversation you are in
 
-Decide this once, before step 1. A conversation has a computer behind it when you can run a command or write a file there: ChatGPT Work, Codex, Claude Code, and Cursor do when their command or file tools are available. A ChatGPT Chat conversation does not: a video the user attaches there is something the host holds, not a file you have.
+Decide this once, before step 1. A conversation has a computer behind it when you can run a command or write a file there: ChatGPT Work, Codex, and Claude Code always do. Cursor does when its command or file tools are available. A ChatGPT Chat conversation does not: a video the user attaches there is something the host holds, not a file you have.
 
 - **With a computer**, steps 1 to 3 run as written. Then hand over: carry the user's video and goal straight into the aip skill's new-project flow, which uploads the video, starts the project, and goes on to edit it. Steps 4 to 6 below do not apply; do not use the attachment tool there.
-- **Without a computer**, all six steps apply. The video reaches AI Producer only as an attachment the server downloads, through `start_project_from_attachment`. Never ask the user to run a command, open a terminal, or upload from a computer of yours, and do not sign an upload.
+- **Cursor without command or file access:** tell the user this chat needs access to their video files and editing workspace. Ask them to switch to Agent mode with command and file access enabled, then resume setup. Stop here until that access is available; do not use the ChatGPT attachment-only flow or `start_project_from_attachment` in Cursor.
+- **ChatGPT Chat without a computer**, all six steps apply. The video reaches AI Producer only as an attachment the server downloads, through `start_project_from_attachment`. Never ask the user to run a command, open a terminal, or upload from a computer of yours, and do not sign an upload.
 
 ## 1. Is AI Producer already connected?
 
