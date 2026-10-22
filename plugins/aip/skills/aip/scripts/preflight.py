@@ -225,6 +225,11 @@ def check(root, remote_files=()):
     if len(stages) != 1 or stages[0].get("data-composition-id") != "finecut-root":
         issue(errors, "missing_or_invalid_root")
     if index is not None:
+        for tag, attrs, depth in index.elements:
+            if (not depth and tag in {"video", "audio"}
+                    and "speaker-clip" in (attrs.get("class") or "").split()
+                    and attrs.get("preload") != "none"):
+                issue(warnings, "speaker_clip_eager_preload", root / "index.html")
         effect_codes = speaker_effects.check(index.elements, index.motion_scripts)
         for code in effect_codes or speaker_effects.sample(index.elements, index.motion_scripts):
             issue(errors, code, root / "index.html")
