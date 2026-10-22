@@ -1,0 +1,22 @@
+{
+  "name": "aip",
+  "displayName": "AI Producer by OpusClip",
+  "version": "1.2.12",
+  "description": "Create an editable talking-head video in chat. Upload footage, direct cuts, captions, reframing, and motion graphics, then open the AI Producer preview to refine or export.",
+  "author": {
+    "name": "OpusClip",
+    "url": "https://www.opus.pro/"
+  },
+  "homepage": "https://producer.opus.pro",
+  "repository": "https://github.com/opus-pro/ai-producer-plugin",
+  "keywords": [
+    "video",
+    "editing",
+    "captions",
+    "motion-graphics",
+    "mcp"
+  ],
+  "logo": "./assets/icon.png",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}

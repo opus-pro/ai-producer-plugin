@@ -1,6 +1,6 @@
 # Release history
 
-This directory records the declared plugin version and release notes. Local preparation does not publish. After an authorized release PR merge, Codex or Claude Code completes publication using the user's GitHub identity as described below; existing tags are preserved.
+This directory records the declared plugin version and release notes. Local preparation does not publish. After an authorized release PR merge, Codex, Claude Code, or Cursor completes publication using the user's GitHub identity as described below; existing tags are preserved.
 
 ## latest_version.json
 
@@ -12,11 +12,11 @@ This directory records the declared plugin version and release notes. Local prep
 }
 ```
 
-It must match both host manifests, the Claude marketplace entry, and both MCP version headers. It records repository state, which may be ahead of the latest published GitHub Release while a release is being prepared. Backfilling older notes does not change this value.
+It must match all three host manifests, the Claude and Cursor marketplace entries, and both MCP version headers. It records repository state, which may be ahead of the latest published GitHub Release while a release is being prepared. Backfilling older notes does not change this value.
 
 ## template.md
 
-Use `template.md` for new releases. First follow the shared [version-selection procedure](../.agents/rules/release.md#choose-a-new-version): verify the published GitHub Release version, default to the next patch, and obtain a separate second confirmation before any minor or major version edits. From the repository root, run `python3 scripts/prepare_release.py X.Y.Z` with that selected version to align all six version values and create `releases/vX.Y.Z.md`. The helper fills the version and previous-version placeholders, including the final Full Changelog comparison link; complete the remaining content before running checks.
+Use `template.md` for new releases. First follow the shared [version-selection procedure](../.agents/rules/release.md#choose-a-new-version): verify the published GitHub Release version, default to the next patch, and obtain a separate second confirmation before any minor or major version edits. From the repository root, run `python3 scripts/prepare_release.py X.Y.Z` with that selected version to align all eight version values and create `releases/vX.Y.Z.md`. The helper fills the version and previous-version placeholders, including the final Full Changelog comparison link; complete the remaining content before running checks.
 
 Changes, Compatibility, and Validation are optional and appear in that order when retained. Delete sections and categories with nothing noteworthy to report. Group concise change summaries by category and end each entry with one or more related PR-number links. Do not leave placeholders or empty sections.
 
@@ -28,7 +28,7 @@ Keep each version update in its own PR titled `chore: release vX.Y.Z`. Follow th
 
 ## Publication with a user account
 
-Codex and Claude Code use the shared [release rule](../.agents/rules/release.md#request-scope-and-progress) to complete a full release request in one session with the user's authenticated GitHub CLI session: fetch the published version, announce the target and inspection links, prepare the PR, wait for checks and required reviews, merge, publish, and verify. Default patch releases continue without another version or merge confirmation; minor and major increases require the user's separate second confirmation before version edits. A preparation-only request stops at the PR. CI continues to validate the package and release PR policy; it does not create tags or Releases.
+Codex, Claude Code, and Cursor use the shared [release rule](../.agents/rules/release.md#request-scope-and-progress) to complete a full release request in one session with the user's authenticated GitHub CLI session: fetch the published version, announce the target and inspection links, prepare the PR, wait for checks and required reviews, merge, publish, and verify. Default patch releases continue without another version or merge confirmation; minor and major increases require the user's separate second confirmation before version edits. A preparation-only request stops at the PR. CI continues to validate the package and release PR policy; it does not create tags or Releases.
 
 The agent verifies the release PR's merged commit is on upstream `main`, validates the declared version and matching log in a clean worktree at that commit, and creates `vX.Y.Z` there. It then publishes a GitHub Release named `vX.Y.Z` using the log verbatim. Only the authorized version is published. Prereleases are marked accordingly, and publication is verified before the agent reports the Release URL.
 

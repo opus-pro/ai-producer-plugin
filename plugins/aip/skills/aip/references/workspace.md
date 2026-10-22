@@ -1,6 +1,6 @@
 # AI Producer workspace format
 
-Before source upload, check the format and size: `.mp4`, `.mov`, or `.webm`; at most 1.5 GiB; up to 15 minutes by default. Read the duration only from metadata the host already provides; do not install a media tool to measure it. When the duration stays unknown, submit and let the service enforce the limit. Recommend compression for larger files. Exports follow the source frame rate by default, capped at 30 fps.
+Before source upload, check the format and size: `.mp4`, `.mov`, or `.webm`; at most 3.5 GiB; up to 30 minutes by default. Read the duration only from metadata the host already provides; do not install a media tool to measure it. When the duration stays unknown, submit and let the service enforce the limit. Recommend compression for larger files. Exports follow the source frame rate by default, capped at 30 fps.
 
 The entry is `render-engine/index.html`. Supporting documents go in `compositions/`, assets in `public/`, styles in `styles/`, and fonts in `fonts/`, all beneath `render-engine/`.
 

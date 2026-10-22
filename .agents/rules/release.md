@@ -1,6 +1,6 @@
 # release
 
-Follow this rule whenever asked to prepare or publish a release, bump the plugin version, align release metadata, or finish a merged release in this repository. Codex and Claude Code share this procedure. Preparation updates version files and a release log; after an authorized merge, the agent completes tag and GitHub Release publication by default using the user's authenticated GitHub identity. CI only validates; there is no publication workflow to wait for or rerun.
+Follow this rule whenever asked to prepare or publish a release, bump the plugin version, align release metadata, or finish a merged release in this repository. Codex, Claude Code, and Cursor share this procedure. Preparation updates version files and a release log; after an authorized merge, the agent completes tag and GitHub Release publication by default using the user's authenticated GitHub identity. CI only validates; there is no publication workflow to wait for or rerun.
 
 ## Request scope and progress
 
@@ -14,12 +14,14 @@ Keep working in the same session while checks or a merge queue progress. If requ
 
 `releases/latest_version.json` is the canonical declared plugin version. Its complete shape is `{"version": "X.Y.Z"}`. It records the version in the repository, not confirmation of publication on GitHub. The helper files `latest_version.json`, `reissues.json`, and `template.md` sort before the `vX.Y.Z.md` release logs by name.
 
-Keep these six values identical:
+Keep these eight values identical:
 
 - `releases/latest_version.json`: `version`.
 - `plugins/aip/.codex-plugin/plugin.json`: `version`.
 - `plugins/aip/.claude-plugin/plugin.json`: `version`.
+- `plugins/aip/.cursor-plugin/plugin.json`: `version`.
 - `.claude-plugin/marketplace.json`: the AIP entry's `version`.
+- `.cursor-plugin/marketplace.json`: the AIP entry's `version`.
 - `plugins/aip/.mcp.json`: `mcpServers.ai-producer.headers.X-AIP-Plugin-Version` and `mcpServers.ai-producer.http_headers.X-AIP-Plugin-Version`.
 
 Use SemVer without `v` in JSON, and with `v` in log names and PR titles. Prerelease and build suffixes are allowed, but a build-metadata-only change is not a version increase. A new version must have greater precedence than the verified published version, the starting version, and the current base branch version.
@@ -43,7 +45,7 @@ This version-selection step applies to preparing a new version. When completing 
 
 ## Reissue a deleted immutable Release
 
-Use this exception only when the user explicitly requests a metadata-only reissue of a deleted immutable GitHub Release. GitHub reserves the original tag name after deletion. A distinct `vX.Y.Z+reissue.N` tag may identify the same original release commit, but SemVer gives it the same precedence as `X.Y.Z`; it is not a plugin upgrade. Do not change the six plugin version fields, the original `releases/vX.Y.Z.md`, plugin files, or the production MCP deployment.
+Use this exception only when the user explicitly requests a metadata-only reissue of a deleted immutable GitHub Release. GitHub reserves the original tag name after deletion. A distinct `vX.Y.Z+reissue.N` tag may identify the same original release commit, but SemVer gives it the same precedence as `X.Y.Z`; it is not a plugin upgrade. Do not change the eight plugin version fields, the original `releases/vX.Y.Z.md`, plugin files, or the production MCP deployment.
 
 First verify the original release PR's merged commit and declared version, its ancestry on fresh upstream `main`, the latest published stable Release, and the original and proposed tag and Release states. Only HTTP 404 establishes absence; do not overwrite or move any existing tag or Release. Prepare a separate ordinary PR with `releases/reissues.json`, a `releases/reissue-vX.Y.Z.md` body explaining the deleted original and unchanged plugin, and any needed release-tooling guidance. The record names the original commit, original release PR, previous published version, notes file, and `vX.Y.Z+reissue.N` tag. Preserve the original release log. Run `python3 scripts/test.py`, inspect the full public diff and metadata, and wait for all required checks and human review before merging.
 
@@ -52,9 +54,9 @@ After that PR is merged, read its approved notes from fresh upstream `main`. Val
 ## Prepare a release PR
 
 1. Read `AGENTS.md`, `CONTRIBUTING.md`, the latest-version file, and the latest release log. Check the working tree and the current base branch. Follow the version-selection step above to verify GitHub Releases, choose the default patch target, and obtain any required minor or major confirmation before editing. Keep unrelated user changes intact and use a dedicated release branch or isolated worktree if needed. Functional changes must already be in the base branch.
-2. Run `python3 scripts/prepare_release.py X.Y.Z` with the selected version only after the version-selection step is complete. This validates the current copies, aligns all six version values, and copies `releases/template.md` into a new `releases/vX.Y.Z.md`. If existing versions disagree, inspect and resolve the discrepancy before preparing a new release.
+2. Run `python3 scripts/prepare_release.py X.Y.Z` with the selected version only after the version-selection step is complete. This validates the current copies, aligns all eight version values, and copies `releases/template.md` into a new `releases/vX.Y.Z.md`. If existing versions disagree, inspect and resolve the discrepancy before preparing a new release.
 3. Complete the new log using the format below. Replace placeholders in retained sections and delete unused sections and categories entirely. Use public information and preserve third-party notices; never include private data or invent validation results. Keep the full validation evidence and checks not run in the PR description even when the release log omits Validation.
-4. Run `python3 scripts/test.py` and the packaging checks required by `CONTRIBUTING.md`. Inspect the complete diff. A release PR may change only the version fields in the five JSON files above and add exactly one matching release log. Keep `template.md`, previous logs, rules, scripts, workflow configuration, and functional changes out of the release PR.
+4. Run `python3 scripts/test.py` and the packaging checks required by `CONTRIBUTING.md`. Inspect the complete diff. A release PR may change only the version fields in the seven JSON files above and add exactly one matching release log. Keep `template.md`, previous logs, rules, scripts, workflow configuration, and functional changes out of the release PR.
 5. Commit only the release files, fetch complete base and head history, and run `python3 scripts/check_release_pr.py --base origin/main --head HEAD --title 'chore: release vX.Y.Z'`, using the actual PR base when it differs from `main`. The committed PR diff is what this check validates.
 6. Push the release branch and open the PR with the exact title `chore: release vX.Y.Z`, replacing `X.Y.Z` with the version in the JSON files and log. Include the release summary and validation results in the PR description. Share the actual PR, Files changed, and Checks links. For a preparation-only request, finish here. For a full release request, continue with the steps below; opening the PR does not complete the task.
 
@@ -79,7 +81,7 @@ See the [release directory guide](../../releases/README.md) for legacy notes. Pu
 
 1. Use the local GitHub CLI authenticated as the user. Check `gh auth status --active --hostname github.com` and `gh api --hostname github.com user --jq .login`. Use this identity for both tag and Release creation. Do not use an Actions `GITHUB_TOKEN`, a bot account, or simulated CI environment variables. If authentication or repository access fails, report the exact blocker and leave publication pending; never print tokens or fall back to CI.
 2. Confirm the release PR is merged into `opus-pro/ai-producer-plugin` on `main`, and record its merged commit SHA with `gh pr view <pr-number> --repo opus-pro/ai-producer-plugin --json state,baseRefName,mergeCommit,url`. Fetch upstream main and verify that SHA is in its history. Use the release PR's merged commit, even if main has advanced; never tag the unmerged PR head or an arbitrary local HEAD.
-3. Use a clean detached worktree at that SHA to read `releases/latest_version.json` and its matching `releases/vX.Y.Z.md`. Confirm the version matches the authorized release and run `python3 scripts/test.py` there before any writes. This checks all six version values and the release log. Missing metadata, a missing log, or failed validation blocks publication. Publish only this declared version; do not scan historical logs to create other releases.
+3. Use a clean detached worktree at that SHA to read `releases/latest_version.json` and its matching `releases/vX.Y.Z.md`. Confirm the version matches the authorized release and run `python3 scripts/test.py` there before any writes. This checks all eight version values and the release log. Missing metadata, a missing log, or failed validation blocks publication. Publish only this declared version; do not scan historical logs to create other releases.
 4. Look up the remote tag with `gh api --hostname github.com repos/opus-pro/ai-producer-plugin/git/ref/tags/vX.Y.Z`. Only HTTP 404 means the tag is absent; authentication, permission, rate-limit, and network errors block publication. If the tag exists, leave it unchanged and follow the existing-tag procedure below. Never replace, move, or delete a tag or overwrite a Release.
 5. If the tag is absent, create it at the verified SHA with the command below, then create the GitHub Release with the log from the same worktree. Run these as separate steps: continue to Release creation only after successful tag creation. If another publisher creates the tag concurrently or a write has an uncertain result, inspect the remote tag and Release before continuing through the existing-tag procedure.
 6. Verify the remote tag resolves to the selected merged commit, and check the Release's URL, tag, title, body, draft status, and prerelease flag against the validated log and version. Report the published URL and checks actually run. A merged PR, a created tag, or a failed CLI command is not evidence that publication completed.
@@ -108,4 +110,4 @@ If the tag matches but the Release is absent, including after tag creation succe
 
 ## CI enforcement
 
-The `Release PR policy` check detects version changes regardless of title, checks the complete PR diff against the allowed files and fields, verifies all six version values and the new release log, and rejects version reuse or decreases. Historical release logs are append-only. Only during initial adoption, when neither the starting commit nor the current base has version tracking, may an ordinary tooling PR add historical logs at or below the declared version; existing logs cannot be changed. Ordinary PRs otherwise keep version values and logs unchanged; template or release-tooling changes belong in their own ordinary PRs. Repository maintainers must make this check required and require the branch to be up to date before merging.
+The `Release PR policy` check detects version changes regardless of title, checks the complete PR diff against the allowed files and fields, verifies all eight version values and the new release log, and rejects version reuse or decreases. Historical release logs are append-only. Only during initial adoption, when neither the starting commit nor the current base has version tracking, may an ordinary tooling PR add historical logs at or below the declared version; existing logs cannot be changed. Ordinary PRs otherwise keep version values and logs unchanged; template or release-tooling changes belong in their own ordinary PRs. Repository maintainers must make this check required and require the branch to be up to date before merging.

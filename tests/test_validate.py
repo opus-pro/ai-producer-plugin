@@ -18,7 +18,7 @@ validate = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = validate
 SPEC.loader.exec_module(validate)
 
-FIXTURE_PARTS = (".agents", ".claude-plugin", "plugins", "releases")
+FIXTURE_PARTS = (".agents", ".claude-plugin", ".cursor-plugin", "plugins", "releases")
 ENTRY_SKILL = Path("plugins/aip/skills/aip/SKILL.md")
 MCP_CONFIG = "plugins/aip/.mcp.json"
 
@@ -69,6 +69,61 @@ class ValidateFixtureTest(unittest.TestCase):
         (self.root / "plugins/aip/assets/icon-dark.png").unlink()
         with self.assertRaises(AssertionError):
             validate.validate_manifests(self.root)
+
+    def test_cursor_manifest_preserves_identity_and_version(self) -> None:
+        path = self.root / "plugins/aip/.cursor-plugin/plugin.json"
+        original = validate.load_json(path)
+        for field, value in (("name", "other"), ("repository", "https://example.invalid/plugin"), ("version", "999.0.0")):
+            with self.subTest(field=field):
+                path.write_text(json.dumps({**original, field: value}), encoding="utf-8")
+                with self.assertRaises(AssertionError):
+                    validate.validate_manifests(self.root)
+
+    def test_cursor_manifest_paths_must_resolve_inside_package(self) -> None:
+        path = self.root / "plugins/aip/.cursor-plugin/plugin.json"
+        original = validate.load_json(path)
+        for field in ("skills", "mcpServers", "logo"):
+            for value in ("../outside", "/tmp/outside", "https://example.invalid/asset", "./missing"):
+                with self.subTest(field=field, value=value):
+                    path.write_text(json.dumps({**original, field: value}), encoding="utf-8")
+                    with self.assertRaisesRegex(AssertionError, f"Cursor {field}"):
+                        validate.validate_manifests(self.root)
+
+    def test_cursor_skill_path_cannot_follow_external_symlink(self) -> None:
+        path = self.root / "plugins/aip/skills"
+        path.rename(self.root / "outside-skills")
+        path.symlink_to(self.root / "outside-skills", target_is_directory=True)
+        with self.assertRaisesRegex(AssertionError, "Cursor skills must stay within the package"):
+            validate.validate_manifests(self.root)
+
+    def test_cursor_marketplace_preserves_identity_source_and_version(self) -> None:
+        path = self.root / ".cursor-plugin/marketplace.json"
+        original = path.read_text(encoding="utf-8")
+        version = validate.load_json(self.root / "releases/latest_version.json")["version"]
+        mutations = (
+            ("name", "other"), ("source", "../outside"), ("source", "https://example.invalid/plugin"),
+            ("version", "999.0.0"), ("hooks", "./hooks.json"),
+        )
+        for field, value in mutations:
+            with self.subTest(field=field, value=value):
+                document = json.loads(original)
+                document["plugins"][0][field] = value
+                path.write_text(json.dumps(document), encoding="utf-8")
+                with self.assertRaises(AssertionError):
+                    validate.validate_marketplaces(self.root, version)
+        document = json.loads(original)
+        document["name"] = "other"
+        path.write_text(json.dumps(document), encoding="utf-8")
+        with self.assertRaises(AssertionError):
+            validate.validate_marketplaces(self.root, version)
+
+    def test_cursor_marketplace_rejects_extra_plugins(self) -> None:
+        path = self.root / ".cursor-plugin/marketplace.json"
+        document = validate.load_json(path)
+        document["plugins"].append(document["plugins"][0])
+        path.write_text(json.dumps(document), encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "exactly one plugin"):
+            validate.validate_marketplaces(self.root, document["plugins"][0]["version"])
 
     def test_legacy_or_duplicate_mcp_server_fails(self) -> None:
         path = self.root / MCP_CONFIG
@@ -143,7 +198,7 @@ class ValidateFixtureTest(unittest.TestCase):
 
     def test_stale_latest_version_fails(self) -> None:
         (self.root / "releases/latest_version.json").write_text('{"version": "0.0.1"}\n', encoding="utf-8")
-        with self.assertRaisesRegex(ValueError, "six version fields must match"):
+        with self.assertRaisesRegex(ValueError, "version fields must match"):
             validate.main(self.root)
 
     def test_missing_latest_release_log_fails(self) -> None:
@@ -184,7 +239,7 @@ class ValidateFixtureTest(unittest.TestCase):
             validate.main(self.root)
 
     def test_manifest_declaring_hooks_fails(self) -> None:
-        for directory in (".codex-plugin", ".claude-plugin"):
+        for directory in (".codex-plugin", ".claude-plugin", ".cursor-plugin"):
             with self.subTest(host=directory):
                 path = self.root / "plugins/aip" / directory / "plugin.json"
                 original = path.read_text(encoding="utf-8")
@@ -196,7 +251,7 @@ class ValidateFixtureTest(unittest.TestCase):
                 path.write_text(original, encoding="utf-8")
 
     def test_bundled_hook_file_fails(self) -> None:
-        for relative in ("hooks/hooks.json", ".claude-plugin/hooks.json", ".codex-plugin/hooks.json"):
+        for relative in ("hooks/hooks.json", ".claude-plugin/hooks.json", ".codex-plugin/hooks.json", ".cursor-plugin/hooks.json"):
             with self.subTest(path=relative):
                 path = self.root / "plugins/aip" / relative
                 path.parent.mkdir(parents=True, exist_ok=True)

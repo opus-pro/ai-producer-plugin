@@ -10,13 +10,13 @@ Python 3.9 or newer is sufficient for the offline checks:
 python3 scripts/test.py
 ```
 
-The suite validates both manifests, marketplace entries, MCP version headers, skill structure, package-relative Markdown links, the absence of lifecycle hooks, and the release rules. No authentication or hosted processing is performed.
+The suite validates all three host manifests, marketplace entries, MCP version headers, skill structure, package-relative Markdown links, the absence of lifecycle hooks, and the release rules. No authentication or hosted processing is performed.
 
-For packaging changes, validate the marketplace and bundle with Claude Code and test marketplace discovery in an isolated Codex profile. Report client versions and distinguish static validation from authenticated integration checks. CI runs on GitHub-hosted runners without service credentials; private integration checks are maintained separately.
+For packaging changes, validate the marketplace and bundle with Claude Code, test marketplace discovery in an isolated Codex profile, and load the local package in Cursor to confirm skill discovery and MCP server registration. Report client versions and distinguish static validation from authenticated integration checks. CI runs on GitHub-hosted runners without service credentials; private integration checks are maintained separately.
 
 ## Ownership and compatibility
 
-This repository publishes the client plugin. Its package (`plugins/aip/`) and both marketplace manifests are generated from OpusClip's plugin source, which also runs the package's behavioral tests, and reach this repository as reviewed pull requests; an edit made here directly is replaced by the next one. Report a problem with the package as an issue. Release history, release tooling, and this repository's documentation are edited here. Do not introduce employee environments, private fixtures, internal notification integrations, or organization-specific release orchestration.
+This repository publishes the client plugin. Its package (`plugins/aip/`) and all three marketplace manifests are generated from OpusClip's plugin source, which also runs the package's behavioral tests, and reach this repository as reviewed pull requests; an edit made here directly is replaced by the next one. Report a problem with the package as an issue. Release history, release tooling, and this repository's documentation are edited here. Do not introduce employee environments, private fixtures, internal notification integrations, or organization-specific release orchestration.
 
 Preserve the `ai-producer-plugins` marketplace identifier, `aip` plugin name, and `ai-producer` MCP server name unless a change includes an explicit migration. The plugin contains no lifecycle hooks or self-update commands. Users manage installation and updates through their client.
 
@@ -32,17 +32,19 @@ Verify workspace requirements against the service's current acceptance and playb
 
 ## Versions
 
-Follow the shared [release rule](.agents/rules/release.md) when preparing a version update. Codex reaches it through `AGENTS.md`; Claude Code imports it through `CLAUDE.md`. Merge functional changes through ordinary PRs first, then prepare a separate PR titled exactly `chore: release vX.Y.Z`, for example `chore: release v1.1.4`. Documentation-only or test-only changes do not require a plugin version bump.
+Follow the shared [release rule](.agents/rules/release.md) when preparing a version update. Codex and Cursor reach it through `AGENTS.md`; Claude Code imports it through `CLAUDE.md`. Merge functional changes through ordinary PRs first, then prepare a separate PR titled exactly `chore: release vX.Y.Z`, for example `chore: release v1.1.4`. Documentation-only or test-only changes do not require a plugin version bump.
 
-`releases/latest_version.json` is the canonical declared version. A release PR may change only the version fields in these five files and add the matching `releases/vX.Y.Z.md` log:
+`releases/latest_version.json` is the canonical declared version. A release PR may change only the version fields in these seven files and add the matching `releases/vX.Y.Z.md` log:
 
 - `releases/latest_version.json`: `version`.
 - `plugins/aip/.codex-plugin/plugin.json`: `version`.
 - `plugins/aip/.claude-plugin/plugin.json`: `version`.
+- `plugins/aip/.cursor-plugin/plugin.json`: `version`.
 - `.claude-plugin/marketplace.json`: the AIP entry's `version`.
+- `.cursor-plugin/marketplace.json`: the AIP entry's `version`.
 - `plugins/aip/.mcp.json`: `X-AIP-Plugin-Version` under both `headers` and `http_headers`.
 
-All six values must agree with the PR title and log version, and the version must increase in SemVer precedence over both the PR's starting version and the current base version. Prerelease and build suffixes are supported; a metadata-only change does not increase precedence. Other fields in those JSON files, other files, renames, deletions, and file-mode changes are not allowed in a release PR. Historical logs cannot be changed. Template and release-tooling changes belong in separate ordinary PRs.
+All eight values must agree with the PR title and log version, and the version must increase in SemVer precedence over both the PR's starting version and the current base version. Prerelease and build suffixes are supported; a metadata-only change does not increase precedence. Other fields in those JSON files, other files, renames, deletions, and file-mode changes are not allowed in a release PR. Historical logs cannot be changed. Template, release-tooling, and new host metadata belong in separate ordinary PRs. The checker accepts historical base commits and reissue sources that predate Cursor, while the current PR head must contain all host metadata.
 
 A deleted immutable GitHub Release may be reissued under an explicitly requested `vX.Y.Z+reissue.N` tag without changing the plugin package version. The reviewed record in `releases/reissues.json` and separate `releases/reissue-vX.Y.Z.md` notes belong in an ordinary PR; the new tag points to the original release commit. This does not signal a plugin upgrade. Follow the [reissue procedure](.agents/rules/release.md#reissue-a-deleted-immutable-release), including human approval and publication checks.
 
@@ -66,7 +68,7 @@ python3 scripts/check_release_pr.py --base origin/main --head HEAD --title 'chor
 
 Before preparing a new version, verify the latest published stable GitHub Release and compare it with the repository's declared version. Default to the next patch version. Minor or major increases require a separate second confirmation from the user before editing version files, even when the initial request specifies the bump type or exact target. Follow the shared [version-selection procedure](.agents/rules/release.md#choose-a-new-version) for discrepancies and confirmation details.
 
-Describe user-visible behavior and validation in the pull request. A full release request lets Codex or Claude Code prepare the PR, wait for required checks and reviews, merge under repository rules, and publish in the same session using the user's authenticated GitHub CLI session. Before edits, the agent announces the current and target versions with links to the current Release and pending changes; it shares the release log and PR inspection links as they become available and continues the default patch flow without another confirmation. Preparation-only requests stop at the PR. The agent creates the version tag at the release PR's merged commit on upstream `main` and publishes the matching log as the GitHub Release body. CI validates release PRs but does not publish. See [publication with a user account](releases/README.md#publication-with-a-user-account) for the shared procedure, existing tags, and failure recovery.
+Describe user-visible behavior and validation in the pull request. A full release request lets Codex, Claude Code, or Cursor prepare the PR, wait for required checks and reviews, merge under repository rules, and publish in the same session using the user's authenticated GitHub CLI session. Before edits, the agent announces the current and target versions with links to the current Release and pending changes; it shares the release log and PR inspection links as they become available and continues the default patch flow without another confirmation. Preparation-only requests stop at the PR. The agent creates the version tag at the release PR's merged commit on upstream `main` and publishes the matching log as the GitHub Release body. CI validates release PRs but does not publish. See [publication with a user account](releases/README.md#publication-with-a-user-account) for the shared procedure, existing tags, and failure recovery.
 
 ## Source and assets
 

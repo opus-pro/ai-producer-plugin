@@ -13,7 +13,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "scripts"))
 import prepare_release
 from check_release_pr import (
-    LATEST_VERSION_FILE, RELEASE_TEMPLATE, VERSION_FIELDS, release_log_path,
+    CURSOR_VERSION_FILES, LATEST_VERSION_FILE, RELEASE_TEMPLATE, VERSION_FIELDS, release_log_path,
     validate_release_log, version_fields_for, version_from_documents,
 )
 
@@ -85,9 +85,21 @@ class PrepareReleaseTest(unittest.TestCase):
         path = self.root / LATEST_VERSION_FILE
         path.write_text('{"version":"0.0.1"}\n')
         original = self.files()
-        with self.assertRaisesRegex(ValueError, "six version fields must match"):
+        with self.assertRaisesRegex(ValueError, "version fields must match"):
             prepare_release.prepare_release(self.root, self.target)
         self.assertEqual(self.files(), original)
+
+    def test_cursor_metadata_is_required_before_preparing_release(self) -> None:
+        for relative in CURSOR_VERSION_FILES:
+            with self.subTest(path=relative):
+                path = self.root / relative
+                contents = path.read_bytes()
+                path.unlink()
+                original = self.files()
+                with self.assertRaisesRegex(ValueError, "regular and non-executable"):
+                    prepare_release.prepare_release(self.root, self.target)
+                self.assertEqual(self.files(), original)
+                path.write_bytes(contents)
 
     def test_existing_log_is_not_overwritten(self) -> None:
         (self.root / release_log_path(self.target)).write_text("Existing notes.\n")
