@@ -16,7 +16,7 @@ Apply the user's brief and the [AI Producer text rules](../aip/SKILL.md#on-scree
 3. **The form, per moment.** Seat, overlay, and full cover each offer a short menu of forms in their chapters below. Name the register and the form in the plan.
 4. **The measurement, before you place.** Call `frame_speaker` with every window you will seat, overlay, cut out, or reframe, in as few calls as the limit allows: each window's `start` and `end` on the cut, a `slug`, `matte` (true only for a cutout), and the `slot` the speaker will occupy (the seat's rect, a circle's side twice, an aperture's hole, or the canvas for an overlay, a full-frame reframe, and a cutout). Read the task with `get_task`. Each window in its `result.windows` carries `presence` (skip a seat or an overlay where `seat_ok` is false and a cutout where `matte_ok` is false), `face` and `head` as source fractions, and for the slot `object_position` (paste its `css` onto the seat's `data-pip-src` view, or onto the root clip for a full-frame reframe), `head_in_slot`, and `fits`. When `fits.height` is false the slot is wider than the source's aspect allows at that height, so `object-fit: cover` is scaling the source to the slot's width and the head is drawn at that width: narrow the slot at the same height and the head shrinks with it, or give it at least `fits.min_slot_height`. Measure the revised slot before placing it: if `min_slot_height` did not fall, the slot is height-bound and only deepening helps, and a slot narrowed until `fits.width` turns false has gone too far. Never deepen the crop instead. For a canvas slot, `head_in_slot` is the head's box on the canvas, the area an overlay keeps clear. A cutout window takes and returns more; the [cutout reference](references/cutout.md) owns those fields. The call is free and takes at most 8 windows, with matte windows totalling at most 60 s a call; when the plan has more, split the windows across calls, keep every `slug` unique across them, and read each call's task.
 5. **The windows.** A register that shows the speaker is legal only over a window where the speaker is on camera. When the source cuts away to something the creator chose to show, let it play raw rather than covering it.
-6. **The caption band, per moment.** Captions stay on during a visual moment: the moment gives way to the band, not the reverse. Decide where the band sits for each moment from its layout chapter below (`Where the caption sits`), declare it on the moment host (`data-hide-captions="false"` with `data-caption-position`, and `data-caption-ink` only where the ground under the band is one the composition painted light), and pass the same windows to the caption call, which the [dynamic caption skill](../aip-dynamic-caption/SKILL.md) owns. Hide the band under a moment only for a `headline` overlay or a `statement` full cover (the spoken phrase drawn big), a `source-text` or `photo` full cover whose relevant detail must occupy the band and cannot move, or a stretch the brief wants silent; those windows go to `hide_intervals`. One whole-video `position` cannot serve a PIP and a full cover at once, so the per-moment anchor is what lets one video hold both.
+6. **The caption band, per moment.** Captions stay on during a visual moment: the moment gives way to the band, not the reverse. Decide where the band sits for each moment from its layout chapter below (`Where the caption sits`), and place the caption cues that play during that moment there, as the [dynamic caption skill](../aip-dynamic-caption/SKILL.md) says, in a dark type only where the ground under the band is one the composition painted light. Leave the captions out under a moment only for a `headline` overlay or a `statement` full cover (the spoken phrase drawn big), a `source-text` or `photo` full cover whose relevant detail must occupy the band and cannot move, or a stretch the brief wants silent. Each cue takes its own position, so one video holds a PIP and a full cover at once.
 
 ## Registers
 
@@ -68,12 +68,12 @@ The canvas decides where a seat may sit. A left or right column is a landscape l
 
 ### Where the caption sits under a seat
 
-Look at the seat the speaker actually occupies, not the source frame: measure the head in the seat, then give the band its own region outside the seat and outside the payload. The whole-video caption never shrinks into the seat, and a seat that cannot leave the band its head intact takes another framing (narrow it, or change register). The pixel rows below are the 1080x1920 and 1920x1080 zoning the design settled on; `data-caption-position` takes the first value for a pattern that centres on its anchor and the second for one that grows downward (`lead-in-flare`, `blur-ladder`, `editorial-stack`).
+Look at the seat the speaker actually occupies, not the source frame: measure the head in the seat, then give the band its own region outside the seat and outside the payload. The whole-video caption never shrinks into the seat, and a seat that cannot leave the band its head intact takes another framing (narrow it, or change register). The pixel rows below are the 1080x1920 and 1920x1080 zoning the design settled on; a cue is centred on the percent of the frame height each row gives.
 
 | canvas | the band | the payload | the seat |
 | --- | --- | --- | --- |
-| portrait 9:16 | between the payload and the seat, about y 920 to 1110: `data-caption-position` 53, or 50 | above the band, about y 265 to 770 | below the band, from about y 1240 (a `card` about 780x460) |
-| landscape 16:9 | the bottom band, about y 800 to 890: `data-caption-position` 78 (the service renders a single-row pattern on this canvas, so the band is one row) | beside the seat, ending above y 700 | a side column ending above y 700 |
+| portrait 9:16 | between the payload and the seat, about y 920 to 1110, centred at 53% | above the band, about y 265 to 770 | below the band, from about y 1240 (a `card` about 780x460) |
+| landscape 16:9 | the bottom band, about y 800 to 890, centred at 78%, one row | beside the seat, ending above y 700 | a side column ending above y 700 |
 
 ### What a seat keeps
 
@@ -101,7 +101,7 @@ Every overlay is one of these forms. Name the form and where it sits in the plan
 | form | what it is |
 | --- | --- |
 | `annotation` | drawn graphics, a short label, or an image placed in the area clear of the head |
-| `headline` | the phrase just spoken, drawn big as the beat's whole payload; its window goes to `hide_intervals`, because the captions would otherwise repeat the line |
+| `headline` | the phrase just spoken, drawn big as the beat's whole payload; no caption plays under it, because the captions would otherwise repeat the line |
 
 ### Overlay positions by canvas
 
@@ -119,8 +119,8 @@ The head, the payload, and the band avoid one another. The footage stays full-bl
 
 | canvas | the band | the payload |
 | --- | --- | --- |
-| portrait 9:16 | the lower third, about y 1400 to 1600: `data-caption-position` 78, or 72 for a growing pattern | below the head, about y 860 to 1250 |
-| landscape 16:9 | the bottom band, about y 800 to 890: `data-caption-position` 78 (the service renders a single-row pattern on this canvas, so the band is one row) | the open flank, ending above y 620 |
+| portrait 9:16 | the lower third, about y 1400 to 1600, centred at 78% | below the head, about y 860 to 1250 |
+| landscape 16:9 | the bottom band, about y 800 to 890, centred at 78%, one row | the open flank, ending above y 620 |
 
 ### What an overlay keeps
 
@@ -132,7 +132,7 @@ The head, the payload, and the band avoid one another. The footage stays full-bl
 
 - An overlay is an ordinary visual moment whose composition stays transparent: no `background` on the composition root or on any full-frame wrapper, the payload inside one positioned wrapper, and its entrance and exit on the moment's own paused child timeline. The composition contract's [editable speaker PIP](../aip-composition/references/pip-transition.md) example minus its ground and its speaker view is an overlay.
 - It embeds no video: no `data-pip-src` view and no copy of the source, because the root speaker underneath is the picture. Leave the root speaker's geometry to the root timeline.
-- Declare the window's caption policy on the host (`data-hide-captions="false"` and its `data-caption-position`) and pass it to the caption call as a caption window. A `headline` is the exception: pass its window as `hide_intervals`, because the captions would otherwise repeat the phrase the headline draws.
+- The caption cues of the overlay's window sit in its band (`Where the caption sits under an overlay`). A `headline` is the exception: no caption plays under it, because the captions would otherwise repeat the phrase the headline draws.
 
 ## Full cover
 
@@ -162,12 +162,12 @@ The canvas decides how a page is laid out.
 
 ### Where the caption sits on a full cover
 
-Settle the band first, then compose the payload in the space it leaves: the animation recentres, scales, and moves inside that space, and the band must not cross an arrow's end, a compared result, a value, or a legend through the whole entry and exit. Check the frames where the speaker shows briefly at the switch. Only where the ground under the band is one this composition painted light (a pale panel, a light style the brief asked for) add `data-caption-ink` with a hex that contrasts with that ground (`#0a0c12` on a pale ground); the default black canvas keeps the white type, so the ink is a per-moment call, never a full-cover default, and never over footage or a photo, which move under the words. A `statement` hides the captions, and so does a `source-text` or `photo` whose relevant detail must occupy the band and cannot move up.
+Settle the band first, then compose the payload in the space it leaves: the animation recentres, scales, and moves inside that space, and the band must not cross an arrow's end, a compared result, a value, or a legend through the whole entry and exit. Check the frames where the speaker shows briefly at the switch. Only where the ground under the band is one this composition painted light (a pale panel, a light style the brief asked for) give the cues there a type colour that contrasts with that ground (`#0a0c12` on a pale ground); the default black canvas keeps the white type, so a dark type is a per-moment call, never a full-cover default, and never over footage or a photo, which move under the words. A `statement` hides the captions, and so does a `source-text` or `photo` whose relevant detail must occupy the band and cannot move up.
 
 | canvas | the band | the payload |
 | --- | --- | --- |
-| portrait 9:16 | about y 1390 to 1590: `data-caption-position` 78, or 72 for a growing pattern | recentred above the band, about y 360 to 1060 |
-| landscape 16:9 | the bottom band, about y 800 to 890: `data-caption-position` 78 (the service renders a single-row pattern on this canvas, so the band is one row) | above the band, about y 160 to 630 |
+| portrait 9:16 | about y 1390 to 1590, centred at 78% | recentred above the band, about y 360 to 1060 |
+| landscape 16:9 | the bottom band, about y 800 to 890, centred at 78%, one row | above the band, about y 160 to 630 |
 
 ### What a full cover keeps
 
@@ -179,7 +179,7 @@ Settle the band first, then compose the payload in the space it leaves: the anim
 
 - A full cover is an ordinary visual moment whose composition root paints the opaque ground (`position: absolute; inset: 0` with a solid `background`), with the payload's entrance and exit on the moment's own paused child timeline. The composition contract's [editable speaker PIP](../aip-composition/references/pip-transition.md) example minus its speaker view is a full cover.
 - It embeds no speaker view. The root speaker and its audio keep playing underneath at their ordinary geometry; end a zoom effect before the full cover starts.
-- Declare the window's caption policy on the host and pass it to the caption call as a caption window; a `statement`, or a payload whose relevant detail must occupy the band, goes to `hide_intervals` instead. Reference every image through `src` so the hand-back check sees it.
+- The caption cues of the cover's window sit in its band; under a `statement`, or a payload whose relevant detail must occupy the band, no caption plays. Reference every image through `src` so the hand-back check sees it.
 
 ## The speaker beat
 
