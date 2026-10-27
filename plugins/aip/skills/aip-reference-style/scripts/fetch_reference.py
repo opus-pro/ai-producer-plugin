@@ -3,8 +3,8 @@
 
 usage: fetch_reference.py <post url> <output directory> [--browser auto|firefox|chrome]
 
-Without --browser it never touches the browser: it fetches the post signed out, with the current
-yt-dlp release and its JavaScript challenge solver, and writes <output directory>/reference.<ext>,
+Without --browser it never touches the browser: it fetches the post signed out, with the yt-dlp
+release this plugin pins and its JavaScript challenge solver, and writes <output directory>/reference.<ext>,
 the video only, at no more than 1080p (the smallest video when nothing at 1080p or below exists),
 and never more than its first ten minutes. When the platform answers with a sign-in or bot wall it
 stops with status sign_in_required, the browsers it could borrow a sign-in from, and the gated ones
@@ -41,9 +41,13 @@ import sys
 import tempfile
 from urllib.parse import urlparse
 
-# The only process that sees the whole browser jar: a reviewed release, pinned, run with no URL, so it
-# reads the browser and writes the jar on exit without a request. Raise it with a plugin release.
-COOKIE_READER = ["uvx", "--from", "yt-dlp==2026.10.21", "yt-dlp", "--ignore-config"]
+# Every yt-dlp run uses this reviewed release, so the plugin never fetches and runs code nobody pinned.
+# The platforms change often: raise it, with the solver pin its `default` extra names, every plugin release.
+YT_DLP_RELEASE = "2026.10.26"
+YT_DLP_EJS_RELEASE = "0.8.0"
+# The only process that sees the whole browser jar, run with no URL, so it reads the browser and writes
+# the jar on exit without a request.
+COOKIE_READER = ["uvx", "--from", f"yt-dlp=={YT_DLP_RELEASE}", "yt-dlp", "--ignore-config"]
 FORMAT = "bv*[height<=1080]/b[height<=1080]/wv*/w"
 MAX_SECONDS = 600
 PROBE_TIMEOUT_SECONDS = 240
@@ -83,10 +87,10 @@ def run(cmd, timeout):
 
 
 def downloader():
-    """The yt-dlp command to run: the current release through uvx with the challenge solver beside it."""
+    """The yt-dlp command to run: the pinned release through uvx with the challenge solver beside it."""
     # Without the solver YouTube offers only storyboard images, so no other launcher stands in for uvx.
     if shutil.which("uvx"):
-        return ["uvx", "--with", "yt-dlp-ejs", "yt-dlp@latest"]
+        return ["uvx", "--with", f"yt-dlp-ejs=={YT_DLP_EJS_RELEASE}", "--from", f"yt-dlp=={YT_DLP_RELEASE}", "yt-dlp"]
     return None
 
 
