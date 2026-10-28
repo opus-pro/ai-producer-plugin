@@ -6,6 +6,7 @@ usage: reference_frames.py <reference video or image directory> <output director
                            --band <top>:<bottom> [--entry <seconds>]
        reference_frames.py <image directory> <output directory> --caption-kit <still>[:<still>][,...]
                            --band <top>:<bottom>
+       reference_frames.py <reference video> <output directory> --visuals <seconds>[,...]
 
 Needs ffmpeg and ffprobe on PATH. Writes contact sheets of the analyzed span, then per
 beat a keyframe and a frame strip, transition pages that straddle every hard cut between
@@ -26,6 +27,9 @@ writes each image as stills/still-NN.jpg and reference-index.json naming them, w
 cuts or transitions, which stills cannot show. Its --caption-kit names stills by number, a
 still showing a caption and optionally a still of the same shot without one, each copied at
 the image's own resolution, and kit.jpg sets their caption bands side by side with no entry row.
+
+--visuals writes visuals/visual-<seconds>.jpg instead: the frame at each contact-sheet time at the
+reference's own resolution, for reading one graphic's type, colour and layout in detail.
 """
 from __future__ import annotations
 
@@ -423,6 +427,18 @@ def stack_kit(rows, tmp, kit):
     ffmpeg(["-i", str(stacked), "-vf", f"scale=trunc(iw*{scale:.4f}/2)*2:-2", "-q:v", "2", str(kit / "kit.jpg")], "kit.jpg")
 
 
+def visual_frames(video, out, times):
+    """Each time's frame at the reference's own resolution, for the detail a graphic's keyframe and strip are too small for."""
+    require_tools()
+    (out / "visuals").mkdir(parents=True, exist_ok=True)
+    names = []
+    for t in times:
+        name = f"visuals/visual-{t:.2f}.jpg"
+        ffmpeg(["-ss", f"{t:.3f}", "-i", str(video), "-frames:v", "1", "-q:v", "2", str(out / name)], name)
+        names.append(name)
+    return {"visuals": names}
+
+
 def reference_images(reference):
     """The images a reference directory holds, in name order; None when the reference is a video."""
     if not reference.is_dir():
@@ -497,8 +513,14 @@ def main(argv):
     parser.add_argument("--caption-kit", type=lambda s: [p for p in s.split(",") if p])
     parser.add_argument("--band", type=seconds_pair)
     parser.add_argument("--entry", type=float)
+    parser.add_argument("--visuals", type=lambda s: [float(t) for t in s.split(",") if t])
     args = parser.parse_args(argv[1:])
     images = reference_images(args.reference)
+    if args.visuals:
+        if images is not None:
+            parser.error("--visuals needs a video: a reference of stills is read at its own resolution already")
+        print(json.dumps(visual_frames(args.reference, args.out, args.visuals)))
+        return
     if args.caption_kit and not args.band:
         parser.error("--caption-kit needs --band <top>:<bottom>")
     if images is not None:
