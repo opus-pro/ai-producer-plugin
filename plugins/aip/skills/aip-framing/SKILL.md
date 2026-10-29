@@ -119,7 +119,7 @@ The head, the payload, and the band avoid one another. The footage stays full-bl
 
 | canvas | the band | the payload |
 | --- | --- | --- |
-| portrait 9:16 | the lower third, about y 1400 to 1600, centred at 78% | below the head, about y 860 to 1250 |
+| portrait 9:16 | the lower third, about y 1340 to 1530, centred at 75% | below the head, about y 860 to 1250 |
 | landscape 16:9 | the bottom band, about y 800 to 890, centred at 78%, one row | the open flank, ending above y 620 |
 
 ### What an overlay keeps
@@ -166,7 +166,7 @@ Settle the band first, then compose the payload in the space it leaves: the anim
 
 | canvas | the band | the payload |
 | --- | --- | --- |
-| portrait 9:16 | about y 1390 to 1590, centred at 78% | recentred above the band, about y 360 to 1060 |
+| portrait 9:16 | about y 1340 to 1530, centred at 75% | recentred above the band, about y 360 to 1060 |
 | landscape 16:9 | the bottom band, about y 800 to 890, centred at 78%, one row | above the band, about y 160 to 630 |
 
 ### What a full cover keeps

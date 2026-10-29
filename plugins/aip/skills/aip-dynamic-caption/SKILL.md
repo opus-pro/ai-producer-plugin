@@ -37,7 +37,7 @@ The EditingScript sync refuses a cut change while caption moments are mounted (`
     <style>
       @font-face { font-family: "Inter"; font-weight: 700; src: url("public/fonts/Inter-700.woff2") format("woff2"); }
       [data-composition-id="captions-01"] .cue {
-        position: absolute; left: 8%; right: 8%; top: 70%; transform: translateY(-50%);
+        position: absolute; left: 8%; right: 12%; top: 70%; transform: translateY(-50%);
         text-align: center; font: 700 64px/1.15 "Inter"; color: #ffffff;
         text-shadow: 0 3px 12px rgba(0, 0, 0, 0.6); visibility: hidden;
       }
@@ -76,6 +76,6 @@ When the user's edit copies a reference, the [reference style skill](../aip-refe
 
 These hold over the default, a reference and the user's words:
 
-- Every word stays wholly inside the frame's safe area for its whole time on screen, at its largest scale in any entrance or emphasis: 8% of the width clear on each side, and on a portrait canvas clear of the platform's buttons on the right edge and its caption bar at the bottom.
+- Every word stays wholly inside the frame's safe area for its whole time on screen, at its largest scale in any entrance or emphasis: the safe area the [aesthetic rules](../aip/references/aesthetic-rules.md) set for the canvas, clear of a portrait canvas's platform buttons on the right edge and its caption bar at the bottom.
 - A cue wraps inside its box rather than shrinking; split a cue that would take a third line instead of making its type smaller.
-- No cue plays under a `headline` overlay or a `statement` full cover, which already draw the phrase, or under a full cover whose detail must occupy the band; drop those cues, and the whole moment when every cue falls there.
+- No cue plays under a `headline` overlay or a `statement` full cover, which already draw the phrase, under a logo with text or a quote card, which the aesthetic rules give their beat alone, or under a full cover whose detail must occupy the band; drop those cues, and the whole moment when every cue falls there.
