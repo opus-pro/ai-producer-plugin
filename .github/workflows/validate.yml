@@ -15,7 +15,9 @@ concurrency:
 
 jobs:
   offline:
-    runs-on: ubuntu-latest
+    # Pinned: setup-python publishes no Python 3.9 build for Ubuntu 26.04, which ubuntu-latest now names, and the
+    # shipped scripts must keep running on 3.9.
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     strategy:
       fail-fast: false
