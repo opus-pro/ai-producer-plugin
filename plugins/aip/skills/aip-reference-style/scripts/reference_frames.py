@@ -7,6 +7,7 @@ usage: reference_frames.py <reference video or image directory> <output director
        reference_frames.py <image directory> <output directory> --caption-kit <still>[:<still>][,...]
                            --band <top>:<bottom>
        reference_frames.py <reference video> <output directory> --visuals <seconds>[,...]
+       reference_frames.py <reference video> <output directory> --hook-span <start>:<end>
 
 Needs ffmpeg and ffprobe on PATH. Writes contact sheets of the analyzed span, then per
 beat a keyframe and a frame strip, transition pages that straddle every hard cut between
@@ -30,6 +31,10 @@ the image's own resolution, and kit.jpg sets their caption bands side by side wi
 
 --visuals writes visuals/visual-<seconds>.jpg instead: the frame at each contact-sheet time at the
 reference's own resolution, for reading one graphic's type, colour and layout in detail.
+
+--hook-span writes hook-spans/hook-span-<start>-<end>-NN.jpg instead: that stretch at the reference's own frame
+rate, at most HOOK_SPAN_MAX_FPS, each frame labeled with its time, HOOK_SPAN_COLUMNS x HOOK_SPAN_ROWS frames to a
+sheet, for how one graphic of a preset's hook enters, moves and leaves while its whole pack is built.
 """
 from __future__ import annotations
 
@@ -84,6 +89,14 @@ LABEL = "drawtext=text='%{{pts\\:hms}}':x=4:y=4:fontsize={size}:fontcolor=yellow
 NAME_LABEL = "drawtext=text='{text}':x=6:y=6:fontsize={size}:fontcolor=yellow:box=1:boxcolor=black@0.6"
 # How a caption arrives: the band from --entry, at this rate, for this long, in one row.
 KIT_ENTRY_FPS = 12
+# One hook graphic's span at the reference's own frame rate, so a glitch or flash two frames long still shows; a 60 fps
+# reference is read at half its rate, and a long span takes more sheets rather than fewer frames.
+HOOK_SPAN_MAX_FPS = 30
+HOOK_SPAN_COLUMNS = 8
+HOOK_SPAN_ROWS = 4
+HOOK_SPAN_FRAME_WIDTH = 240
+# A hook is at most about six seconds; a longer span is not one graphic.
+HOOK_SPAN_MAX_SECONDS = 8.0
 KIT_ENTRY_FRAMES = 6
 KIT_GAP = 6
 KIT_MAX_SIDE = 1568
@@ -439,6 +452,35 @@ def visual_frames(video, out, times):
     return {"visuals": names}
 
 
+def probe_fps(video):
+    out = run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=avg_frame_rate",
+               "-of", "csv=p=0", str(video)])
+    num, _, den = out.stdout.strip().partition("/")
+    try:
+        return float(num) / float(den or 1)
+    except (ValueError, ZeroDivisionError):
+        return float(HOOK_SPAN_MAX_FPS)
+
+
+def hook_span_sheets(video, out, span):
+    """A hook graphic's span at the reference's frame rate up to HOOK_SPAN_MAX_FPS, one labeled sheet per HOOK_SPAN_COLUMNS x
+    HOOK_SPAN_ROWS frames."""
+    require_tools()
+    start, end = span
+    if end <= start:
+        raise ValueError(f"--hook-span needs <start>:<end> with end after start, got {start}:{end}")
+    if end - start > HOOK_SPAN_MAX_SECONDS:
+        raise ValueError(f"--hook-span covers one graphic, at most {HOOK_SPAN_MAX_SECONDS:g} s; got {end - start:g} s")
+    (out / "hook-spans").mkdir(parents=True, exist_ok=True)
+    stem = f"hook-span-{start:.2f}-{end:.2f}"
+    fps = round(min(HOOK_SPAN_MAX_FPS, probe_fps(video)), 3)
+    chain = frame_chain(fps, HOOK_SPAN_FRAME_WIDTH, start, has_drawtext(), 14)
+    chain.append(f"tile={HOOK_SPAN_COLUMNS}x{HOOK_SPAN_ROWS}:padding=3:color=white")
+    render(video, start, end - start, chain, out / "hook-spans" / f"{stem}-%02d.jpg")
+    sheets = sorted(f"hook-spans/{p.name}" for p in (out / "hook-spans").glob(f"{stem}-*.jpg"))
+    return {"hook_spans": sheets, "fps": fps}
+
+
 def reference_images(reference):
     """The images a reference directory holds, in name order; None when the reference is a video."""
     if not reference.is_dir():
@@ -514,12 +556,21 @@ def main(argv):
     parser.add_argument("--band", type=seconds_pair)
     parser.add_argument("--entry", type=float)
     parser.add_argument("--visuals", type=lambda s: [float(t) for t in s.split(",") if t])
+    parser.add_argument("--hook-span", type=seconds_pair)
     args = parser.parse_args(argv[1:])
     images = reference_images(args.reference)
     if args.visuals:
         if images is not None:
             parser.error("--visuals needs a video: a reference of stills is read at its own resolution already")
         print(json.dumps(visual_frames(args.reference, args.out, args.visuals)))
+        return
+    if args.hook_span:
+        if images is not None:
+            parser.error("--hook-span needs a video: stills show no motion")
+        try:
+            print(json.dumps(hook_span_sheets(args.reference, args.out, args.hook_span)))
+        except ValueError as error:
+            parser.error(str(error))
         return
     if args.caption_kit and not args.band:
         parser.error("--caption-kit needs --band <top>:<bottom>")

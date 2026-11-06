@@ -28,6 +28,8 @@ Read project sources with `list_workspace` and `get_workspace_file`; stage uploa
 
 ## Local handoff
 
+Locally, the workspace is the `render-engine/` directory inside the project's [working folder](../SKILL.md#working-folder), never one straight in the current folder; `<render-engine-root>` below is its full path.
+
 Write a media, image, stylesheet, `data-composition-src`, or `data-pip-src` reference, and a CSS `url(...)` inside an HTML document, from the render-engine root whichever directory holds the document: the editor mounts a composition's template into `index.html`, so a document in `compositions/` references an image as `public/images/example.jpg` and a stylesheet as `styles/theme.css`, exactly as `index.html` does. A `../public/...` or `../styles/...` path from a composition names a file above the served root; the editor cannot load it and `commit_workspace` refuses it as `missing_reference`. Only a `<script src>` inside a composition is written from the composition's own file (`../public/vendor/gsap.min.js`, or `../public/vendor/three.min.js` for Three.js, which the service writes once a committed document names it), because the export loads the composition as its own page; the editor re-points a vendor script by file name. A `url(...)` inside a `.css` file under `styles/` resolves from that file, as CSS does.
 
 The bundled helpers require Python 3.9 or newer on the client host, invoked as `python3`, or as `py -3` on Windows. Without an interpreter, upload with the host's batch HTTP tools and skip the local check: submit and let admission report contract errors, rather than installing a runtime as part of the video task.

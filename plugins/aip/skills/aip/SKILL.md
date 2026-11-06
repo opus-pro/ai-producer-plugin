@@ -7,6 +7,10 @@ description: "Create or update an editable AI Producer video. Use when someone p
 
 Create one editable AI Producer preview from the user's footage and creative brief. Shape the edit around the user's intent, the footage, and its audience.
 
+## Working folder
+
+Every project, a new one or a change to an existing one, keeps the files you make on this computer in a working folder of its own. At its start, before you download or write anything for it, create a new folder in the current folder with `mktemp -d ./aip-XXXXXXXX`; where `mktemp` is missing, `python3 -c 'import tempfile; print(tempfile.mkdtemp(prefix="aip-", dir="."))'` (`py -3` in place of `python3` on Windows), or in PowerShell without Python `New-Item -ItemType Directory -Path "aip-$([guid]::NewGuid().ToString('N').Substring(0,8))"`. Name it by its full path from then on. Everything you make for the project goes under it: the local `render-engine/` workspace, a downloaded reference, preset or copy of the footage, reference frames and the caption kit, drafts and the checkpoint, a headless browser's profile, and every other scratch file. Never write to a fixed path, such as `/tmp/aipwork` or a `render-engine/` straight in the current folder, and never read or reuse a folder you did not create for this project unless the user hands it to you: another session can be editing on this computer at the same time, and a folder an earlier project left holds that project's files. The user's own files are read where they are.
+
 ## Targeted changes to an existing project
 
 When the request targets an existing AI Producer project, begin from its current saved edit and make only the requested change. Do not upload the source again, restart project preparation, or change its settings unless the user asks.
@@ -116,6 +120,8 @@ Once preparation has started, plan in the creative direction below and research 
 ## Delivery boundary
 
 Deliver the editable project link by default. Treat "finished video" or "final cut" as a completed preview, not an explicit MP4 request. Export only when the user explicitly requests an MP4, rendered video file, or export. For an authorized export, wait for completion and return its link without opening, playing, sampling, or analyzing the output.
+
+Each time you hand the project back, the first delivery and every later edit, call `finish_project` once after the last commit is accepted, before any export and before the reply that hands it back. Until then the project page shows the edit as still in progress and keeps its editor locked, so the user cannot review the cut or adjust it by hand. Finishing does not export, freeze, or charge for the project. A project made in the AI Producer web app takes no `finish_project` and refuses it; for one, the final commit's `authoring: false` is what ends that status.
 
 Do not inspect the generated preview or MP4, including browser playback, screenshots, contact sheets, frame extraction, audio analysis, or delegated inspection. Do not start a post-delivery review, repair, or aesthetic iteration. This stopping condition applies whether the deliverable is a preview or an explicitly requested export. Input-media analysis, including retrieved source assets, local static contract checks before submission, and the [reference style skill](../aip-reference-style/SKILL.md)'s local caption matching remain allowed.
 
