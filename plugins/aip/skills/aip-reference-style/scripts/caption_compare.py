@@ -11,11 +11,18 @@ usage:
       faces in order as "<n> <file> #<index> <family> / <style>". Needs fontTools, like `fonts`.
   caption_compare.py extract <font file> <index> <out.ttf>
       One face of a collection (.ttc / .otc) as its own file.
-  caption_compare.py compare <out.png> <frame>=<page> [<frame>=<page> ...] [--crop X,Y,W,H] [--t SECONDS]
+  caption_compare.py page <out.html> <composition.html> --root <render-engine dir> [--under <image>]
+                          [--host-style "<css>"]
+      A page that mounts one composition the way the edit does, over <image> (the frame it is compared with) or
+      a black canvas, with the project's GSAP, fonts and images from <root>/public, and seeks the composition's
+      timeline to ?t=<seconds>. <out.html> goes in a directory of its own, beside a `public` link to the root's;
+      --host-style is the CSS its host carries in index.html, such as a blend or a backdrop filter.
+  caption_compare.py compare <out.png> <frame>=<page>[@<seconds>] [...] [--crop X,Y,W,H] [--t SECONDS]
       Renders each page in headless Chrome at its frame's pixel size and sets it beside that frame, frame on the
       left; pairs stack top to bottom in one image. --crop keeps one region of both (fractions of the frame), at
-      full resolution; --t is passed to every page as ?t=<seconds>. Pages load over HTTP from their own
-      directory, so their relative fonts and images resolve.
+      full resolution; a pair's @<seconds>, else --t, is passed to its page as ?t=<seconds>, so one image holds a
+      graphic's entrance, peak and exit. Pages load over HTTP from their own directory, so their relative fonts
+      and images resolve.
 
 It measures and draws nothing on its own: what to compare, and whether the two match, is the caller's call.
 """
@@ -24,6 +31,7 @@ import html
 import http.server
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -131,7 +139,10 @@ def render(browser, page, width, height, out, t):
     server = serve(str(page.parent))
     try:
         url = f"http://127.0.0.1:{server.server_port}/{page.name}" + (f"?t={t}" if t is not None else "")
-        base = [browser, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--force-device-scale-factor=1",
+        # `out` sits in this call's own temporary directory, so the profile is never shared with another run.
+        profile = os.path.join(os.path.dirname(os.path.abspath(out)), "chrome-profile")
+        base = [browser, "--headless=new", f"--user-data-dir={profile}", "--disable-gpu", "--hide-scrollbars",
+                "--force-device-scale-factor=1",
                 f"--window-size={width},{height}", "--virtual-time-budget=8000", f"--screenshot={out}"]
         for extra in ([], ["--single-process", "--no-zygote"]):
             subprocess.run(base + extra + [url], capture_output=True, timeout=120)
@@ -208,27 +219,84 @@ def specimen(args):
         shutil.rmtree(work, ignore_errors=True)
 
 
+COMPOSITION_ID = re.compile(r'data-composition-id="([^"]+)"')
+TEMPLATE = re.compile(r"<template>(.*)</template>", re.S)
+GSAP_TAG = re.compile(r'<script[^>]*src="[^"]*gsap[^"]*"[^>]*>\s*</script>')
+# The page mounts the composition at its root, as index.html does, so a path written from compositions/ points
+# one level up for the same file.
+PARENT_PUBLIC = re.compile(r"(\.\./)+public/")
+SIZE = re.compile(r'data-(width|height)="(\d+)"')
+SEEK = """<script>
+  const seekTo = Number(new URLSearchParams(location.search).get("t") || 0);
+  document.fonts.ready.then(() => {{
+    const tl = window.__timelines[{cid}];
+    if (tl) tl.seek(seekTo, false);
+    document.body.dataset.seeked = String(seekTo);
+  }});
+</script>"""
+
+
+def page(args):
+    options, rest = split_options(args, ("--root", "--under", "--host-style"))
+    if len(rest) != 2 or "root" not in options:
+        fail('page <out.html> <composition.html> --root <render-engine dir> [--under <image>] [--host-style "<css>"]')
+    out, composition = Path(rest[0]).resolve(), Path(rest[1]).resolve()
+    source = composition.read_text(encoding="utf-8")
+    body, cid = TEMPLATE.search(source), COMPOSITION_ID.search(source)
+    if not body or not cid:
+        fail(f"{composition} holds no <template> with a data-composition-id")
+    inner = PARENT_PUBLIC.sub("public/", GSAP_TAG.sub("", body.group(1)))
+    size = {name: int(value) for name, value in SIZE.findall(source)}
+    width, height = size.get("width", 1080), size.get("height", 1920)
+    public = Path(options["root"]).resolve() / "public"
+    if not (public / "vendor" / "gsap.min.js").is_file():
+        fail(f"{public}/vendor/gsap.min.js is missing: the edit fetches this project's copy there before the matches "
+             "start; a match reads no other project")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    link = out.parent / "public"
+    if not link.exists():
+        link.symlink_to(public, target_is_directory=True)
+    under = ""
+    if "under" in options:
+        image = Path(options["under"]).resolve()
+        name = f"{out.stem}-under{image.suffix.lower()}"
+        shutil.copyfile(image, out.parent / name)
+        under = f'<img src="{name}" style="position:absolute;inset:0;width:{width}px;height:{height}px">'
+    host = html.escape(options.get("host-style", ""), quote=True)
+    out.write_text(
+        "<!doctype html><meta charset=utf-8>"
+        f"<style>html,body{{margin:0;width:{width}px;height:{height}px;overflow:hidden;background:#000}}</style>"
+        # The player creates the registry before any composition registers its timeline in it.
+        '<script src="public/vendor/gsap.min.js"></script><script>window.__timelines = {};</script>'
+        f'<div style="position:relative;width:{width}px;height:{height}px">{under}'
+        f'<div class="visual-host" style="position:absolute;inset:0;{host}">{inner}</div></div>'
+        + SEEK.format(cid=json.dumps(cid.group(1))),
+        encoding="utf-8")
+    print(out)
+
+
 def compare(args):
     options, rest = split_options(args, ("--crop", "--t"))
     if len(rest) < 2:
-        fail("compare <out.png> <frame>=<page> [...] [--crop X,Y,W,H] [--t SECONDS]")
+        fail("compare <out.png> <frame>=<page>[@<seconds>] [...] [--crop X,Y,W,H] [--t SECONDS]")
     out = rest[0]
     crop = [float(x) for x in options["crop"].split(",")] if "crop" in options else None
     t = float(options["t"]) if "t" in options else None
     pairs = []
     for arg in rest[1:]:
-        frame, _, page = arg.partition("=")
-        if not page:
-            fail(f"expected <frame>=<page>, got {arg}")
-        pairs.append((Path(frame).resolve(), Path(page).resolve()))
+        frame, _, target = arg.partition("=")
+        target, at, when = target.rpartition("@") if "@" in target else (target, "", "")
+        if not target:
+            fail(f"expected <frame>=<page>[@<seconds>], got {arg}")
+        pairs.append((Path(frame).resolve(), Path(target).resolve(), float(when) if at else t))
     browser = chrome()
     work = tempfile.mkdtemp(prefix="caption-compare-")
     rows = []
     try:
-        for n, (frame, page) in enumerate(pairs):
+        for n, (frame, target, when) in enumerate(pairs):
             width, height = size_of(str(frame))
             shot = os.path.join(work, f"page{n}.png")
-            render(browser, page, width, height, shot, t)
+            render(browser, target, width, height, shot, when)
             row = os.path.join(work, f"row{n}.png")
             if crop:
                 region = crop_filter(crop, width, height)
@@ -253,7 +321,7 @@ def compare(args):
 
 
 def main():
-    commands = {"fonts": fonts, "specimen": specimen, "extract": extract, "compare": compare}
+    commands = {"fonts": fonts, "specimen": specimen, "extract": extract, "page": page, "compare": compare}
     if len(sys.argv) < 2 or sys.argv[1] not in commands:
         print(__doc__.strip())
         sys.exit(len(sys.argv) >= 2 and sys.argv[1] not in ("-h", "--help"))

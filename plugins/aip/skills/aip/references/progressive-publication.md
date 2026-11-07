@@ -6,7 +6,7 @@ Use this path for a fresh prepared project with no visual effects. Plan once, ge
 
 Read `list_workspace` once: require no staged files, retain its digest and confirmed remote paths. In the same initialization execution, fetch `render-engine/compositions/editing-script.json` with `get_workspace_file` and save its complete content locally without printing its word data. Keep the fetched document's source and tracks; do not invent a replacement. Write a base `index.html` with the full planned duration, no visual hosts, and continuous paired speaker/audio clips. Each pair uses the same `data-hf-id`, output starts and durations, with explicit IDs, sources, `data-media-start`, `data-track-index`, and `data-volume`. A deliberate rough cut can shorten the source; progressive effects cannot shorten that planned output.
 
-Keep the checkpoint and drafts outside `render-engine/`. Initialize before authoring the first effect:
+`$TASK_ROOT` is the full path of the project's [working folder](../SKILL.md#working-folder), which holds the live `render-engine/` workspace; keep the checkpoint and drafts in it, outside `render-engine/`. Initialize before authoring the first effect:
 
 ```sh
 python3 "$AIP_SKILL/scripts/progressive_checkpoint.py" init \
@@ -53,7 +53,7 @@ The helper prepares and publishes each step automatically: wait for the precedin
 
 After its first draft is prepared, a nonfinal batch emits `batch_publishing` and yields once while keeping publication awaited, so the model can write the next batch. An automatic host timeout before that marker means the prior batch is still being joined; resume that execution before authoring another batch. Otherwise continue authoring immediately, without model turns to poll or collect already-accepted receipts from earlier cells. The next checkpoint joins publication locally, and the final batch awaits completion and returns cumulative warning codes for delivery. No live receipt from cross-execution memory is needed. Without live yielded executions, await each batch serially. Never detach a promise that the host would discard.
 
-The checkpoint preserves duration, speaker/audio timing, earlier effects and file hashes, exact accepted paths, and the receipt digest. Draft validation failures leave the live workspace unchanged. Static checks preserve the composition contract, not visual quality. No extra task, heartbeat, transcript read, `finish_project`, export, or playback inspection is needed.
+The checkpoint preserves duration, speaker/audio timing, earlier effects and file hashes, exact accepted paths, and the receipt digest. Draft validation failures leave the live workspace unchanged. Static checks preserve the composition contract, not visual quality. Publication needs no extra task, heartbeat, transcript read, export, or playback inspection; the hand-back's `finish_project` belongs to the [delivery boundary](../SKILL.md#delivery-boundary).
 
 ## After a failed batch
 

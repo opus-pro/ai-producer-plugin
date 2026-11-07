@@ -38,7 +38,9 @@ The connection is something only the user can complete, in their own client. Nam
 - **Claude Code:** run `/mcp`, select `plugin:aip:ai-producer`, and finish signing in.
 - **Cursor:** open Customize > MCPs > ai-producer > Authenticate and finish signing in. Use Cursor's own connection control, not a Codex or Claude Code command.
 
-When a refusal carries its own recovery sentence, pass its meaning on in plain words alongside this step, since it is written for the client that called. Do not build an authorization link, do not suggest reinstalling the plugin, and do not change any MCP configuration: none of these connects the account, and each can break a working install. Then ask the user to tell you when they have finished, and wait.
+Skills installed on their own, such as with `npx skills add`, arrive without the `ai-producer` server, so there is nothing to sign in to. When the user finds no AI Producer server where the step above points, they add it once in their own terminal: `claude mcp add --transport http --scope user ai-producer https://producer.opus.pro/api/mcp` for Claude Code, where `/mcp` then lists it as `ai-producer`, or `codex mcp add ai-producer --url https://producer.opus.pro/api/mcp` for Codex; any other client adds an HTTP MCP server named `ai-producer` at that URL in its own MCP settings. Then they start a new chat, sign in as above, and say "continue AI Producer setup" there.
+
+When a refusal carries its own recovery sentence, pass its meaning on in plain words alongside this step, since it is written for the client that called. Do not build an authorization link, do not suggest reinstalling the plugin, and do not change an existing MCP configuration: none of these connects the account, and each can break a working install. Then ask the user to tell you when they have finished, and wait.
 
 ## 2. Confirm the connection
 
