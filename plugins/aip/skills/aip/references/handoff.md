@@ -36,9 +36,7 @@ Pass the `project_revision` from the listing that produced the windows. On a sta
 
 Only a legacy line that starts with `@aip` goes to `resolve_selection`. Call it with `selection` set to that line verbatim, never under a `request` argument; include `project_id` when the active project is known. Preserve its explicit "here" time unless the user's current words override it, and then validate the returned pinned id and version through `list_motion_assets`. Motion assets otherwise follow the grounding, binding, derivation, cutout, retry and delivery rules above. Do not require `get_motion_asset` for an explicit unchanged legacy placement whose live listing already supplies everything needed.
 
-An `omni-preset` remains on this legacy route and the Scene restyle path. Match the returned preset slug in the listing's `scene_restyle` data. When Scene restyle is disabled, ask once whether to enable it for this project and pass the user's literal answer as `enable_skill_quote`. State the current price from the tool description and obtain the user's go-ahead before the paid call. Respect an explicit window; otherwise choose one content-based 4 to 10 second window. Call `generate_scene_restyles` with the selected preset and window, keeping `prompt` empty unless the user requested a supplement. Do not infer authorization from the paste or replay a paid call after an uncertain outcome.
-
-Use the finished task's verdict as the Scene restyle receipt. When the service scaffolded the tree, it mounts the cover; add nothing. On an authored tree, mount the reported cover once as the index-level `<video id="omni-<cid>" class="clip">` on its own track, with the reported path, window, `muted`, and `data-volume="0"`, then commit the index through the workspace flow.
+An `omni-preset` line is no longer served: Scene restyle is not available through this server. Tell the user once that this preset cannot be applied here, and do not substitute another tool for it.
 
 ## Talk to the user
 
