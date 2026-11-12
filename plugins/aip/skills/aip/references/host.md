@@ -1,0 +1,42 @@
+# Sign-in and progress on this host
+
+How this host repairs a lost sign-in, shows the user the project and the presets beside the conversation, and writes the project link the user gets. The [AI Producer skill](../SKILL.md) says when each part applies.
+
+## Sign-in repair
+
+**The host reports that the MCP server requires OAuth reauthentication, or this plugin's tools are absent from the tool list with nothing else offered to explain it.** This is the client validating the credential it stores locally, not a service fault. No request leaves the client, so no service error exists to read and nothing can be retried or repaired from inside the conversation. Signing in clears it, but the session that hit it does not reliably reload the tools, so do not wait for them and do not deliberate over whether to. When the host reports a condition of its own, such as the service being unreachable or a network failure, that is a different problem and signing in does not address it: report what it means for the user's project instead of running this flow.
+
+1. Ask the user to sign in once in their own client, naming the step for the host they are on as the [setup skill](../../aip-setup/SKILL.md)'s Connect the account section gives it, with the same things not to do, and keep everything around it in product language.
+2. Then ask the user to start a new chat and resume the work there. The hosts differ: in Codex the user @-mentions this plugin, and in Claude Code or Cursor the user makes the request again with AI Producer enabled. State exactly what carries over: an existing project keeps its footage and its edit behind its project link, while anything the failed connection prevented from reaching AI Producer has to be sent again.
+
+## The presets page
+
+With a link and at least one preset, open the link beside the conversation as the progress sections below say for this host. The link is single-use and short-lived, which is another reason to mint it only right before the question. A session with no built-in browser, such as Claude Code or Codex in a terminal, or Cursor, and a host that refuses to open it, gives the user the presets page in the first option instead: the answer's `agent_page_url` as a link to open in their own browser, never the single-use `url`, which is spent or expired by the time a reader clicks it in the conversation. Under it list up to five presets by their look, each with its `preset_id` to answer with, since a preset's name is often a bare code, and say the page shows the rest.
+
+## Show progress in Codex
+
+In Codex, when an AI Producer creation/preparation tool returns `project_id`, call `get_view_url` at once, unless a new project's [reference question](../SKILL.md#ask-for-a-reference) is still unanswered: then wait for the answer and call it right after, so the presets stay beside the conversation until the user has chosen. In the same code-mode call, parse its single-use `url` and durable `agent_page_url` with `URL`. Require the same origin and the expected `/p/<project_id>` path. On the project URL, replace its query with `mcp=1&embed=1` followed by the original parameters other than `mode`, `mcp`, and `embed`; preserve `host` and other parameters. Set only the exchange URL's `next` parameter to that project path plus query and fragment; preserve its ticket and all other parameters. Pass the resulting exchange URL directly to `open_in_codex` with `target: {type: "browser", url: <exchange url>}` and `placement: "right"`, omitting `threadId`. Open during preparation, or right after the reference answer as above; use the transformed `agent_page_url` for any later reopening in that browser. The exchange URL is single-use: do not fetch it separately or include it in messages or files.
+
+The presets a new project's question points to open the same way: pass the `url` that `get_view_url` without `project_id` returned straight to `open_in_codex` with the same browser target and placement, without rewriting it, since it already lands on the presets. Open them right before the question, once the project has started, never while the upload runs. Open the project's progress page, as above, only once the question is answered.
+
+In Codex, for every user-facing project link, including the link given when a run starts, the final reply, and follow-up handoffs, parse `page_url` with `URL` and replace its query with `mcp=1&embed=0` followed by the original parameters other than `mode`, `mcp`, and `embed`; preserve `host` and other parameters. Never give the user the exchange URL or `agent_page_url`.
+
+## Show progress in Claude Code
+
+In the Claude desktop app, Claude Code has a built-in browser that shows in the panel beside the conversation. Its tools are named `mcp__Claude_Browser__*`, or `mcp__remote-devices__Claude_Browser__*` in a cloud session linked to the user's computer; when they are deferred, load them with one ToolSearch call on that prefix, and when only `enable__mcp__remote-devices__Claude_Browser` is offered, call it first. A session with none of these, such as Claude Code in a terminal or a headless run, skips this section: the project link in the reply is the handoff.
+
+When an AI Producer creation/preparation tool returns `project_id`, call `get_view_url` at once, unless a new project's [reference question](../SKILL.md#ask-for-a-reference) is still unanswered: then wait for the answer and call it right after, so the presets stay beside the conversation until the user has chosen. Its single-use `url` carries the project page in its percent-encoded `next` parameter; set `embed=1` in that page's query (append `%26embed%3D1` to `next`, or change an `embed` already there to `1`), keeping the ticket and every other parameter, and pass the result as `url` to the browser's `preview_start`. The browser keeps its own sign-in, apart from the user's own browser, so it opens through this exchange URL, never through `agent_page_url` alone. Open during preparation, or right after the reference answer as above; to show the page again later in that browser, pass `agent_page_url` with `embed=1` to `preview_start`.
+
+The presets a new project's question points to open the same way: pass the `url` that `get_view_url` without `project_id` returned straight to `preview_start`, without rewriting it, since it already lands on the presets. Open them right before the question, once the project has started, never while the upload runs. Open the project's progress page, as above, only once the question is answered.
+
+Then show the page: call `mcp__ccd_view__show_pane` with `pane: "preview"`, loading it with one ToolSearch call when it is deferred, after the first `preview_start` and after any later one. `preview_start` opens the page but leaves the side panel as it was, so without this the user sees only a card in the conversation, not the page beside it. The call changes only this session's view and does nothing when the session is not on screen; continue editing either way, and skip it in a session that does not offer the tool. Call only `preview_start` and `show_pane`: do not read, screenshot, navigate, or click the page. If the browser asks the user to allow the site and they decline, say so once and keep editing. Never give the user the exchange URL or `agent_page_url`.
+
+## The progress page in Codex and Claude Code
+
+In either host, opening the progress page is a status-only handoff to the user, not inspection. Use no external browser or computer-use action that returns page content. Keep the tab for live updates without reopening, refreshing, polling, playing, or inspecting it.
+
+`queued` means pending. Retry an explicit failure at most once with the same tool, obtaining a fresh exchange URL only if the first may have been consumed. If unavailable or still failing, report it and continue editing; never claim the page opened.
+
+## Preview and references in Cursor
+
+In Cursor, parse the durable `page_url` with `URL`, remove `mode` and `threadId`, and set `mcp=1`, `embed=0`, and `host=cursor`, preserving unrelated query parameters. Deliver that normal browser link. Do not use the Codex panel-opening flow or invent a Cursor conversation id or deep link. The project page's Copy for agent action copies the reference for the user to paste into the chat; it does not inject or send a message. When that reference arrives with an edit request, resolve it and apply the targeted change as for any existing project.
