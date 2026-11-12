@@ -5,11 +5,11 @@ description: "Set up AI Producer: connect the user's account, confirm the connec
 
 # Set up AI Producer
 
-This skill gets the user from a fresh install to one real AI Producer project, then stops. Its first success is a project AI Producer has accepted and started preparing, never an edited video. Everything after that, the cut, captions, and motion graphics, belongs to the [aip skill](../aip/SKILL.md).
+This skill gets the user from a fresh install to one real AI Producer project. Its first success is a project AI Producer has accepted and started preparing, never an edited video. Everything after that, the cut, captions, and motion graphics, belongs to the [aip skill](../aip/SKILL.md): with a computer, setup hands over to it after step 3 and it goes on to edit; without one, setup stops at step 6.
 
 It is safe to run again. Each time, start at step 1 and skip what is already done. In a new chat, "continue AI Producer setup" picks up where the user left off: a connection that already works skips steps 1 and 2, and a project this conversation already started skips straight to step 6 with it.
 
-Talk to the user as the aip skill's Talk to the user section says: in their language, about their account and their video, never about tools, servers, codes, or this skill.
+Talk to the user as the aip skill's Talk to the user section says: in their language, about their account and their video, never about tools, servers, codes, or this skill. The one exception is the connect step below, which names the server entry and, when the user has to add it, its URL, because the user selects or types them.
 
 ## Which conversation you are in
 

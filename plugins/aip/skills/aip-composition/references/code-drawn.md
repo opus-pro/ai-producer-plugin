@@ -14,7 +14,7 @@ Draw on a canvas when the beat needs:
 - a shader-driven surface: a field, flow, glow or distortion no set of elements can paint;
 - data too dense for DOM: hundreds of points, particles or cells.
 
-Titles, cards, lists, counters, simple charts, callouts and anything the user may want to retype or restyle stay DOM, and can sit over a canvas in the same moment. A canvas is one leaf in the editor, so none of what it draws can be selected or edited there; it costs more to render; and it fails blank rather than degraded when its lifecycle is wrong, so follow the rules below exactly.
+Titles, cards, lists, counters, simple charts, callouts and anything the user may want to retype or restyle stay DOM, and can sit over a canvas in the same moment. A canvas costs more to render, and it fails blank rather than degraded when its lifecycle is wrong, so follow the rules below exactly.
 
 ## What the service provides
 
@@ -39,7 +39,6 @@ The local [preflight](../../aip/scripts/preflight.py) reports the same codes bef
 - Create the context on the first draw inside the window, not at load. A released or lost context cannot be recreated on the same element: replace the canvas with `canvas.cloneNode(false)` first.
 - Size the canvas to the composition (`width="1080" height="1920"` for a portrait project) and position it absolutely; DOM text such as a label sits over it as ordinary elements.
 - Keep data inline and fetch nothing.
-- A canvas is one leaf to the editor: the user can move, trim or delete the moment, not edit what it draws.
 
 ## Canvas 2D
 
