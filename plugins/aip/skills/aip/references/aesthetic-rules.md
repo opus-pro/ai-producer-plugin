@@ -49,7 +49,7 @@ When a sentence names both a real thing and a concept, show the one that carries
 ## 2. Rhythm: short and dense
 
 - Keep the rhythm the reference or the creative direction sets, but no two neighboring beats are more than 6 s apart.
-- Without a reference, showcase shots cover at least 70% of the runtime. With a reference, keep its balance between speaker and showcase shots, but never below 50%. Speaker shots join the showcase shots and keep the speaker present.
+- Without a reference, showcase shots cover at least 70% of the runtime. With a reference, keep its balance between speaker and showcase shots, but never below 50%. The floor outranks a reference or style pack that shows no showcase shot, such as one whose graphics all sit over the speaker: build the showcase shots it lacks in its look. Speaker shots join the showcase shots and keep the speaker present.
 - When there is a lot to show, split it into consecutive showcase shots of 2 to 4 s each; no single picture holds for 10 s.
 - Two neighboring showcase shots never look the same: change the layout, the arrangement or the kind of material.
 
@@ -124,6 +124,16 @@ A logo that carries text, a wordmark or a mark set with a name, is itself a set 
 - When content follows the logo, such as a feature list or selling points, make it two beats: the logo alone first, then the content, with the captions back in the content beat.
 
 Why: a logo and a caption are both words. Together, two faces and two weights compete for one glance, and the viewer cannot tell the brand from what the speaker is saying.
+
+### 3.5 Layout variety
+
+A **layout family** is where a graphic sits against the speaker and the frame and how its parts are arranged: a heading with a line of text over the speaker, a label or sticker beside the speaker, an object or icon card, full-cover type, a full-cover drawing or diagram, a split, a seat, a cutout of the speaker over a graphic, real imagery full frame. Graphics in one family differ only in their words or picture: eight title cards over the speaker are one family.
+
+- No layout family carries more than about a third of the edit's graphic beats.
+- The family changes at least every 10 s or so: no run of graphic beats in one family lasts longer.
+- A reference decides how each family looks, never that the edit keeps to the families it shows: a family the reference never shows, built in its look, is in its style.
+
+Why: one arrangement repeated beat after beat reads as a template filled in, every scene the same heading and text, and the viewer stops seeing new information once the screen stops changing shape.
 
 ## 4. Punch-in
 
