@@ -54,8 +54,21 @@ def _number(value, default=None):
     return number if math.isfinite(number) else None
 
 
+def _lane_file(attrs):
+    """A speaker clip's file as a whole path, without a query or a leading ``./`` or ``/``."""
+    path = re.split(r"[?#]", str(attrs.get("src") or "").strip(), maxsplit=1)[0]
+    while path.startswith("./"):
+        path = path[2:]
+    return path.lstrip("/")
+
+
 def _source_at(clips, start):
-    """The source second playing at output second ``start``, or None off the cut."""
+    """The source second playing at output second ``start``, or None off the cut. Also None
+    on a lane that plays more than one file: a source second there belongs to one of them,
+    and an anchor names its file in ``data-source-id``, which only the service can match
+    to a path. The service's commit check is the authority for those anchors."""
+    if len({_lane_file(attrs) for attrs in clips}) > 1:
+        return None
     for attrs in clips:
         clip_start = _number(attrs.get("data-start"))
         clip_duration = _number(attrs.get("data-duration"))
