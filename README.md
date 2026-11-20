@@ -10,8 +10,15 @@
 
 <p align="center">
   <a href="https://producer.opus.pro/plugin"><strong>Get started</strong></a> &nbsp; | &nbsp;
+  <a href="https://producer.opus.pro/download?ref=plugin_readme">Desktop app</a> &nbsp; | &nbsp;
   <a href="https://producer.opus.pro/docs">Documentation</a>
 </p>
+
+## Prefer an app?
+
+AI Producer Desktop runs your own Claude Code or Codex in a desktop app, with the editor built in.
+
+[Download for Mac](https://producer.opus.pro/download?ref=plugin_readme) | [Download for Windows](https://producer.opus.pro/download?ref=plugin_readme)
 
 ## Where it runs
 
