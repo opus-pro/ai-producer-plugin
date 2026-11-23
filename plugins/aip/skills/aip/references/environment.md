@@ -22,12 +22,13 @@ A page you check here before publishing stays inside this project, because other
 ```bash
 WORK=<full path of the working folder>; SERVE=<directory to serve, inside it>; PAGE=<page, relative to SERVE>
 PORT=$(python3 -c 'import random; print(random.randint(20000, 59999))')
-python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$SERVE" > "$WORK/server-$PORT.log" 2>&1 &
-PID=$!; sleep 1
-if kill -0 "$PID" 2>/dev/null && curl -fsS "http://127.0.0.1:$PORT/$PAGE" | cmp - "$SERVE/$PAGE"; then echo "http://127.0.0.1:$PORT/$PAGE pid $PID"; else cat "$WORK/server-$PORT.log"; kill "$PID" 2>/dev/null; fi
+python3 -u -m http.server "$PORT" --bind 127.0.0.1 --directory "$SERVE" > "$WORK/server-$PORT.log" 2>&1 &
+PID=$!
+for _ in $(seq 100); do if grep -q '^Serving HTTP' "$WORK/server-$PORT.log" || ! kill -0 "$PID" 2>/dev/null; then break; fi; sleep 0.2; done
+if grep -q '^Serving HTTP' "$WORK/server-$PORT.log" && kill -0 "$PID" 2>/dev/null && curl -fsS "http://127.0.0.1:$PORT/$PAGE" | cmp - "$SERVE/$PAGE"; then echo "http://127.0.0.1:$PORT/$PAGE pid $PID"; else cat "$WORK/server-$PORT.log"; kill "$PID" 2>/dev/null; fi
 ```
 
-Keep the log rather than sending it to `/dev/null`: a failed start is reported there. When it does not print a URL, read the log and run the block again. Stop the server with `kill` and the pid it printed, and only that pid; `pkill -f` or killing by port also stops other sessions' servers. Where this shell is missing, such as PowerShell on Windows, follow the same steps with that shell's own commands and `py -3`. This server does not answer byte-range requests, so a video in the page cannot seek and stays on its first frame: put a still of that moment in its place for the check.
+Keep the log rather than sending it to `/dev/null`: a failed start is reported there, and the server writes its `Serving HTTP` line there only once it holds the port, so a page another session serves on the same port is never taken for this one. When it does not print a URL, read the log and run the block again. Stop the server with `kill` and the pid it printed, and only that pid; `pkill -f` or killing by port also stops other sessions' servers. Where this shell is missing, such as PowerShell on Windows, follow the same steps with that shell's own commands and `py -3`. This server does not answer byte-range requests, so a video in the page cannot seek and stays on its first frame: put a still of that moment in its place for the check.
 
 ## A conversation with no computer
 

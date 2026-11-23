@@ -96,7 +96,7 @@ class ReleasePRTest(unittest.TestCase):
         self.write_document(path, document)
         self.assertIn("ordinary PR", self.check("fix: clarify the plugin"))
 
-    def remove_cursor_metadata(self, paths: frozenset[str] = policy.CURSOR_VERSION_FILES) -> dict[str, bytes]:
+    def remove_metadata(self, paths: frozenset[str] = policy.CURSOR_VERSION_FILES) -> dict[str, bytes]:
         originals = {}
         for relative in paths:
             path = self.root / relative
@@ -104,46 +104,55 @@ class ReleasePRTest(unittest.TestCase):
             path.unlink()
         return originals
 
-    def restore_cursor_metadata(self, originals: dict[str, bytes]) -> None:
+    def restore_metadata(self, originals: dict[str, bytes]) -> None:
         for relative, contents in originals.items():
             path = self.root / relative
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(contents)
 
     def test_ordinary_pr_can_add_cursor_to_legacy_base_and_merge_base(self) -> None:
-        originals = self.remove_cursor_metadata()
+        originals = self.remove_metadata()
         ancestor = self.commit()
         (self.root / "README.md").write_text("New base content.\n", encoding="utf-8")
         base_tip = self.commit()
         self.git("checkout", "--detach", ancestor)
-        self.restore_cursor_metadata(originals)
+        self.restore_metadata(originals)
         self.assertIn("ordinary PR", self.check("feat: support Cursor", base=base_tip))
 
     def test_ordinary_pr_can_read_legacy_merge_base_after_base_adopts_cursor(self) -> None:
-        originals = self.remove_cursor_metadata()
+        originals = self.remove_metadata()
         ancestor = self.commit()
-        self.restore_cursor_metadata(originals)
+        self.restore_metadata(originals)
         base_tip = self.commit()
         self.git("checkout", "--detach", ancestor)
-        self.restore_cursor_metadata(originals)
+        self.restore_metadata(originals)
         (self.root / "README.md").write_text("Updated fixture.\n", encoding="utf-8")
         self.assertIn("ordinary PR", self.check("feat: support Cursor", base=base_tip))
 
-    def test_cursor_files_are_required_at_current_head(self) -> None:
-        for relative in policy.CURSOR_VERSION_FILES:
+    def test_host_files_are_required_at_current_head(self) -> None:
+        for relative in policy.HOST_ADOPTION_FILES:
             with self.subTest(path=relative):
                 self.git("reset", "--hard", self.base)
                 (self.root / relative).unlink()
                 with self.assertRaisesRegex(ValueError, "must exist"):
-                    self.check("fix: remove Cursor metadata")
+                    self.check("fix: remove host metadata")
 
-    def test_release_cannot_introduce_cursor_metadata(self) -> None:
-        originals = self.remove_cursor_metadata()
-        self.base = self.commit()
-        self.restore_cursor_metadata(originals)
-        self.set_version("0.8.34")
-        with self.assertRaisesRegex(ValueError, "ordinary PR before a release"):
-            self.check()
+    def test_release_cannot_introduce_host_metadata(self) -> None:
+        for paths in (policy.CURSOR_VERSION_FILES, policy.ANTIGRAVITY_VERSION_FILES):
+            with self.subTest(paths=paths):
+                self.git("reset", "--hard", self.base)
+                originals = self.remove_metadata(paths)
+                legacy = self.commit()
+                self.restore_metadata(originals)
+                self.set_version("0.8.34")
+                with self.assertRaisesRegex(ValueError, "ordinary PR before a release"):
+                    self.check(base=legacy)
+
+    def test_ordinary_pr_can_add_antigravity_to_legacy_base(self) -> None:
+        originals = self.remove_metadata(policy.ANTIGRAVITY_VERSION_FILES)
+        legacy = self.commit()
+        self.restore_metadata(originals)
+        self.assertIn("ordinary PR", self.check("feat: support Antigravity", base=legacy))
 
     def test_legacy_cursor_metadata_still_must_have_matching_versions(self) -> None:
         path = "plugins/aip/.cursor-plugin/plugin.json"
@@ -156,21 +165,22 @@ class ReleasePRTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "version fields must match"):
             self.check("fix: align Cursor metadata")
 
-    def test_legacy_snapshots_reject_partial_cursor_metadata(self) -> None:
-        for relative in policy.CURSOR_VERSION_FILES:
-            with self.subTest(path=relative):
-                self.git("reset", "--hard", self.base)
-                self.remove_cursor_metadata(frozenset({relative}))
-                historical = self.commit()
-                with self.assertRaisesRegex(ValueError, "Historical Cursor metadata must include both"):
-                    policy.snapshot(self.root, historical, allow_legacy=True)
+    def test_legacy_snapshots_reject_partial_host_metadata(self) -> None:
+        for host, paths in (("Cursor", policy.CURSOR_VERSION_FILES), ("Antigravity", policy.ANTIGRAVITY_VERSION_FILES)):
+            for relative in paths:
+                with self.subTest(path=relative):
+                    self.git("reset", "--hard", self.base)
+                    self.remove_metadata(frozenset({relative}))
+                    historical = self.commit()
+                    with self.assertRaisesRegex(ValueError, f"Historical {host} metadata must include both"):
+                        policy.snapshot(self.root, historical, allow_legacy=True)
 
     def add_reissue_record(self, *, missing_cursor_files: frozenset[str] = frozenset()) -> None:
         self.set_version("1.2.8")
         shutil.copyfile(REPO / "releases/v1.2.8.md", self.root / "releases/v1.2.8.md")
-        originals = self.remove_cursor_metadata(missing_cursor_files)
+        originals = self.remove_metadata(missing_cursor_files)
         source_commit = self.commit()
-        self.restore_cursor_metadata(originals)
+        self.restore_metadata(originals)
         self.base = source_commit
         record_path = self.root / policy.REISSUES_FILE
         record = json.loads((REPO / policy.REISSUES_FILE).read_text())

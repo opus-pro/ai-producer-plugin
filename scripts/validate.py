@@ -19,7 +19,8 @@ import sys
 from pathlib import Path
 
 from check_release_pr import (
-    VERSION_FIELDS, reject_constant, release_log_path, unique_object,
+    ANTIGRAVITY_MANIFEST_FILE, ANTIGRAVITY_MCP_FILE, VERSION_FIELDS,
+    reject_constant, release_log_path, unique_object,
     reissues_on_disk, validate_release_log, version_from_documents,
 )
 
@@ -161,6 +162,19 @@ def validate_mcp(root: Path, version: str) -> None:
         )
 
 
+def validate_antigravity(root: Path) -> None:
+    manifest = load_json(root / ANTIGRAVITY_MANIFEST_FILE)
+    assert manifest["name"] == PLUGIN_DIRNAME, "unexpected Antigravity plugin identity"
+    assert manifest["repository"] == EXPECTED_REPOSITORY, "unexpected Antigravity repository"
+
+    shared = load_json(plugin_dir(root) / ".mcp.json")["mcpServers"][MCP_SERVER_NAME]
+    config = load_json(root / ANTIGRAVITY_MCP_FILE)
+    expected_server = {"url": shared["url"], "headers": shared["headers"]}
+    assert config == {"mcpServers": {MCP_SERVER_NAME: expected_server}}, (
+        "Antigravity MCP config must carry the shared production URL and headers"
+    )
+
+
 def validate_releases(root: Path, version: str) -> None:
     documents = {}
     for relative in VERSION_FIELDS:
@@ -230,11 +244,12 @@ def main(root: Path = ROOT) -> None:
     validate_marketplaces(root, version)
     validate_mcp(root, version)
     validate_releases(root, version)
+    validate_antigravity(root)
     validate_skill_structure(root)
     validate_host_hooks(root)
     validate_relative_links(root)
     validate_notices(root)
-    print(f"Validated {PLUGIN_DIRNAME} {version} for Codex, Claude Code, and Cursor")
+    print(f"Validated {PLUGIN_DIRNAME} {version} for Codex, Claude Code, Cursor, and Antigravity")
 
 
 if __name__ == "__main__":

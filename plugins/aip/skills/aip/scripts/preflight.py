@@ -2,6 +2,7 @@
 """Check a local AI Producer workspace without network, media decoding, or rendering."""
 
 import argparse
+from fnmatch import fnmatchcase
 from html.parser import HTMLParser
 import json
 import math
@@ -9,6 +10,7 @@ from pathlib import Path
 import re
 from urllib.parse import unquote, urlsplit
 from editing_script_sync import EDITING_SCRIPT, sync_workspace, validate_workspace
+import source_files
 import speaker_effects
 
 CSS_URL = re.compile(r"url\(\s*(['\"]?)(.*?)\1\s*\)", re.I)
@@ -27,6 +29,19 @@ PROMOTABLE_SUFFIXES = {
 # Files the service writes in the same commit that first names them, so a document may load
 # one before it exists locally or in the workspace.
 SERVICE_WRITTEN = ("public/vendor/three.min.js", speaker_effects.ENGINE)
+
+# A target whose workspace already holds files the service put there ships their list beside
+# this script, as glob patterns from the workspace root: the hosted session's project holds
+# AIP's runtime scripts and the timeline's waveform peaks. One standing in the tree is the
+# service's, so the type check passes it; a missing one is still a missing reference unless
+# declared. A target without the list holds none.
+SERVICE_FILES = Path(__file__).with_name("service_files.json")
+
+
+def service_file_patterns():
+    if not SERVICE_FILES.is_file():
+        return ()
+    return tuple(json.loads(SERVICE_FILES.read_text(encoding="utf-8"))["present"])
 
 # The commit's code-drawn rules, judged on a document whose script paints a canvas; the
 # composition skill's code-drawn reference explains each code. Comments never count, and
@@ -130,12 +145,13 @@ def check(root, remote_files=()):
     documents = {}
     declared = set()
 
-    def issue(collection, code, path=None, attribute=None):
+    def issue(collection, code, path=None, attribute=None, **detail):
         item = {"code": code}
         if path is not None:
             item["file"] = path.relative_to(root).as_posix()
         if attribute:
             item["attribute"] = attribute
+        item.update(detail)
         if item not in collection:
             collection.append(item)
 
@@ -169,12 +185,15 @@ def check(root, remote_files=()):
             issue(errors, "missing_local_reference", owner, attribute)
         return candidate
 
+    service_files = service_file_patterns()
     for path in sorted(root.rglob("*")):
         # Hidden entries are editor and OS metadata, never part of a publication.
         if not path.is_file() or any(part.startswith(".") for part in path.relative_to(root).parts):
             continue
         suffix = path.suffix.lower()
-        if suffix not in PROMOTABLE_SUFFIXES and path.resolve() not in declared:
+        relative = path.relative_to(root).as_posix()
+        if (suffix not in PROMOTABLE_SUFFIXES and path.resolve() not in declared
+                and not any(fnmatchcase(relative, pattern) for pattern in service_files)):
             issue(errors, "unpromotable_type", path)
             continue
         if suffix not in {".html", ".css"}:
@@ -232,7 +251,15 @@ def check(root, remote_files=()):
                 issue(warnings, "speaker_clip_eager_preload", root / "index.html")
         effect_codes = speaker_effects.check(index.elements, index.motion_scripts)
         for code in effect_codes or speaker_effects.sample(index.elements, index.motion_scripts):
-            issue(errors, code, root / "index.html")
+            if code == "speaker_effect_anchor_mismatch":
+                for detail in speaker_effects.anchor_mismatches(index.elements):
+                    issue(errors, code, root / "index.html", **detail)
+            else:
+                issue(errors, code, root / "index.html")
+        # A project cut from several videos: the commit's own refusals, element by element.
+        for item in source_files.issues(index.elements, source_files.read_script(root)):
+            if item not in errors:
+                errors.append(item)
     for path, doc in documents.items():
         for _, attrs, _ in doc.elements:
             if "data-composition-src" not in attrs:

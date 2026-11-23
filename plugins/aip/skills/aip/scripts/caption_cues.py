@@ -12,7 +12,9 @@ words the cut keeps into moments and cues:
 - A cue holds at most --max-words words and ends at a clause mark or a pause.
 
 Times are seconds: a moment's start on the cut and its source anchor, and each
-cue's and word's in and out from the moment's start.
+cue's and word's in and out from the moment's start. On a project cut from several
+videos each moment also names its video, `source_id`: a moment plays within one
+video's clips, and its anchor is a second of that video.
 """
 
 import argparse
@@ -20,7 +22,7 @@ import json
 from pathlib import Path
 import sys
 
-from editing_script_sync import EDITING_SCRIPT, sync_workspace
+from editing_script_sync import EDITING_SCRIPT, _sources, sync_workspace
 
 
 DEFAULT_MAX_WORDS = 4
@@ -42,13 +44,18 @@ def _spans(document):
     av = next((track for track in document["tracks"] if track["type"] == "av"), None)
     clips = sorted((item for item in (av or {}).get("items", []) if item.get("state") is None),
                    key=lambda item: item["timelineIn"])
+    # On several videos a span is one video's: seconds of two videos that meet are two clocks.
+    multi = _sources(document) is not None
     spans = []
     for clip in clips:
+        file = clip.get("sourceId") if multi else None
         # A speaker split alone does not cut speech; adjacent spans share one clock.
-        if spans and abs(clip["srcStart"] - spans[-1]["srcEnd"]) <= SPAN_TOLERANCE_MS:
+        if (spans and spans[-1]["file"] == file
+                and abs(clip["srcStart"] - spans[-1]["srcEnd"]) <= SPAN_TOLERANCE_MS):
             spans[-1]["srcEnd"], spans[-1]["timelineOut"] = clip["srcEnd"], clip["timelineOut"]
         else:
-            spans.append({key: clip[key] for key in ("srcStart", "srcEnd", "timelineIn", "timelineOut")})
+            span = {key: clip[key] for key in ("srcStart", "srcEnd", "timelineIn", "timelineOut")}
+            spans.append(dict(span, file=file))
     return spans
 
 
@@ -119,14 +126,28 @@ def cue_moments(document, max_words=DEFAULT_MAX_WORDS):
                           "words": [[word["text"], _seconds(word["in"] - first["in"]),
                                      _seconds(word["out"] - first["in"])] for word in cue]})
         identifier = "captions-{:0{}d}".format(number + 1, width)
-        moments.append({"id": identifier, "src": "compositions/{}.html".format(identifier),
-                        "start": _seconds(first["in"]), "duration": timed[-1]["out"],
-                        "src_anchor": _seconds(source), "cues": timed})
+        moment = {"id": identifier, "src": "compositions/{}.html".format(identifier),
+                  "start": _seconds(first["in"]), "duration": timed[-1]["out"],
+                  "src_anchor": _seconds(source)}
+        if span["file"] is not None:
+            moment["source_id"] = span["file"]
+        moment["cues"] = timed
+        moments.append(moment)
     return moments
+
+OUTPUT_SHAPE = (
+    "Output: one JSON object, {\"ok\": true, \"synced\": <bool>, \"moments\": [row, ...]}, or "
+    "{\"ok\": false, \"code\": <string>} with exit 1. Each row is {\"id\", \"src\" (the composition file), "
+    "\"start\" (on the cut), \"duration\", \"src_anchor\" (the source second at start), \"source_id\" "
+    "(on a project cut from several videos, the video that second is in), \"cues\": "
+    "[{\"in\", \"out\", \"words\": [[text, in, out], ...]}, ...]}, in seconds, cue and word times "
+    "from the moment's start."
+)
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(description=__doc__, epilog=OUTPUT_SHAPE,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("workspace", type=Path, help="the render-engine directory")
     parser.add_argument("--max-words", type=int, default=DEFAULT_MAX_WORDS,
                         help="most words a cue shows at once (default %(default)s)")

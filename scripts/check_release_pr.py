@@ -22,9 +22,12 @@ CURSOR_VERSION_FILES = frozenset({
     "plugins/aip/.cursor-plugin/plugin.json",
     ".cursor-plugin/marketplace.json",
 })
-# Historical commits can predate version tracking or Cursor packaging. HEAD
-# must always contain the complete current metadata set.
-LEGACY_OPTIONAL_FILES = CURSOR_VERSION_FILES | {LATEST_VERSION_FILE}
+ANTIGRAVITY_MANIFEST_FILE = "antigravity/aip/.antigravity-plugin/plugin.json"
+ANTIGRAVITY_MCP_FILE = "antigravity/aip/mcp_config.json"
+ANTIGRAVITY_VERSION_FILES = frozenset({ANTIGRAVITY_MANIFEST_FILE, ANTIGRAVITY_MCP_FILE})
+HOST_ADOPTION_FILES = CURSOR_VERSION_FILES | ANTIGRAVITY_VERSION_FILES
+# Historical commits can predate version tracking or newer host packages.
+LEGACY_OPTIONAL_FILES = HOST_ADOPTION_FILES | {LATEST_VERSION_FILE}
 VERSION_FIELDS = {
     LATEST_VERSION_FILE: (("version",),),
     "plugins/aip/.codex-plugin/plugin.json": (("version",),),
@@ -36,6 +39,8 @@ VERSION_FIELDS = {
         ("mcpServers", "ai-producer", "headers", "X-AIP-Plugin-Version"),
         ("mcpServers", "ai-producer", "http_headers", "X-AIP-Plugin-Version"),
     ),
+    ANTIGRAVITY_MANIFEST_FILE: (("version",),),
+    ANTIGRAVITY_MCP_FILE: (("mcpServers", "ai-producer", "headers", "X-AIP-Plugin-Version"),),
 }
 SEMVER = re.compile(
     r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
@@ -104,6 +109,9 @@ def version_from_documents(documents: dict, *, allow_legacy: bool = False) -> st
     cursor_files = CURSOR_VERSION_FILES & documents.keys()
     if allow_legacy and cursor_files and cursor_files != CURSOR_VERSION_FILES:
         raise ValueError("Historical Cursor metadata must include both the plugin manifest and marketplace, or neither")
+    antigravity_files = ANTIGRAVITY_VERSION_FILES & documents.keys()
+    if allow_legacy and antigravity_files and antigravity_files != ANTIGRAVITY_VERSION_FILES:
+        raise ValueError("Historical Antigravity metadata must include both the plugin manifest and MCP config, or neither")
     versions = []
     for path in VERSION_FIELDS:
         if allow_legacy and path in LEGACY_OPTIONAL_FILES and path not in documents:
@@ -342,7 +350,7 @@ def check_release_pr(repo: Path, base: str, head: str, title: str) -> str:
     if unexpected:
         raise ValueError(f"Release PRs may only change the version files and the new release log; unexpected paths: {sorted(unexpected)!r}")
     for path in VERSION_FIELDS:
-        if path in CURSOR_VERSION_FILES and path not in before:
+        if path in HOST_ADOPTION_FILES and path not in before:
             raise ValueError(f"New host metadata must land in an ordinary PR before a release: {path}")
         original = before.get(path, {"version": old_version})
         original_content = without_versions(original, version_fields_for(path, original))

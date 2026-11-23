@@ -33,3 +33,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: python3 scripts/test.py
+      - name: Strictly validate the Antigravity package
+        if: matrix.python-version == '3.13'
+        shell: bash
+        run: |
+          curl -fsSL https://antigravity.google/cli/install.sh | bash -s -- --dir "$RUNNER_TEMP/antigravity"
+          "$RUNNER_TEMP/antigravity/agy" --version
+          "$RUNNER_TEMP/antigravity/agy" plugin validate --strict antigravity/aip

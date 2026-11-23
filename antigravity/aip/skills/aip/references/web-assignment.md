@@ -1,0 +1,11 @@
+# A request from the AI Producer web page
+
+A request that names a web assignment hands you, through `get_web_assignment`, what the user chose on the web page: their footage, an optional reference and a note. The note is the user's own words, as if they had said it in this conversation. Everything else is a new project like any other, cut with the [settings for a new project](../SKILL.md#settings-for-a-new-project).
+
+- Read it first with `wait: false`, so it answers at once with what has landed instead of holding for the footage; a service that does not know `wait` holds as an ordinary read does. Whenever the answer holds a reference you can get - a preset, a link, or uploaded files with their `download_url`, which `next_data.reference_ready` confirms when it is there - get and read it now, whether the answer is `waiting` or already `ready`: the footage may still be uploading, and the project never starts in its place.
+- When landed footage carries a `download_url`, download it to this computer in the background, and use that copy wherever you would use a video the user gave you here: it is the user's footage. The link lasts fifteen minutes; read the assignment again for a fresh one. When it carries none (`download_unavailable` says why, or the field is absent), use the project's own `public/source.mp4` from `get_workspace_file` once preparation finishes.
+- Read again without `wait` until it answers `ready`, each read holding while a file is on its way, then start the project with `start_transcribe_project` and the answer's `start_args`. The start does not wait for your download: the service reads the footage itself.
+
+## When it cannot be read
+
+A request sent from the AI Producer web page names a web assignment that the page passed to you; the user never sees or handles it. When it cannot be read - not found, expired, missing files, or no tool here to read it - tell the user what they can do: send it again from the AI Producer web page, which opens a new conversation on its own, or give you the files directly in this conversation. Never ask the user for an assignment id, a link, or any other value the page passed to you, and never offer one as an answer on a question or choice card.

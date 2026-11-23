@@ -6,7 +6,7 @@
 
 <h1 align="center">AI Producer Plugin</h1>
 
-<p align="center">The official OpusClip plugin for editing videos in ChatGPT, Codex, Claude Code, Claude Cowork, Cursor, and other AI agents.</p>
+<p align="center">The official OpusClip plugin for editing videos in ChatGPT, Codex, Claude Code, Claude Cowork, Cursor, Antigravity, and other AI agents.</p>
 
 <p align="center">
   <a href="https://producer.opus.pro/plugin"><strong>Get started</strong></a> &nbsp; | &nbsp;
@@ -55,6 +55,16 @@ rsync -a --delete ai-producer-plugin/plugins/aip/ ~/.cursor/plugins/local/aip/
 ```
 
 Restart your client or open a new task after updating; you may need to sign in again. The production endpoint stays at `https://producer.opus.pro/api/mcp`, and existing project links do not change.
+
+## Antigravity
+
+Clone or update this repository, then install the [Antigravity package](antigravity/aip/) from your checkout:
+
+```bash
+agy plugin install ./ai-producer-plugin/antigravity/aip
+```
+
+Start a new Antigravity conversation and sign in to AI Producer when prompted. See the [package guide](antigravity/aip/README.md) for example requests.
 
 ## Development
 

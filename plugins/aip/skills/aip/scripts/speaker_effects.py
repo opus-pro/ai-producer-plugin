@@ -156,12 +156,38 @@ def _host_codes(attrs, clips):
         return codes, None  # the timing check reports the attribute itself
     codes.extend(_value_codes(kind, attrs, duration))
     anchor = _number(attrs.get("data-src-anchor"))
-    expected = _source_at(clips, start)
     if anchor is None:
         codes.append("speaker_effect_anchor_missing")
-    elif expected is not None and abs(anchor - expected) > ANCHOR_TOLERANCE:
+    elif _anchor_mismatch(attrs, clips) is not None:
         codes.append("speaker_effect_anchor_mismatch")
     return codes, (_lane(kind, attrs), start, start + duration)
+
+
+def _anchor_mismatch(attrs, clips):
+    """``(expected, found)`` source seconds when the host's anchor is not the source second at its start."""
+    start = _number(attrs.get("data-start"))
+    anchor = _number(attrs.get("data-src-anchor"))
+    if start is None or anchor is None:
+        return None
+    expected = _source_at(clips, start)
+    if expected is None or abs(anchor - expected) <= ANCHOR_TOLERANCE:
+        return None
+    return expected, anchor
+
+
+def anchor_mismatches(elements):
+    """One ``{"id", "expected", "found"}`` per effect host whose ``data-src-anchor`` is not the
+    source second at its ``data-start``, in document order."""
+    top = [(tag, attrs) for tag, attrs, depth in elements if depth == 0]
+    clips = [attrs for tag, attrs in top if tag == "video" and attrs.get("data-track-index") == "0"]
+    found = []
+    for tag, attrs in top:
+        if attrs.get("data-aip-effect") is None or "speaker_effect_anchor_mismatch" not in _host_codes(attrs, clips)[0]:
+            continue
+        expected, anchor = _anchor_mismatch(attrs, clips)
+        found.append({"id": attrs.get("data-composition-id"), "expected": round(expected, 3),
+                      "found": round(anchor, 3)})
+    return found
 
 
 def _definition_codes(scripts):
