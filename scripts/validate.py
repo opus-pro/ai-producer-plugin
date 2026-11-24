@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 from check_release_pr import (
-    VERSION_FIELDS, reject_constant, release_log_path, unique_object,
+    STAGING_ENV_REFERENCE, VERSION_FIELDS, reject_constant, release_log_path, unique_object,
     reissues_on_disk, validate_release_log, version_from_documents,
 )
 
@@ -217,6 +217,21 @@ def validate_relative_links(root: Path) -> None:
             assert path.exists(), f"missing relative reference: {source}: {target}"
 
 
+PUBLIC_TEXT_SUFFIXES = frozenset({".md", ".json", ".yaml", ".yml", ".py", ".txt"})
+
+
+def validate_public_content(root: Path) -> None:
+    """Public plugin files must not reference non-public staging environments."""
+    for path in sorted(plugin_dir(root).rglob("*")):
+        if not path.is_file() or path.suffix.lower() not in PUBLIC_TEXT_SUFFIXES:
+            continue
+        match = STAGING_ENV_REFERENCE.search(path.read_text(encoding="utf-8"))
+        assert match is None, (
+            f"public package file must not reference non-public staging environments "
+            f"({match.group(0)!r}): {path.relative_to(root)}"
+        )
+
+
 def validate_notices(root: Path) -> None:
     license_file = plugin_dir(root) / "licenses/Apache-2.0.txt"
     assert license_file.is_file(), "missing bundled HyperFrames license"
@@ -233,6 +248,7 @@ def main(root: Path = ROOT) -> None:
     validate_skill_structure(root)
     validate_host_hooks(root)
     validate_relative_links(root)
+    validate_public_content(root)
     validate_notices(root)
     print(f"Validated {PLUGIN_DIRNAME} {version} for Codex, Claude Code, and Cursor")
 

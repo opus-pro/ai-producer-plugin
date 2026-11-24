@@ -599,6 +599,20 @@ class ReleaseLogTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "start from base version"):
             policy.validate_release_log(self.log(), "0.8.34", previous_version="0.8.32")
 
+    def test_staging_environment_references_fail(self) -> None:
+        for line in (
+            "- Verified on staging before merge.",
+            "- Trialled against staging with synthetic fixtures.",
+            "- Checked the staging environment endpoint.",
+            "- Tested https://stg-api.example.invalid/api/mcp.",
+        ):
+            with self.subTest(line=line), self.assertRaisesRegex(ValueError, "non-public staging environments"):
+                policy.validate_release_log(self.log(f"## Validation\n\n{line}"), "0.8.34")
+
+    def test_staging_verb_is_allowed(self) -> None:
+        change = "- Convert clips to H.264 before staging. ([#1](https://github.com/opus-pro/ai-producer-plugin/pull/1))"
+        policy.validate_release_log(self.log(f"## Changes\n\n### Changed\n\n{change}"), "0.8.34")
+
 
 class SemVerTest(unittest.TestCase):
     def test_semver_precedence(self) -> None:

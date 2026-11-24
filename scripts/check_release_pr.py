@@ -43,6 +43,15 @@ SEMVER = re.compile(
     r"(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?"
 )
 TITLE = re.compile(r"chore: release v(.+)")
+# Reject non-public staging environment references without flagging the verb "staging" (e.g. staging files).
+STAGING_ENV_REFERENCE = re.compile(
+    r"\b(?:"
+    r"stg-[a-z0-9-]+"
+    r"|(?:on|against|in|to|from)\s+staging"
+    r"|staging\s+(?:environment|env|server|backend|gateway|host|url|endpoint|deployment|cluster|build|plugin|lane|tier|service)"
+    r")\b",
+    re.IGNORECASE,
+)
 
 
 def precedence(version: str) -> tuple:
@@ -260,6 +269,9 @@ def validate_release_log(contents: str, version: str, *, previous_version: str |
         raise ValueError(f"Release log must start with '# v{version}'")
     if re.search(r"\{\{.*?\}\}", contents, re.DOTALL):
         raise ValueError("Release log still contains template placeholders")
+    staging_ref = STAGING_ENV_REFERENCE.search(contents)
+    if staging_ref:
+        raise ValueError(f"Release log must not reference non-public staging environments: {staging_ref.group(0)!r}")
     visible = re.sub(r"<!--.*?-->", "", contents, flags=re.DOTALL).strip()
     body, _, footer = visible.rpartition("\n")
     comparison = re.fullmatch(r"\*\*Full Changelog\*\*: \[v(.+?)\.\.\.v(.+?)\]\(([^)]+)\)", footer)

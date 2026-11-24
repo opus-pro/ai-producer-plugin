@@ -260,6 +260,16 @@ class ValidateFixtureTest(unittest.TestCase):
                     validate.main(self.root)
                 path.unlink()
 
+    def test_staging_environment_reference_in_plugin_fails(self) -> None:
+        skill = self.root / ENTRY_SKILL
+        original = skill.read_text(encoding="utf-8")
+        for snippet in ("\nTested on staging.\n", "\nEndpoint: https://stg-api.example.invalid/api/mcp\n"):
+            with self.subTest(snippet=snippet):
+                skill.write_text(original + snippet, encoding="utf-8")
+                with self.assertRaisesRegex(AssertionError, "non-public staging environments"):
+                    validate.main(self.root)
+                skill.write_text(original, encoding="utf-8")
+
 
 if __name__ == "__main__":
     unittest.main()
