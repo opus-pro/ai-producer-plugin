@@ -1,6 +1,6 @@
 ---
 name: aip
-description: "Create or update an editable AI Producer video. Use when someone provides footage or an existing project and asks AI Producer to cut or edit it, add captions or subtitles, motion graphics or animated effects, background music, or inserted images or video clips, restyle, export the finished video, or adapt a named Motion Library template, in any language. Cut a new project with fixed settings instead of asking about them, and copy the captions, motion graphics and transitions of a reference video the user supplies."
+description: "Create or update an editable AI Producer video. Use when someone provides footage or an existing project and asks AI Producer to cut or edit it, add captions or subtitles, motion graphics or animated effects, background music, or inserted images or video clips, export the finished video, or adapt a named Motion Library template, in any language. Cut a new project with fixed settings instead of asking about them, and copy the captions, motion graphics and transitions of a reference video the user supplies."
 ---
 
 # AI Producer preview
@@ -130,7 +130,7 @@ Fine-cut the video like a high-performing social media creator: deep-fried, brai
 These rules govern extra authored copy; spoken captions are governed by the caption skill.
 
 - Authored vectors, diagrams, and animations default to no secondary text. Keep core values and units attached to the quantities they depict. Add an object, category, or relationship label only when its absence creates a specific ambiguity that the visual and simultaneous speech do not resolve. Omit labels that merely name a recognizable object or restate what the visual and speech already convey.
-- Sourced B-roll or images carry the source label the aesthetic rules' material section sets. Authored graphics carry no provenance labels, "illustration" disclaimers, or explanatory footnotes.
+- Sourced B-roll or images carry no source label, license notice, or credit overlay unless the aesthetic rules' material section calls for one. Authored graphics carry no provenance labels, "illustration" disclaimers, or explanatory footnotes.
 - Before publishing each effect, apply a deletion test to its local composition source: if removing an extra label preserves the meaning in the context of the speech, remove it.
 
 ### A video with no speech
@@ -149,6 +149,6 @@ Plan the whole edit locally. When the current schema exposes `authoring`, set it
 
 Publish as [publication](references/publish.md) says: every host commits the complete graph, and it covers what to do when a step fails.
 
-Pass `skills_receipt: "aip-file-42bd723d1611"` on every `commit_workspace`, exactly as written here: it tells AI Producer which copy of these skills the edit followed, and changes nothing about the commit.
+Pass `skills_receipt: "aip-file-5791ab75ae69"` on every `commit_workspace`, exactly as written here: it tells AI Producer which copy of these skills the edit followed, and changes nothing about the commit.
 
 After the final requested graph is accepted, deliver the durable project link (`page_url`, retrieved if missing and written for this host as [the host reference](references/host.md) says) in the final reply, then stop unless an export was explicitly requested. Give the user that link in the same reply that says the run has started, not only at the hand-back: the project exists and is watchable from the moment it is created, and a run is long. A view-ticket url is never that link - it is single-use and signs whoever opens it into your own account, so it does not go to the user. Translate refusals and material warnings under the user-facing language contract; do not repeat internal codes or mechanisms. Do not claim visual quality, audio synchronization, or export compatibility. Close by handing final confirmation to the user: state what was applied, then ask them to confirm the result on the project page, already open beside the conversation where this host shows it, otherwise at the link in this reply. Word this as a completed delivery waiting on the user's review.
