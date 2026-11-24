@@ -24,12 +24,13 @@ Decide, sentence by sentence, which kind of thing the sentence shows.
 
 **Real things** exist and can be filmed or captured: a logo, a product, a person, a place, a news event, a software interface.
 
-- Use the real material the [research](../SKILL.md#source-supporting-visuals) found, B-roll or images. Present it the way the reference presents material of the same kind: its container, frame and entrance. Where the reference shows no such example, show the material as it is, with one short source label: the outlet or site, and a date when timing matters. Authored graphics and logos carry no source label.
+- Use the real material the [research](supporting-visuals.md) found, B-roll or images. Present it the way the reference presents material of the same kind: its container, frame and entrance. Where the reference shows no such example, show the material as it is, with one short source label: the outlet or site, and a date when timing matters. Authored graphics and logos carry no source label.
 - Keep material undistorted and sharp: hold its aspect ratio, and never show it larger than 1.5x its own pixel size. Leave out material that carries a watermark, someone else's captions, or another platform's player or feed around it; an interface the speaker talks about is the subject, not that frame.
 - Material whose orientation differs from the canvas never sits on black bars: place it in the reference's container for that kind of material, or crop it to its subject.
 - An interface screenshot or screen recording pushes in on the part the speaker is talking about, until the interface's text reaches body size (section 3.2).
+- The user's own footage shows the speaker only live, in sync with the words: the speaker clip at any framing, seated, cut out, or inside a frame, border or shape. A still taken from it is never material: it never fills a photo, thumbnail, tile, card or any other image slot. The speaker from another moment of the recording never plays over the voice either, talking or silent: a pause where the speaker sits still reads as a frozen picture under the words. Footage in the recording that shows something other than the speaker, such as a product or a place, is material like any B-roll. A slot no real material fills becomes a seat, the live speaker clip in that frame as the [framing skill](../../aip-framing/SKILL.md) builds one, or the beat takes a layout without the slot.
 
-Why: viewers believe what they can see, so real material is the argument. A stretched, blurred or watermarked one argues against the speaker.
+Why: viewers believe what they can see, so real material is the argument. A stretched, blurred or watermarked one argues against the speaker, and a still of the speaker passed off as a photo shows nothing the viewer has not just seen, so the edit reads as padded and broken.
 
 **Concepts** are mechanisms, scale, data, processes, logical breakdowns, causes, and anything else the speaker cannot point at. Animate them. Make the animation accurate, obvious and lean first, then choose 2D or 3D:
 
@@ -58,7 +59,7 @@ Why: attention drains second by second, and steady visual change is what holds i
 ### 2.1 Opening and ending
 
 - The first frame is the cover: feeds and some platforms show it as the thumbnail. It shows the speaker or real content, never a blank or single-color plate, and the first beat lands within the first sentence.
-- The edit ends within 0.5 s of the last word. Its last frame is a settled picture, never an element halfway through its entrance and never an empty plate.
+- The edit ends within 0.5 s of the last word, unless the user supplies a closing video (a logo, an end card, an outro): that plays whole after the last word, as the composition skill places it. Its last frame is a settled picture, never an element halfway through its entrance and never an empty plate.
 
 Why: a blank first frame is a blank cover, and a tail after the last word is dead air the viewer scrolls past.
 

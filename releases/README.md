@@ -12,11 +12,11 @@ This directory records the declared plugin version and release notes. Local prep
 }
 ```
 
-It must match all three host manifests, the Claude and Cursor marketplace entries, and both MCP version headers. It records repository state, which may be ahead of the latest published GitHub Release while a release is being prepared. Backfilling older notes does not change this value.
+It must match every package manifest, the Claude and Cursor marketplace entries, and all MCP version headers listed in the [release rule](../.agents/rules/release.md#version-source). It records repository state, which may be ahead of the latest published GitHub Release while a release is being prepared. Backfilling older notes does not change this value.
 
 ## template.md
 
-Use `template.md` for new releases. First follow the shared [version-selection procedure](../.agents/rules/release.md#choose-a-new-version): verify the published GitHub Release version, default to the next patch, and obtain a separate second confirmation before any minor or major version edits. From the repository root, run `python3 scripts/prepare_release.py X.Y.Z` with that selected version to align all eight version values and create `releases/vX.Y.Z.md`. The helper fills the version and previous-version placeholders, including the final Full Changelog comparison link; complete the remaining content before running checks.
+Use `template.md` for new releases. First follow the shared [version-selection procedure](../.agents/rules/release.md#choose-a-new-version): verify the published GitHub Release version, default to the next patch, and obtain a separate second confirmation before any minor or major version edits. From the repository root, run `python3 scripts/prepare_release.py X.Y.Z` with that selected version to align all version values and create `releases/vX.Y.Z.md`. The helper fills the version and previous-version placeholders, including the final Full Changelog comparison link; complete the remaining content before running checks.
 
 Changes, Compatibility, and Validation are optional and appear in that order when retained. Delete sections and categories with nothing noteworthy to report. Group concise change summaries by category and end each entry with one or more related PR-number links. Do not leave placeholders or empty sections.
 

@@ -18,7 +18,7 @@ validate = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = validate
 SPEC.loader.exec_module(validate)
 
-FIXTURE_PARTS = (".agents", ".claude-plugin", ".cursor-plugin", "plugins", "releases")
+FIXTURE_PARTS = (".agents", ".claude-plugin", ".cursor-plugin", "antigravity", "plugins", "releases")
 ENTRY_SKILL = Path("plugins/aip/skills/aip/SKILL.md")
 MCP_CONFIG = "plugins/aip/.mcp.json"
 
@@ -44,6 +44,21 @@ class ValidateFixtureTest(unittest.TestCase):
 
     def test_pristine_copy_passes(self) -> None:
         validate.main(self.root)
+
+    def test_antigravity_version_fields_must_match_the_release(self) -> None:
+        version = validate.load_json(self.root / "releases/latest_version.json")["version"]
+        for relative in (validate.ANTIGRAVITY_MANIFEST_FILE, validate.ANTIGRAVITY_MCP_FILE):
+            with self.subTest(path=relative):
+                path = self.root / relative
+                self.rewrite(relative, f'"{version}"', '"0.0.0"')
+                with self.assertRaisesRegex(ValueError, "version fields must match"):
+                    validate.validate_releases(self.root, version)
+                shutil.copyfile(REPO / relative, path)
+
+    def test_antigravity_config_must_match_the_shared_production_server(self) -> None:
+        self.rewrite(validate.ANTIGRAVITY_MCP_FILE, validate.EXPECTED_ENDPOINT, "https://example.invalid/mcp")
+        with self.assertRaisesRegex(AssertionError, "shared production URL and headers"):
+            validate.validate_antigravity(self.root)
 
     def test_default_icons_do_not_depend_on_theme_switching(self) -> None:
         path = self.root / "plugins/aip/.codex-plugin/plugin.json"

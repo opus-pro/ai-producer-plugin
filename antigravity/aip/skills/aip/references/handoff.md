@@ -1,0 +1,41 @@
+# Adapting a Motion Library template
+
+The primary handoff is a natural-language request followed by a small explicit context line. A typical handoff is:
+
+```text
+Use AI Producer to adapt the "Hero Statement" template to this video's content and place it where it fits best.
+Project: DEMO_PROJECT | Template: text-hero-statement@4.0.0
+```
+
+The first line is the instruction and carries the template's user-facing label. The second line carries only the actual project id and the exact Motion Library asset id and version. Accept the equivalent Chinese labels `项目` and `模板`, ASCII or full-width colons, a pipe or middle dot separator, and optional matching code backticks around either value. Do not require or infer a URL, hidden parameter, playhead, revision, context token, intent enum or `@aip` marker. A generic request about a project, a template name without both context values, or context without a natural request to use the template is not this handoff. When multiple project or template values make the target ambiguous, ask for one context line before any AI Producer call.
+
+The [AI Producer skill](../SKILL.md) owns user-facing language, existing-project scope and the delivery boundary; the [framing skill](../../aip-framing/SKILL.md) and its [cutout reference](../../aip-framing/references/cutout.md) own speaker measurements, and the [composition contract](../../aip-composition/SKILL.md) a derived composition.
+
+## Ground and place the primary handoff
+
+1. **Use the explicit identity.** Parse the context line into `project_id`, `motion_asset_id` and `version`. Treat the version as pinned. If the surrounding request, the active project and the context line name conflicting explicit project targets, ask which project to change before any mutation.
+2. **Authorize and discover the exact package.** Call `list_motion_assets` with the parsed `project_id` and no invented placement. Find the live entry whose `motion_asset_id` and `version` both match the parsed values. More than one plausible match is ambiguous. A missing id, unavailable entry or different offered version is unavailable for this request; report it and stop without choosing the latest version, a similarly named asset or an authored substitute, and do not ask whether to use a different version. Use this entry to learn the package's duration bounds, defaults, purpose and capabilities, but do not execute a cutout plan for a window that has not been chosen.
+3. **Read the pinned design.** Call `get_motion_asset` with the parsed `motion_asset_id` and `version`, and read that manifest and source. Pass `orientation` once the project's orientation is known, to read that source alone; without it the reply carries every supported orientation. This is the source of truth for the recognizable design, motion, declared inputs and bindings. The primary text handoff never goes to `resolve_selection`; that parser is reserved for a legacy `@aip` line (below).
+4. **Read and ground the current edit.** Read the current project, accepted video and media, transcript, saved edit, output timeline and existing visual moments, and preserve unrelated graphics, audio, captions and edits. Do not upload the source again or start project preparation. Replace demo topics, names, copy, figures and media with facts from the user's request, transcript and accepted project assets, keeping qualifiers and units. Never leave demo copy in an adaptation or invent a number, example, quotation or asset. Infer a required value from known context when responsible; otherwise ask one focused question instead of writing the effect.
+5. **Choose the requested scope.** An output time, range, count, scope or unchanged insertion the user's words set, before or after the context line, wins. Otherwise place one occurrence at the retained output beat where the template's purpose best supports the actual video, weighing semantic fit, useful information gain, readability, existing visuals, captions and speaker clearance. Map source cues through the current cut; never treat source time as output time or default to zero. Keep the duration inside the package's discovered bounds.
+6. **Refresh the final package plan.** Call `list_motion_assets` again with the same `project_id` and the final `at_ms` and `duration_ms`. Require the same exact id and version, and retain this listing's current `project_revision`, supported action, inputs and cutout plan. A refusal remains a refusal.
+7. **Use declared bindings when they express the adaptation.** Bind only manifest inputs that carry a supported `binding` with `storage: "parameter"` and a token. Submit each grounded parameter under the manifest input's exact `key`, never under `binding.token`. Call `materialize_motion_asset` with the final `timeline_in_ms` and `duration_ms` and the refreshed `expected_project_revision`. Cutout media uses the listing's exact `input_key`. Infer a listed `chooseInput` value from grounded context before asking. An explicit unchanged insertion uses the package defaults.
+8. **Derive from the pinned source when bindings cannot express the result.** Hardcoded content, an unbound semantic slot, overlay storage, or a required structural or element-count change takes the smallest necessary derived-composition path. Keep the template's recognizable design and motion, and commit the derived effect at the final window through the existing workspace flow. Never derive to bypass authorization, compatibility, availability or an exact-version mismatch.
+9. **Keep placement current and safe.** Reconcile a stale revision against the current edit before writing again, and preserve the chosen final duration. Do not blindly replay a paid generation or overwrite another accepted edit.
+10. **Verify and hand back.** Confirm materialization from its receipt (`instance_id`, `timeline_in_ms`, `timeline_out_ms`) or a derived edit from the accepted workspace receipt. Return `page_url` with `mcp=1&embed=0` as directed in the main skill, retrieving it from the current project when the receipt omits it. Briefly name the chosen beat and why it fits. Do not return `agent_page_url`, and do not play, screenshot or otherwise inspect the generated preview.
+
+## Cutout packages
+
+Choose the final output window before the final window-specific listing so the returned cutout plan is measured for the kept spans that will appear. The selected entry's `next_data.cutout.frame_speaker_calls` carries one measurement window per kept span inside that effect window, split at cut boundaries, together with the package measurement inputs and revision. Run those calls as supplied. Do not widen, merge, shift or guess a window, and never bridge two takes with one matte.
+
+Bind the result as `media_inputs[input_key]`, with one segment per planned window in order. Each segment has top-level `path`, `sha256`, `start_ms` and `end_ms`, plus one `geometry` object. Set `geometry.object_position` to the returned `object_position.css` string and put the returned `sink_px`, `card_clip_top_px`, `head_top_px` and `head_bottom_px` inside that same `geometry`; never put `object_position` or a `cutout` object at the segment's top level. Every segment must tile the final effect window without a gap or overlap. If any planned window reports `presence.matte_ok` false or a null cutout, report that the template is unavailable for that placement and do not materialize a partial set. Never silently move an explicit user-selected window to make the cutout work.
+
+Pass the `project_revision` from the listing that produced the windows. On a stale revision, list the same final window again, compare kept spans, re-run `frame_speaker` only for spans that moved, and reuse unchanged accepted files and geometry.
+
+## Legacy `@aip` lines
+
+When the user's message holds a line that starts with `@aip` in place of a context line, read [legacy `@aip` lines](legacy-aip-line.md) before any call.
+
+## Talk to the user
+
+Name the template as the user sees it and the chosen time or beat; project ids, package ids, versions, revisions, keys, hashes and paths stay inside calls. Ask only for an ambiguous context line or an unknowable required input; otherwise report concisely what was applied, or why it could not be and what the user can do next.

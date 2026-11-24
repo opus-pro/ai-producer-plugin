@@ -20,6 +20,8 @@ A host that uses one of them:
 ></div>
 ```
 
+On a project cut from several videos the host also carries `data-source-id="<id>"`, the video its `data-src-anchor` second is in, as the [composition contract](../SKILL.md) says for a zoom.
+
 Two treatments on one beat (a shake and a flash on the same slam) are two hosts with the same start on two tracks, 900 and 901.
 
 ## Impact shake

@@ -13,7 +13,8 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "scripts"))
 import prepare_release
 from check_release_pr import (
-    CURSOR_VERSION_FILES, LATEST_VERSION_FILE, RELEASE_TEMPLATE, VERSION_FIELDS, release_log_path,
+    ANTIGRAVITY_MANIFEST_FILE, ANTIGRAVITY_MCP_FILE, HOST_ADOPTION_FILES, LATEST_VERSION_FILE,
+    RELEASE_TEMPLATE, VERSION_FIELDS, release_log_path,
     validate_release_log, version_fields_for, version_from_documents,
 )
 
@@ -43,6 +44,11 @@ class PrepareReleaseTest(unittest.TestCase):
         after = self.documents()
         self.assertEqual(version_from_documents(after), self.target)
         self.assertEqual(json.loads((self.root / LATEST_VERSION_FILE).read_text()), {"version": self.target})
+        self.assertEqual(after[ANTIGRAVITY_MANIFEST_FILE]["version"], self.target)
+        self.assertEqual(
+            after[ANTIGRAVITY_MCP_FILE]["mcpServers"]["ai-producer"]["headers"]["X-AIP-Plugin-Version"],
+            self.target,
+        )
         for path in VERSION_FIELDS:
             for field in version_fields_for(path, after[path]):
                 parent = after[path]
@@ -89,8 +95,8 @@ class PrepareReleaseTest(unittest.TestCase):
             prepare_release.prepare_release(self.root, self.target)
         self.assertEqual(self.files(), original)
 
-    def test_cursor_metadata_is_required_before_preparing_release(self) -> None:
-        for relative in CURSOR_VERSION_FILES:
+    def test_host_metadata_is_required_before_preparing_release(self) -> None:
+        for relative in HOST_ADOPTION_FILES:
             with self.subTest(path=relative):
                 path = self.root / relative
                 contents = path.read_bytes()

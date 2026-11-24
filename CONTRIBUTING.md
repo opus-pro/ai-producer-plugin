@@ -10,13 +10,13 @@ Python 3.9 or newer is sufficient for the offline checks:
 python3 scripts/test.py
 ```
 
-The suite validates all three host manifests, marketplace entries, MCP version headers, skill structure, package-relative Markdown links, the absence of lifecycle hooks, and the release rules. No authentication or hosted processing is performed.
+The suite validates host identities, marketplace entries, MCP version headers, skill structure, package-relative Markdown links, the absence of lifecycle hooks, and the release rules. No authentication or hosted processing is performed.
 
-For packaging changes, validate the marketplace and bundle with Claude Code, test marketplace discovery in an isolated Codex profile, and load the local package in Cursor to confirm skill discovery and MCP server registration. Report client versions and distinguish static validation from authenticated integration checks. CI runs on GitHub-hosted runners without service credentials; private integration checks are maintained separately.
+For packaging changes, validate the marketplace and bundle with Claude Code, test marketplace discovery in an isolated Codex profile, and load the local package in Cursor to confirm skill discovery and MCP server registration. Run `agy plugin validate --strict antigravity/aip` and verify package installation in Antigravity. Report client versions and distinguish static validation from authenticated integration checks. CI runs on GitHub-hosted runners without service credentials; private integration checks are maintained separately.
 
 ## Ownership and compatibility
 
-This repository publishes the client plugin. Its package (`plugins/aip/`) and all three marketplace manifests are generated from OpusClip's plugin source, which also runs the package's behavioral tests, and reach this repository as reviewed pull requests; an edit made here directly is replaced by the next one. Report a problem with the package as an issue. Release history, release tooling, and this repository's documentation are edited here. Do not introduce employee environments, private fixtures, internal notification integrations, or organization-specific release orchestration.
+This repository publishes the client plugin. The packages (`plugins/aip/` and `antigravity/aip/`) and all three marketplace manifests are generated from OpusClip's plugin source, which also runs the behavioral tests. They reach this repository as reviewed pull requests. Report a package problem as an issue. Release history, release tooling, and this repository's documentation are edited here. Do not introduce employee environments, private fixtures, internal notification integrations, or organization-specific release orchestration.
 
 Preserve the `ai-producer-plugins` marketplace identifier, `aip` plugin name, and `ai-producer` MCP server name unless a change includes an explicit migration. The plugin contains no lifecycle hooks or self-update commands. Users manage installation and updates through their client.
 
@@ -34,17 +34,7 @@ Verify workspace requirements against the service's current acceptance and playb
 
 Follow the shared [release rule](.agents/rules/release.md) when preparing a version update. Codex and Cursor reach it through `AGENTS.md`; Claude Code imports it through `CLAUDE.md`. Merge functional changes through ordinary PRs first, then prepare a separate PR titled exactly `chore: release vX.Y.Z`, for example `chore: release v1.1.4`. Documentation-only or test-only changes do not require a plugin version bump.
 
-`releases/latest_version.json` is the canonical declared version. A release PR may change only the version fields in these seven files and add the matching `releases/vX.Y.Z.md` log:
-
-- `releases/latest_version.json`: `version`.
-- `plugins/aip/.codex-plugin/plugin.json`: `version`.
-- `plugins/aip/.claude-plugin/plugin.json`: `version`.
-- `plugins/aip/.cursor-plugin/plugin.json`: `version`.
-- `.claude-plugin/marketplace.json`: the AIP entry's `version`.
-- `.cursor-plugin/marketplace.json`: the AIP entry's `version`.
-- `plugins/aip/.mcp.json`: `X-AIP-Plugin-Version` under both `headers` and `http_headers`.
-
-All eight values must agree with the PR title and log version, and the version must increase in SemVer precedence over both the PR's starting version and the current base version. Prerelease and build suffixes are supported; a metadata-only change does not increase precedence. Other fields in those JSON files, other files, renames, deletions, and file-mode changes are not allowed in a release PR. Historical logs cannot be changed. Template, release-tooling, and new host metadata belong in separate ordinary PRs. The checker accepts historical base commits and reissue sources that predate Cursor, while the current PR head must contain all host metadata.
+`releases/latest_version.json` is the canonical declared version. A release PR may change only the version fields listed in the [release rule](.agents/rules/release.md#version-source) and add the matching `releases/vX.Y.Z.md` log. All values must agree with the PR title and log version, and the version must increase in SemVer precedence over both the PR's starting version and the current base version. Prerelease and build suffixes are supported; a metadata-only change does not increase precedence. Other fields, other files, renames, deletions, and file-mode changes are not allowed in a release PR. Historical logs cannot be changed. Template, release-tooling, and new host metadata belong in ordinary PRs. Historical base commits and reissue sources may predate newer host packages. The current PR head must contain all host metadata.
 
 A deleted immutable GitHub Release may be reissued under an explicitly requested `vX.Y.Z+reissue.N` tag without changing the plugin package version. The reviewed record in `releases/reissues.json` and separate `releases/reissue-vX.Y.Z.md` notes belong in an ordinary PR; the new tag points to the original release commit. This does not signal a plugin upgrade. Follow the [reissue procedure](.agents/rules/release.md#reissue-a-deleted-immutable-release), including human approval and publication checks.
 
