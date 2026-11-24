@@ -1,6 +1,6 @@
 # Aesthetic rules
 
-These rules hold over every fine cut, with a reference or without one. They decide what the edit shows, how much of it, and whether it reads, and they set a few numeric floors. How things move and cut - effects, curves, speeds, transitions, cutting techniques, palette, type and the caption look - comes from the reference, as the [reference style skill](../../aip-reference-style/SKILL.md) says, and without a reference from the [creative direction](../SKILL.md#creative-direction). Where a reference or the creative direction sets a number past a floor here, take the floor and keep everything else.
+These rules hold over every fine cut, with a reference or without one. They decide what the edit shows, how much of it, and whether it reads, and they set a few numeric floors. How things move and cut - effects, curves, speeds, transitions, cutting techniques, palette, type and the caption look - comes from the reference, as the [reference style skill](../../aip-reference-style/SKILL.md) says, and without a reference from the [creative direction](../SKILL.md#creative-direction). Where a reference or the creative direction sets a number past a floor here, take the floor and keep everything else. With a reference, its measured style outranks the floors here that only add variety (section 2.2's "never after it", section 2.3's framing change at every jump cut, section 3.5's layout variety, and section 4's punch-in minimum); readability (section 3.2), the safe area, the contracts, and the 50% showcase floor (section 2) still outrank the reference.
 
 When rules disagree, decide in this order:
 
@@ -24,7 +24,7 @@ Decide, sentence by sentence, which kind of thing the sentence shows.
 
 **Real things** exist and can be filmed or captured: a logo, a product, a person, a place, a news event, a software interface.
 
-- Use the real material the [research](supporting-visuals.md) found, B-roll or images. Present it the way the reference presents material of the same kind: its container, frame and entrance. Where the reference shows no such example, show the material as it is, with one short source label: the outlet or site, and a date when timing matters. Authored graphics and logos carry no source label.
+- Use the real material the [research](supporting-visuals.md) found, B-roll or images. Present it the way the reference presents material of the same kind: its container, frame and entrance. Where the reference shows no such example, show the material cleanly as it is, with no source label, license notice (such as CC BY), or credit overlay. Add a short outlet or date caption only when the speaker explicitly cites a news report, study, or dated event where the source itself is the point. Authored graphics and logos carry no source label.
 - Keep material undistorted and sharp: hold its aspect ratio, and never show it larger than 1.5x its own pixel size. Leave out material that carries a watermark, someone else's captions, or another platform's player or feed around it; an interface the speaker talks about is the subject, not that frame.
 - Material whose orientation differs from the canvas never sits on black bars: place it in the reference's container for that kind of material, or crop it to its subject.
 - An interface screenshot or screen recording pushes in on the part the speaker is talking about, until the interface's text reaches body size (section 3.2).
@@ -113,7 +113,7 @@ Why: text that is cut off, too small or unreadable against its picture fails at 
 
 - One thing enters at a time: elements that arrive together enter one after another, in reading order.
 - Text and graphics stay off the speaker's face, as the [framing skill](../../aip-framing/SKILL.md) measures it for an overlay.
-- The same kind of information keeps one style and one place across the edit: every number in one style, every source label in one position. The edit uses at most two type families, the reference's where it shows them.
+- The same kind of information keeps one style and one place across the edit: every number in one style, every label in one position. The edit uses at most two type families, the reference's where it shows them.
 
 Why: the eye goes to motion, and two things moving at once split it. A style that changes from beat to beat makes the viewer learn the screen again.
 
